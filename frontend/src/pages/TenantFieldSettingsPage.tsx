@@ -32,8 +32,8 @@ type ValidationRules = {
 };
 
 type UiProps = {
-  placeholder?: string;
-  read_only_on_edit?: boolean;
+  placeholder?: string | null;
+  read_only_on_edit?: boolean | null;
 };
 
 type FieldConfig = {
@@ -204,12 +204,12 @@ export default function TenantFieldSettingsPage() {
       prev.map((row, i) => {
         if (i !== index) return row;
 
-        const nextUi = { ...(row.ui_props_override || {}) };
+        const nextUi: UiProps = { ...(row.ui_props_override || {}) };
 
         if (value === "") {
           delete nextUi[key];
         } else {
-          nextUi[key] = value as never;
+          (nextUi as any)[key] = value;
         }
 
         return {

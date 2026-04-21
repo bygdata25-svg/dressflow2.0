@@ -2,20 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api } from "../../lib/api";
 import { useFieldConfig } from "../../hooks/useFieldConfig";
 import { DynamicForm } from "../dynamic/DynamicForm";
+import type { Supplier, SupplierType } from "../../types/supplier";
 
-type SupplierType = "FABRIC_SUPPLIER" | "WORKSHOP" | "BOTH";
-
-type Supplier = {
-  id?: string;
-  tenant_id?: string;
-  name: string;
-  supplier_code?: string | null;
-  origin?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  notes?: string | null;
-  supplier_type: SupplierType;
-};
 
 type SupplierFormProps = {
   supplier?: Supplier | null;

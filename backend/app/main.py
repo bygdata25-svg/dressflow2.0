@@ -38,3 +38,9 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+from app.core.database import Base, engine
+
+Base.metadata.create_all(bind=engine)
+
+print("DB creada")

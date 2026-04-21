@@ -17,3 +17,4 @@ reportlab==4.0.8
 pandas==2.2.2
 numpy==1.26.4
 cloudinary
+psycopg2-binary==2.9.9

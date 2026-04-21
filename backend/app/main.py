@@ -4,10 +4,15 @@ from pathlib import Path
 import os
 from fastapi.staticfiles import StaticFiles
 
-from app.core.database import Base, engine
+from app.core.database import Base, engine, SessionLocal
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.services.storage_service import ensure_upload_dirs
+from sqlalchemy.orm import Session
+from app.models.user import User, UserTenant
+from app.core.security import hash_password
+from app.models.tenant import Tenant
+
 
 app = FastAPI(title="DressFlow API")
 
@@ -55,23 +60,21 @@ def init_db():
 def seed_admin():
     db: Session = SessionLocal()
     try:
-        # 1. Crear tenant
         tenant = db.query(Tenant).filter(Tenant.slug == "demo").first()
-
         if not tenant:
             tenant = Tenant(
                 name="DressFlow Demo",
                 slug="demo",
                 status="ACTIVE",
+                email="admin@dressflow.ai",
                 currency="ARS",
+                timezone="America/Argentina/Buenos_Aires",
             )
             db.add(tenant)
             db.commit()
             db.refresh(tenant)
 
-        # 2. Crear usuario
         user = db.query(User).filter(User.email == "admin@dressflow.ai").first()
-
         if not user:
             user = User(
                 email="admin@dressflow.ai",
@@ -80,12 +83,12 @@ def seed_admin():
                 last_name="User",
                 is_active=True,
                 is_superuser=True,
+                must_change_password=False,
             )
             db.add(user)
             db.commit()
             db.refresh(user)
 
-        # 3. Vincular usuario con tenant
         membership = (
             db.query(UserTenant)
             .filter(
@@ -111,7 +114,10 @@ def seed_admin():
             "password": "Admin1234!",
             "tenant": "demo",
         }
-
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "detail": str(e)}
     finally:
         db.close()
+
 

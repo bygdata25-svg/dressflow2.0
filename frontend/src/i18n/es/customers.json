@@ -1,0 +1,41 @@
+{
+  "title": "Clientes",
+  "hero": {
+    "eyebrow": "Personas y relaciones",
+    "subtitle": "Mantené tu base de clientes con contactos limpios y acceso operativo rápido."
+  },
+  "empty": "No hay clientes cargados todavía.",
+  "fields": {
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "fullName": "Nombre completo",
+    "email": "Email",
+    "phone": "Teléfono",
+    "notes": "Notas"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por nombre, email o teléfono"
+  },
+  "delete": {
+    "confirm": "¿Querés eliminar este cliente?",
+    "error": "No se pudo eliminar el cliente."
+  },
+  "form": {
+    "title": "Crear cliente",
+    "placeholders": {
+      "firstName": "Ej: Ana",
+      "lastName": "Ej: Pérez",
+      "email": "Ej: ana@email.com",
+      "phone": "Ej: 11 1234 5678",
+      "notes": "Notas del cliente"
+    },
+    "validation": {
+      "required": "Nombre y apellido son obligatorios."
+    },
+    "messages": {
+      "created": "Cliente creado correctamente.",
+      "error": "No se pudo crear el cliente."
+    }
+  }
+}

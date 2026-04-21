@@ -1,0 +1,224 @@
+.df-login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 1) 45%, rgba(243, 244, 246, 1) 100%);
+}
+
+.df-login-shell {
+  width: 100%;
+  max-width: 460px;
+}
+
+.df-login-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.df-login-logo-full {
+  width: min(320px, 78%);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.08));
+}
+
+.df-login-card {
+  --tenant-primary: #c97f70;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-top: 4px solid var(--tenant-primary);
+  border-radius: 28px;
+  padding: 34px 28px 30px;
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.08),
+    0 10px 24px rgba(15, 23, 42, 0.04);
+  display: grid;
+  gap: 18px;
+  backdrop-filter: blur(8px);
+}
+
+.df-login-heading {
+  text-align: center;
+  display: grid;
+  gap: 8px;
+}
+
+.df-login-title {
+  margin: 0;
+  font-size: 2.1rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  color: #171717;
+}
+
+.df-login-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.df-login-tenant-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #fafafa;
+  border: 1px solid #ececec;
+}
+
+.df-login-tenant-logo,
+.df-login-tenant-fallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex: 0 0 44px;
+}
+
+.df-login-tenant-logo {
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.df-login-tenant-fallback {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.df-login-tenant-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.df-login-tenant-meta strong {
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.df-login-tenant-meta span {
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.df-login-field {
+  display: grid;
+  gap: 8px;
+}
+
+.df-login-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.df-login-input {
+  width: 100%;
+  padding: 14px 15px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #111827;
+  font-size: 0.96rem;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+  outline: none;
+}
+
+.df-login-input::placeholder {
+  color: #9ca3af;
+}
+
+.df-login-input:focus {
+  background: #ffffff;
+  border-color: color-mix(in srgb, var(--tenant-primary) 40%, #d1d5db);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tenant-primary) 16%, transparent);
+  transform: translateY(-1px);
+}
+
+.df-login-error {
+  color: #b42318;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.df-login-submit {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--tenant-primary);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 14px 28px color-mix(in srgb, var(--tenant-primary) 35%, transparent),
+    0 6px 12px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease,
+    filter 0.18s ease;
+}
+
+.df-login-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: saturate(1.03);
+  box-shadow:
+    0 18px 34px color-mix(in srgb, var(--tenant-primary) 38%, transparent),
+    0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.df-login-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.df-login-submit:disabled {
+  opacity: 0.82;
+  cursor: not-allowed;
+}
+
+.df-login-tagline {
+  margin-top: 2px;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.34em;
+  color: var(--tenant-primary);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .df-login-page {
+    padding: 20px 16px;
+  }
+
+  .df-login-card {
+    padding: 28px 20px 24px;
+    border-radius: 24px;
+  }
+
+  .df-login-title {
+    font-size: 1.85rem;
+  }
+
+  .df-login-logo-full {
+    width: min(280px, 84%);
+  }
+}

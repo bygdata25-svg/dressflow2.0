@@ -1,0 +1,39 @@
+{
+  "title": "Movimientos de rollos",
+  "hero": {
+    "eyebrow": "Operaciones de stock",
+    "subtitle": "Registrá entradas, salidas y ajustes con trazabilidad completa del rollo e impacto en stock."
+  },
+  "empty": "No hay movimientos cargados todavía.",
+  "fields": {
+    "roll": "Rollo",
+    "fabric": "Tela",
+    "type": "Tipo",
+    "quantity": "Cantidad",
+    "reference": "Referencia",
+    "notes": "Notas"
+  },
+  "types": {
+    "IN": "Entrada",
+    "OUT": "Salida",
+    "ADJUSTMENT": "Ajuste"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por rollo, tela o referencia",
+    "type": "Tipo",
+    "allTypes": "Todos los tipos"
+  },
+  "form": {
+    "title": "Crear movimiento",
+    "placeholders": {
+      "roll": "Seleccionar rollo",
+      "quantity": "Ej: 5",
+      "reference": "Ej: Corte taller / Compra / Ajuste",
+      "notes": "Notas del movimiento"
+    },
+    "messages": {
+      "error": "No se pudo crear el movimiento."
+    }
+  }
+}

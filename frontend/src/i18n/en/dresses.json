@@ -1,0 +1,79 @@
+{
+  "title": "Dresses",
+  "empty": "There are no dresses yet.",
+  "hero": {
+    "eyebrow": "Collection Management",
+    "subtitle": "Curate your dress inventory with a premium catalog view and operational control in one place."
+  },
+  "fields": {
+    "image": "Image",
+    "code": "Code",
+    "name": "Name",
+    "description": "Description",
+    "size": "Size",
+    "color": "Color",
+    "status": "Status",
+    "purchasePrice": "Purchase price",
+    "rentalPrice": "Rental price"
+  },
+  "status": {
+    "AVAILABLE": "Available",
+    "LOANED": "Loaned",
+    "RENTED": "Rented",
+    "CLEANING": "Cleaning",
+    "MAINTENANCE": "Maintenance",
+    "SOLD": "Sold",
+    "RETIRED": "Retired"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by code or name",
+    "status": "Status",
+    "allStatuses": "All statuses"
+  },
+  "delete": {
+    "confirm": "Do you want to delete this dress?",
+    "error": "Could not delete the dress."
+  },
+  "images": {
+    "title": "Images",
+    "noImage": "No image",
+    "mainImage": "Main image",
+    "uploadError": "Could not upload the image.",
+    "deleteError": "Could not delete the image.",
+    "setPrimaryError": "Could not update the main image."
+  },
+  "history": {
+    "title": "Loan history",
+    "empty": "There are no loans for this dress yet.",
+    "customer": "Customer",
+    "start": "Start",
+    "expectedReturn": "Expected return",
+    "actualReturn": "Actual return"
+  },
+  "edit": {
+    "title": "Edit dress",
+    "loadError": "Could not load dress.",
+    "saveError": "Could not save dress.",
+    "notFound": "Dress not found"
+  },
+  "form": {
+    "title": "Create dress",
+    "placeholders": {
+      "code": "Ex: DR-001",
+      "name": "Ex: Black evening dress",
+      "description": "Dress details",
+      "size": "Ex: M",
+      "color": "Ex: Black",
+      "purchasePrice": "Ex: 120000",
+      "rentalPrice": "Ex: 35000"
+    },
+    "validation": {
+      "required": "Code and name are required."
+    },
+    "messages": {
+      "created": "Dress created successfully.",
+      "error": "Could not create the dress."
+    }
+  }
+}

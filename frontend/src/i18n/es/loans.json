@@ -1,0 +1,45 @@
+{
+  "title": "Préstamos",
+  "hero": {
+    "eyebrow": "Operaciones",
+    "subtitle": "Gestioná préstamos activos, devoluciones y operaciones con clientes con un flujo editorial y limpio."
+  },
+  "empty": "No hay préstamos cargados todavía.",
+  "fields": {
+    "dress": "Vestido",
+    "customer": "Cliente",
+    "startDate": "Inicio",
+    "expectedReturnDate": "Devolución esperada",
+    "actualReturnDate": "Devolución real",
+    "status": "Estado"
+  },
+  "status": {
+    "ACTIVE": "Activo",
+    "RETURNED": "Devuelto",
+    "LATE": "Atrasado"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por vestido o cliente",
+    "status": "Estado",
+    "allStatuses": "Todos los estados"
+  },
+  "form": {
+    "title": "Crear préstamo",
+    "dress": "Vestido",
+    "customer": "Cliente",
+    "startDate": "Fecha de inicio",
+    "expectedReturnDate": "Fecha esperada de devolución",
+    "create": "Crear préstamo",
+    "dressPlaceholder": "Seleccionar vestido",
+    "customerPlaceholder": "Seleccionar cliente"
+  },
+  "actions": {
+    "return": "Devolver"
+  },
+  "messages": {
+    "loadError": "No se pudieron cargar los préstamos.",
+    "createError": "No se pudo crear el préstamo.",
+    "returnError": "No se pudo devolver el préstamo."
+  }
+}

@@ -1,0 +1,61 @@
+:root {
+  --df-font-sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --df-font-heading: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --df-font-serif: Georgia, "Times New Roman", serif;
+  --df-font-mono: ui-monospace, Consolas, monospace;
+
+  --df-page-bg: #f5f1eb;
+  --df-surface: #ffffff;
+  --df-surface-soft: #fbf8f4;
+  --df-surface-muted: #f8f4ef;
+
+  --df-text: #6b6375;
+  --df-text-strong: #2f2738;
+  --df-muted: #8e847b;
+
+  --df-border: #eadfd4;
+  --df-border-soft: #f0e7df;
+  --df-code-bg: #f4f3ec;
+
+  --df-accent: #d9b8a8;
+  --df-accent-strong: #b98770;
+  --df-accent-soft: #efe3db;
+
+  --df-shadow: 0 10px 30px rgba(86, 63, 48, 0.06);
+  --df-shadow-lg: 0 16px 34px rgba(86, 63, 48, 0.09);
+
+  --df-radius-sm: 16px;
+  --df-radius-md: 22px;
+  --df-radius-lg: 28px;
+
+  --df-topbar-height: 72px;
+  --df-sidebar-width: 240px;
+
+  --df-status-success-bg: #dce9dd;
+  --df-status-success-text: #35533a;
+
+  --df-status-warm-bg: #efe2d4;
+  --df-status-warm-text: #7a5940;
+
+  --df-status-lavender-bg: #ece7f5;
+  --df-status-lavender-text: #5e4e83;
+
+  --df-status-blue-bg: #dde7f4;
+  --df-status-blue-text: #3e5f7e;
+
+  --df-status-gold-bg: #f3ead7;
+  --df-status-gold-text: #866b34;
+
+  --df-status-neutral-bg: #efefef;
+  --df-status-neutral-text: #666666;
+
+  --df-status-danger-bg: #f7dede;
+  --df-status-danger-text: #8b2c2c;
+
+  --tenant-logo-url: "";
+  --tenant-primary: #2f2738;
+  --tenant-secondary: #d9b8a8;
+  --tenant-accent: #b98770;
+  --tenant-surface: #ffffff;
+  --tenant-sidebar: #faf7f3;
+}

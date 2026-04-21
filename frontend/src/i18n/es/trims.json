@@ -1,0 +1,41 @@
+{
+  "title": "Avíos",
+  "hero": {
+    "eyebrow": "Insumos y detalles",
+    "subtitle": "Gestioná cierres, botones, puntillas y otros avíos con stock, reserva y control operativo."
+  },
+  "empty": "No hay avíos cargados todavía.",
+  "fields": {
+    "code": "Código",
+    "name": "Nombre",
+    "category": "Categoría",
+    "unit": "Unidad",
+    "currentStock": "Stock actual",
+    "reservedStock": "Reservado",
+    "minStock": "Stock mínimo",
+    "supplier": "Proveedor",
+    "unitCost": "Costo unitario",
+    "notes": "Notas"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por código, nombre o categoría"
+  },
+  "form": {
+    "title": "Crear avío",
+    "placeholders": {
+      "code": "Ej: CIERRE-001",
+      "name": "Ej: Cierre invisible negro",
+      "category": "Ej: Cierres",
+      "unit": "Ej: unit",
+      "currentStock": "Ej: 50",
+      "minStock": "Ej: 10",
+      "supplier": "Seleccionar proveedor",
+      "unitCost": "Ej: 1200",
+      "notes": "Notas del avío"
+    },
+    "messages": {
+      "error": "No se pudo crear el avío."
+    }
+  }
+}

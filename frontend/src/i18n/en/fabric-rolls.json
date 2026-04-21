@@ -1,0 +1,47 @@
+{
+  "title": "Rollos",
+  "hero": {
+    "eyebrow": "Estructura de stock",
+    "subtitle": "Seguí cada rollo con metraje preciso, disponibilidad e información de la tela de origen."
+  },
+  "empty": "No hay rollos cargados todavía.",
+  "fields": {
+    "rollCode": "Código de rollo",
+    "fabric": "Tela",
+    "initialLength": "Metraje inicial",
+    "currentLength": "Metraje actual",
+    "unit": "Unidad",
+    "status": "Estado",
+    "notes": "Notas"
+  },
+  "status": {
+    "AVAILABLE": "Disponible",
+    "DEPLETED": "Agotado"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por código o tela",
+    "status": "Estado",
+    "allStatuses": "Todos los estados"
+  },
+  "form": {
+    "title": "Crear rollo",
+    "placeholders": {
+      "fabric": "Seleccionar tela",
+      "rollCode": "Ej: R-001",
+      "initialLength": "Ej: 25",
+      "notes": "Notas del rollo"
+    },
+    "messages": {
+      "error": "No se pudo crear el rollo."
+    }
+  },
+  "delete": {
+    "confirm": "¿Querés eliminar este rollo?",
+    "error": "No se pudo eliminar el rollo."
+  },
+  "units": {
+    "meters": "metros",
+    "yards": "yardas"
+  }
+}

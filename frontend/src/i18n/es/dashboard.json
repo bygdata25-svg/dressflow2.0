@@ -1,0 +1,58 @@
+{
+  "eyebrow": "Editorial Tech Fashion",
+  "title": "Bienvenido a DressFlow",
+  "subtitle": "Una plataforma de operaciones de moda con la precisión de un ERP y el lenguaje visual de una marca premium.",
+  "today": "Hoy",
+  "heroValueSuffix": "operaciones activas",
+  "heroMeta": "Préstamos, actualizaciones de stock y actividad del atelier en un solo lugar.",
+  "stats": {
+    "availableDresses": "Vestidos disponibles",
+    "activeLoans": "Préstamos activos",
+    "availableRolls": "Rollos disponibles",
+    "soldDresses": "Vestidos vendidos"
+  },
+  "collection": {
+    "eyebrow": "Colección",
+    "title": "Descubrí nuestra colección",
+    "noImage": "Sin imagen"
+  },
+  "stock": {
+    "eyebrow": "Stock",
+    "title": "Movimientos de rollos",
+    "empty": "No hay movimientos recientes"
+  },
+  "operations": {
+    "eyebrow": "Operaciones",
+    "title": "Actividad de préstamos",
+    "empty": "No hay préstamos recientes"
+  },
+  "summary": {
+    "activeLoans": "Préstamos activos",
+    "overdue": "Vencidos",
+    "dueSoon": "Próximos a vencer"
+  },
+  "alerts": {
+    "overdueTitle": "Préstamos vencidos",
+    "overdueMessage": "Hay {{count}} préstamo(s) vencido(s).",
+    "dueSoonTitle": "Préstamos próximos a vencer",
+    "dueSoonMessage": "Hay {{count}} préstamo(s) con devolución próxima.",
+    "depletedRollsTitle": "Rollos agotados",
+    "depletedRollsMessage": "Hay {{count}} rollo(s) agotado(s)."
+  },
+  "statuses": {
+    "AVAILABLE": "Disponible",
+    "LOANED": "Prestado",
+    "MAINTENANCE": "En mantenimiento",
+    "SOLD": "Vendido",
+    "RETIRED": "Retirado",
+    "ACTIVE": "Activo",
+    "RETURNED": "Devuelto",
+    "LATE": "Atrasado",
+    "IN": "Entrada",
+    "OUT": "Salida",
+    "ADJUSTMENT": "Ajuste"
+  },
+  "meta": {
+    "returns": "Devuelve {{date}}"
+  }
+}

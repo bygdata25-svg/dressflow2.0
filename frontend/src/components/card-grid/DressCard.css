@@ -1,0 +1,89 @@
+.df-dress-card {
+  border: 1px solid var(--df-border);
+  border-radius: 24px;
+  overflow: hidden;
+  background: #fff;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.df-dress-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.08);
+}
+
+.df-dress-card__image-wrap {
+  width: 100%;
+  aspect-ratio: 3 / 4;   /* 🔥 clave */
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.df-dress-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.df-dress-card__empty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--df-muted);
+}
+
+.df-dress-card__body {
+  padding: 16px;
+}
+
+.df-dress-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.df-dress-card__title {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 600;
+}
+
+.df-dress-card__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.df-dress-card__meta small {
+  display: block;
+  color: var(--df-muted);
+  margin-bottom: 4px;
+}
+
+.df-dress-card__meta strong {
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .df-dress-card__meta {
+    grid-template-columns: 1fr;
+  }
+}
+.df-capsule-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f3ece6;
+  color: #6d5a4c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid #eadfd4;
+}
+

@@ -1,0 +1,36 @@
+{
+  "title": "Telas",
+  "hero": {
+    "eyebrow": "Biblioteca de materiales",
+    "subtitle": "Estructurá tu catálogo de telas por tipo, color y proveedor con una vista operativa refinada."
+  },
+  "empty": "No hay telas cargadas todavía.",
+  "fields": {
+    "name": "Nombre",
+    "fabricType": "Tipo",
+    "color": "Color",
+    "supplier": "Proveedor",
+    "notes": "Notas"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por nombre, tipo o color"
+  },
+  "form": {
+    "title": "Crear tela",
+    "placeholders": {
+      "name": "Ej: Satén premium",
+      "fabricType": "Ej: Satén",
+      "color": "Ej: Negro",
+      "supplier": "Seleccionar proveedor",
+      "notes": "Notas de la tela"
+    },
+    "messages": {
+      "error": "No se pudo crear la tela."
+    }
+  },
+  "delete": {
+    "confirm": "¿Querés eliminar esta tela?",
+    "error": "No se pudo eliminar la tela."
+  }
+}

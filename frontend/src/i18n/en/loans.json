@@ -1,0 +1,45 @@
+{
+  "title": "Loans",
+  "hero": {
+    "eyebrow": "Operations",
+    "subtitle": "Manage active loans, returns and customer operations with a clean editorial workflow."
+  },
+  "empty": "There are no loans yet.",
+  "fields": {
+    "dress": "Dress",
+    "customer": "Customer",
+    "startDate": "Start date",
+    "expectedReturnDate": "Expected return",
+    "actualReturnDate": "Actual return",
+    "status": "Status"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "RETURNED": "Returned",
+    "LATE": "Late"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by dress or customer",
+    "status": "Status",
+    "allStatuses": "All statuses"
+  },
+  "form": {
+    "title": "Create loan",
+    "dress": "Dress",
+    "customer": "Customer",
+    "startDate": "Start date",
+    "expectedReturnDate": "Expected return date",
+    "create": "Create loan",
+    "dressPlaceholder": "Select dress",
+    "customerPlaceholder": "Select customer"
+  },
+  "actions": {
+    "return": "Return"
+  },
+  "messages": {
+    "loadError": "Could not load loans.",
+    "createError": "Could not create loan.",
+    "returnError": "Could not return loan."
+  }
+}

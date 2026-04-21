@@ -1,0 +1,163 @@
+{
+  "title": "Production Orders",
+  "detailTitle": "Production order detail",
+  "hero": {
+    "eyebrow": "Production",
+    "subtitle": "Manage garment production orders, material reservations and workshop delivery with full traceability."
+  },
+  "empty": "There are no production orders yet.",
+  "fields": {
+    "orderNumber": "Order number",
+    "workshop": "Workshop / Seamstress",
+    "targetDressName": "Target dress",
+    "targetDressCode": "Target code",
+    "targetSize": "Size",
+    "targetColor": "Color",
+    "plannedQuantity": "Planned quantity",
+    "producedQuantity": "Produced quantity",
+    "status": "Status",
+    "priority": "Priority",
+    "dueDate": "Due date",
+    "notes": "Notes",
+    "receivedNotes": "Received notes",
+    "material": "Material",
+    "plannedQuantityMaterial": "Planned qty",
+    "deliveredQuantity": "Delivered qty",
+    "returnedQuantity": "Returned qty",
+    "wasteQuantity": "Waste",
+    "consumedQuantity": "Consumed",
+    "rollCurrentLength": "Current stock",
+    "rollReservedLength": "Reserved",
+    "unit": "Unit",
+    "unitCost": "Unit cost",
+    "eventType": "Event",
+    "eventDate": "Date"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "APPROVED": "Approved",
+    "MATERIALS_RESERVED": "Materials reserved",
+    "IN_PRODUCTION": "In production",
+    "PARTIALLY_RECEIVED": "Partially received",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "priority": {
+    "LOW": "Low",
+    "NORMAL": "Normal",
+    "HIGH": "High",
+    "URGENT": "Urgent"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by order or dress",
+    "status": "Status",
+    "allStatuses": "All statuses"
+  },
+  "form": {
+    "title": "Create production order",
+    "placeholders": {
+      "orderNumber": "Ex: PO-0001",
+      "workshop": "Select workshop",
+      "targetDressName": "Ex: Valentina Dress",
+      "targetDressCode": "Ex: VAL-001",
+      "targetSize": "Ex: M",
+      "targetColor": "Ex: Black",
+      "plannedQuantity": "Ex: 1",
+      "dueDate": "Due date",
+      "notes": "Production notes"
+    },
+    "messages": {
+      "error": "Could not create the order."
+    }
+  },
+  "materials": {
+    "title": "Materials",
+    "empty": "There are no materials assigned.",
+    "addTitle": "Add material",
+    "rollPlaceholder": "Select roll",
+    "quantityPlaceholder": "Planned quantity",
+    "notesPlaceholder": "Material notes",
+    "addError": "Could not add material.",
+    "reserveError": "Could not reserve material.",
+    "issueError": "Could not issue material.",
+    "returnTitle": "Register return / waste",
+    "returnError": "Could not register return.",
+    "returnedPlaceholder": "Returned quantity",
+    "wastePlaceholder": "Waste"
+  },
+  "receive": {
+    "title": "Production receipt",
+    "producedPlaceholder": "Produced quantity",
+    "statusPartial": "Partially received",
+    "statusCompleted": "Completed",
+    "notesPlaceholder": "Receipt notes",
+    "error": "Could not register receipt."
+  },
+  "costs": {
+    "title": "Costing",
+    "laborCost": "Labor cost",
+    "additionalCost": "Additional cost",
+    "currency": "Currency",
+    "estimatedMaterialCost": "Estimated material cost",
+    "actualMaterialCost": "Actual material cost",
+    "estimatedTotalCost": "Estimated total cost",
+    "actualTotalCost": "Actual total cost",
+    "estimatedUnitCost": "Estimated unit cost",
+    "actualUnitCost": "Actual unit cost",
+    "saveError": "Could not save costing."
+  },
+  "events": {
+    "title": "Timeline",
+    "empty": "There are no recorded events.",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "types": {
+      "CREATED": "Order created",
+      "FABRIC_ASSIGNED": "Fabric assigned",
+      "TRIM_ASSIGNED": "Trim assigned",
+      "MATERIAL_ASSIGNED": "Material assigned",
+      "MATERIAL_RESERVED": "Material reserved",
+      "MATERIAL_ISSUED": "Material issued to workshop",
+      "MATERIAL_RETURNED": "Material returned",
+      "ORDER_RECEIVED": "Receipt registered",
+      "OUTPUT_CREATED": "Output created",
+      "COSTS_UPDATED": "Costs updated"
+    },
+    "summaries": {
+      "CREATED": "Order {{order_number}} was created.",
+      "FABRIC_ASSIGNED": "Fabric {{roll_code}} was assigned to the order.",
+      "TRIM_ASSIGNED": "Trim {{trim_code}} was assigned to the order.",
+      "MATERIAL_ASSIGNED": "A material was assigned to the order.",
+      "MATERIAL_RESERVED": "Material was reserved for production.",
+      "MATERIAL_ISSUED": "Material was issued to the workshop.",
+      "MATERIAL_RETURNED": "Material return or waste was recorded.",
+      "ORDER_RECEIVED": "Production receipt was recorded.",
+      "OUTPUT_CREATED": "A production output was created.",
+      "COSTS_UPDATED": "Order costs were updated."
+    },
+    "payload": {
+      "orderNumber": "Order",
+      "rollCode": "Roll",
+      "trimCode": "Trim",
+      "materialType": "Material type",
+      "reservedQuantity": "Reserved quantity",
+      "issuedQuantity": "Issued quantity",
+      "returnedQuantity": "Returned quantity",
+      "wasteQuantity": "Waste",
+      "consumedQuantity": "Consumed",
+      "producedQuantity": "Produced quantity",
+      "status": "Status",
+      "name": "Name",
+      "quantity": "Quantity",
+      "laborCost": "Labor cost",
+      "additionalCost": "Additional cost",
+      "currency": "Currency",
+      "unitCostSnapshot": "Unit cost snapshot"
+    }
+  },
+  "messages": {
+    "loadError": "Could not load production orders.",
+    "detailLoadError": "Could not load order detail."
+  }
+}

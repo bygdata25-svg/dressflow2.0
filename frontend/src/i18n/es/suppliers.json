@@ -1,0 +1,45 @@
+{
+  "title": "Proveedores",
+  "hero": {
+    "eyebrow": "Partners y abastecimiento",
+    "subtitle": "Organizá tu red de proveedores para telas, rollos y operaciones de compra."
+  },
+  "empty": "No hay proveedores cargados todavía.",
+  "fields": {
+    "name": "Nombre",
+    "email": "Email",
+    "phone": "Teléfono",
+    "notes": "Notas",
+    "supplierType": "Tipo"
+  },
+  "types": {
+    "FABRIC_SUPPLIER": "Proveedor de telas",
+    "WORKSHOP": "Taller / Modista",
+    "BOTH": "Ambos"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por nombre, email, teléfono o tipo"
+  },
+  "delete": {
+    "confirm": "¿Querés eliminar este proveedor?",
+    "error": "No se pudo eliminar el proveedor."
+  },
+  "form": {
+    "title": "Crear proveedor",
+    "placeholders": {
+      "name": "Ej: Textiles del Sur",
+      "email": "Ej: contacto@proveedor.com",
+      "phone": "Ej: 11 1234 5678",
+      "notes": "Notas del proveedor",
+      "supplierType": "Seleccionar tipo"
+    },
+    "validation": {
+      "required": "El nombre es obligatorio."
+    },
+    "messages": {
+      "created": "Proveedor creado correctamente.",
+      "error": "No se pudo crear el proveedor."
+    }
+  }
+}

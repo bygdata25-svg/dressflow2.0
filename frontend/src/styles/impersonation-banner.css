@@ -1,0 +1,56 @@
+.impersonation-banner {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(90deg, #7a1f1f 0%, #a52a2a 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.impersonation-banner__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.impersonation-banner__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.impersonation-banner__text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.impersonation-banner__button {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+  background: #ffffff;
+  color: #8b2323;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.impersonation-banner__button:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}

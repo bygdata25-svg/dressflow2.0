@@ -1,0 +1,58 @@
+{
+  "eyebrow": "Editorial Tech Fashion",
+  "title": "Welcome to DressFlow",
+  "subtitle": "A fashion operations platform with the precision of an ERP and the visual language of a premium brand.",
+  "today": "Today",
+  "heroValueSuffix": "active operations",
+  "heroMeta": "Loans, stock updates and atelier activity in one place.",
+  "stats": {
+    "availableDresses": "Available Dresses",
+    "activeLoans": "Active Loans",
+    "availableRolls": "Available Rolls",
+    "soldDresses": "Sold Dresses"
+  },
+  "collection": {
+    "eyebrow": "Collection",
+    "title": "Discover Our Collection",
+    "noImage": "No image"
+  },
+  "stock": {
+    "eyebrow": "Stock",
+    "title": "Roll Movements",
+    "empty": "No recent movements"
+  },
+  "operations": {
+    "eyebrow": "Operations",
+    "title": "Loan Activity",
+    "empty": "No recent loans"
+  },
+  "summary": {
+    "activeLoans": "Active Loans",
+    "overdue": "Overdue",
+    "dueSoon": "Due Soon"
+  },
+  "alerts": {
+    "overdueTitle": "Overdue loans",
+    "overdueMessage": "There are {{count}} overdue loan(s).",
+    "dueSoonTitle": "Loans due soon",
+    "dueSoonMessage": "There are {{count}} loan(s) with an upcoming return date.",
+    "depletedRollsTitle": "Depleted rolls",
+    "depletedRollsMessage": "There are {{count}} depleted roll(s)."
+  },
+  "statuses": {
+    "AVAILABLE": "Available",
+    "LOANED": "Loaned",
+    "MAINTENANCE": "Maintenance",
+    "SOLD": "Sold",
+    "RETIRED": "Retired",
+    "ACTIVE": "Active",
+    "RETURNED": "Returned",
+    "LATE": "Late",
+    "IN": "In",
+    "OUT": "Out",
+    "ADJUSTMENT": "Adjustment"
+  },
+  "meta": {
+    "returns": "Returns {{date}}"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "appName": "DressFlow",
+  "navigation": {
+    "home": "Inicio",
+    "dresses": "Vestidos",
+    "loans": "Préstamos / Alquileres",
+    "customers": "Clientes",
+    "suppliers": "Proveedores",
+    "fabrics": "Telas",
+    "fabricRolls": "Rollos",
+    "fabricMovements": "Movimientos",
+    "productionOrders": "Órdenes de producción",
+    "trims": "Avíos",
+    "settings": "Ajustes",
+    "users": "Usuarios",
+    "textileInventory": "Inventario textil"
+  },
+  "home": {
+    "title": "DressFlow v2",
+    "subtitle": "ERP SaaS para moda, multi-tenant y profesional."
+  },
+  "status": {
+    "loading": "Cargando...",
+    "saving": "Guardando..."
+  },
+  "errors": {
+    "loadingData": "No se pudieron cargar los datos."
+  },
+  "actions": {
+    "create": "Crear",
+    "clear": "Limpiar",
+    "update": "Actualizar",
+    "delete": "Eliminar",
+    "search": "Buscar",
+    "actions": "Acciones",
+    "edit": "Editar",
+    "back": "Volver",
+    "logout": "Salir",
+    "viewInventory": "Ver inventario",
+    "seeAll": "Ver todo",
+    "saveChanges": "Guardar cambios",
+    "setAsMain": "Definir como principal",
+    "viewDetail": "Ver detalle",
+    "reserve": "Reservar",
+    "issue": "Entregar al taller"
+  },
+  "viewMode": {
+    "table": "Tabla",
+    "grid": "Grilla"
+  },
+  "pagination": {
+    "showing": "Mostrando",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "page": "Página",
+    "of": "de"
+  },
+  "topbar": {
+    "searchPlaceholder": "Buscar..."
+  },
+  "login": {
+    "title": "Ingresar",
+    "subtitle": "Accedé a tu espacio de gestión de moda.",
+    "email": "Email",
+    "password": "Contraseña",
+    "submit": "Ingresar",
+    "error": "No se pudo iniciar sesión."
+  }
+}

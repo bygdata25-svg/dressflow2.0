@@ -1,0 +1,45 @@
+{
+  "title": "Suppliers",
+  "hero": {
+    "eyebrow": "Partners & Sourcing",
+    "subtitle": "Keep your supplier network organized for fabrics, rolls and purchasing operations."
+  },
+  "empty": "There are no suppliers yet.",
+  "fields": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "notes": "Notes",
+    "supplierType": "Type"
+  },
+  "types": {
+    "FABRIC_SUPPLIER": "Fabric supplier",
+    "WORKSHOP": "Workshop / Seamstress",
+    "BOTH": "Both"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by name, email, phone or type"
+  },
+  "delete": {
+    "confirm": "Do you want to delete this supplier?",
+    "error": "Could not delete the supplier."
+  },
+  "form": {
+    "title": "Create supplier",
+    "placeholders": {
+      "name": "Ex: South Textiles",
+      "email": "Ex: contact@supplier.com",
+      "phone": "Ex: +54 11 1234 5678",
+      "notes": "Supplier notes",
+      "supplierType": "Select type"
+    },
+    "validation": {
+      "required": "Name is required."
+    },
+    "messages": {
+      "created": "Supplier created successfully.",
+      "error": "Could not create the supplier."
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "title": "Customers",
+  "hero": {
+    "eyebrow": "People & Relationships",
+    "subtitle": "Maintain your client base with clean contact records and quick operational access."
+  },
+  "empty": "There are no customers yet.",
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "fullName": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "notes": "Notes"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by name, email or phone"
+  },
+  "delete": {
+    "confirm": "Do you want to delete this customer?",
+    "error": "Could not delete the customer."
+  },
+  "form": {
+    "title": "Create customer",
+    "placeholders": {
+      "firstName": "Ex: Ana",
+      "lastName": "Ex: Perez",
+      "email": "Ex: ana@email.com",
+      "phone": "Ex: +54 11 1234 5678",
+      "notes": "Customer notes"
+    },
+    "validation": {
+      "required": "First name and last name are required."
+    },
+    "messages": {
+      "created": "Customer created successfully.",
+      "error": "Could not create the customer."
+    }
+  }
+}

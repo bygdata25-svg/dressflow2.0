@@ -1,0 +1,41 @@
+{
+  "title": "Trims",
+  "hero": {
+    "eyebrow": "Supplies and details",
+    "subtitle": "Manage zippers, buttons, lace and other trims with stock, reservation and operational control."
+  },
+  "empty": "There are no trims yet.",
+  "fields": {
+    "code": "Code",
+    "name": "Name",
+    "category": "Category",
+    "unit": "Unit",
+    "currentStock": "Current stock",
+    "reservedStock": "Reserved",
+    "minStock": "Minimum stock",
+    "supplier": "Supplier",
+    "unitCost": "Unit cost",
+    "notes": "Notes"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Search by code, name or category"
+  },
+  "form": {
+    "title": "Create trim",
+    "placeholders": {
+      "code": "Ex: ZIPPER-001",
+      "name": "Ex: Black invisible zipper",
+      "category": "Ex: Zippers",
+      "unit": "Ex: unit",
+      "currentStock": "Ex: 50",
+      "minStock": "Ex: 10",
+      "supplier": "Select supplier",
+      "unitCost": "Ex: 1200",
+      "notes": "Trim notes"
+    },
+    "messages": {
+      "error": "Could not create the trim."
+    }
+  }
+}

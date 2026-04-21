@@ -1,0 +1,163 @@
+{
+  "title": "Órdenes de producción",
+  "detailTitle": "Detalle de orden de producción",
+  "hero": {
+    "eyebrow": "Producción",
+    "subtitle": "Gestioná órdenes de confección, reserva de materiales y entrega al taller con trazabilidad completa."
+  },
+  "empty": "No hay órdenes de producción cargadas todavía.",
+  "fields": {
+    "orderNumber": "Nro. de orden",
+    "workshop": "Taller / Modista",
+    "targetDressName": "Vestido objetivo",
+    "targetDressCode": "Código objetivo",
+    "targetSize": "Talle",
+    "targetColor": "Color",
+    "plannedQuantity": "Cantidad planificada",
+    "producedQuantity": "Cantidad producida",
+    "status": "Estado",
+    "priority": "Prioridad",
+    "dueDate": "Fecha compromiso",
+    "notes": "Notas",
+    "receivedNotes": "Notas de recepción",
+    "material": "Material",
+    "plannedQuantityMaterial": "Cant. planificada",
+    "deliveredQuantity": "Cant. entregada",
+    "returnedQuantity": "Cant. devuelta",
+    "wasteQuantity": "Merma",
+    "consumedQuantity": "Consumido",
+    "rollCurrentLength": "Stock actual",
+    "rollReservedLength": "Reservado",
+    "unit": "Unidad",
+    "unitCost": "Costo unitario",
+    "eventType": "Evento",
+    "eventDate": "Fecha"
+  },
+  "status": {
+    "DRAFT": "Borrador",
+    "APPROVED": "Aprobada",
+    "MATERIALS_RESERVED": "Materiales reservados",
+    "IN_PRODUCTION": "En producción",
+    "PARTIALLY_RECEIVED": "Recepción parcial",
+    "COMPLETED": "Completada",
+    "CANCELLED": "Cancelada"
+  },
+  "priority": {
+    "LOW": "Baja",
+    "NORMAL": "Normal",
+    "HIGH": "Alta",
+    "URGENT": "Urgente"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por orden o vestido",
+    "status": "Estado",
+    "allStatuses": "Todos los estados"
+  },
+  "form": {
+    "title": "Crear orden de producción",
+    "placeholders": {
+      "orderNumber": "Ej: OP-0001",
+      "workshop": "Seleccionar taller",
+      "targetDressName": "Ej: Vestido Valentina",
+      "targetDressCode": "Ej: VAL-001",
+      "targetSize": "Ej: M",
+      "targetColor": "Ej: Negro",
+      "plannedQuantity": "Ej: 1",
+      "dueDate": "Fecha compromiso",
+      "notes": "Notas de producción"
+    },
+    "messages": {
+      "error": "No se pudo crear la orden."
+    }
+  },
+  "materials": {
+    "title": "Materiales",
+    "empty": "No hay materiales asignados.",
+    "addTitle": "Agregar material",
+    "rollPlaceholder": "Seleccionar rollo",
+    "quantityPlaceholder": "Cantidad planificada",
+    "notesPlaceholder": "Notas del material",
+    "addError": "No se pudo agregar el material.",
+    "reserveError": "No se pudo reservar el material.",
+    "issueError": "No se pudo entregar el material.",
+    "returnTitle": "Registrar devolución / merma",
+    "returnError": "No se pudo registrar la devolución.",
+    "returnedPlaceholder": "Cantidad devuelta",
+    "wastePlaceholder": "Merma"
+  },
+  "receive": {
+    "title": "Recepción de producción",
+    "producedPlaceholder": "Cantidad producida",
+    "statusPartial": "Recepción parcial",
+    "statusCompleted": "Completada",
+    "notesPlaceholder": "Notas de recepción",
+    "error": "No se pudo registrar la recepción."
+  },
+  "costs": {
+    "title": "Costeo",
+    "laborCost": "Mano de obra",
+    "additionalCost": "Costos adicionales",
+    "currency": "Moneda",
+    "estimatedMaterialCost": "Costo material estimado",
+    "actualMaterialCost": "Costo material real",
+    "estimatedTotalCost": "Costo total estimado",
+    "actualTotalCost": "Costo total real",
+    "estimatedUnitCost": "Costo unitario estimado",
+    "actualUnitCost": "Costo unitario real",
+    "saveError": "No se pudo guardar el costeo."
+  },
+  "events": {
+    "title": "Timeline",
+    "empty": "No hay eventos registrados.",
+    "showDetails": "Ver detalle",
+    "hideDetails": "Ocultar detalle",
+    "types": {
+      "CREATED": "Orden creada",
+      "FABRIC_ASSIGNED": "Tela asignada",
+      "TRIM_ASSIGNED": "Avío asignado",
+      "MATERIAL_ASSIGNED": "Material asignado",
+      "MATERIAL_RESERVED": "Material reservado",
+      "MATERIAL_ISSUED": "Material entregado al taller",
+      "MATERIAL_RETURNED": "Material devuelto",
+      "ORDER_RECEIVED": "Recepción registrada",
+      "OUTPUT_CREATED": "Output creado",
+      "COSTS_UPDATED": "Costos actualizados"
+    },
+    "summaries": {
+      "CREATED": "Se creó la orden {{order_number}}.",
+      "FABRIC_ASSIGNED": "Se asignó la tela {{roll_code}} a la orden.",
+      "TRIM_ASSIGNED": "Se asignó el avío {{trim_code}} a la orden.",
+      "MATERIAL_ASSIGNED": "Se asignó un material a la orden.",
+      "MATERIAL_RESERVED": "Se reservó material para producción.",
+      "MATERIAL_ISSUED": "Se entregó material al taller.",
+      "MATERIAL_RETURNED": "Se registró devolución o merma del material.",
+      "ORDER_RECEIVED": "Se registró la recepción de producción.",
+      "OUTPUT_CREATED": "Se generó un output de producción.",
+      "COSTS_UPDATED": "Se actualizaron los costos de la orden."
+    },
+    "payload": {
+      "orderNumber": "Orden",
+      "rollCode": "Rollo",
+      "trimCode": "Avío",
+      "materialType": "Tipo de material",
+      "reservedQuantity": "Cantidad reservada",
+      "issuedQuantity": "Cantidad entregada",
+      "returnedQuantity": "Cantidad devuelta",
+      "wasteQuantity": "Merma",
+      "consumedQuantity": "Consumido",
+      "producedQuantity": "Cantidad producida",
+      "status": "Estado",
+      "name": "Nombre",
+      "quantity": "Cantidad",
+      "laborCost": "Mano de obra",
+      "additionalCost": "Costo adicional",
+      "currency": "Moneda",
+      "unitCostSnapshot": "Costo unitario snapshot"
+    }
+  },
+  "messages": {
+    "loadError": "No se pudieron cargar las órdenes.",
+    "detailLoadError": "No se pudo cargar el detalle de la orden."
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "title": "Vestidos",
+  "empty": "No hay vestidos cargados todavía.",
+  "hero": {
+    "eyebrow": "Gestión de colección",
+    "subtitle": "Administrá tu inventario de vestidos con una vista de catálogo premium y control operativo en un solo lugar."
+  },
+  "fields": {
+    "image": "Imagen",
+    "code": "Código",
+    "name": "Nombre",
+    "description": "Descripción",
+    "size": "Talle",
+    "color": "Color",
+    "status": "Estado",
+    "purchasePrice": "Precio de compra",
+    "rentalPrice": "Precio de alquiler"
+  },
+  "status": {
+    "AVAILABLE": "Disponible",
+    "LOANED": "Prestado",
+    "RENTED": "Alquilado",
+    "CLEANING": "En limpieza",
+    "MAINTENANCE": "En mantenimiento",
+    "SOLD": "Vendido",
+    "RETIRED": "Retirado"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por código o nombre",
+    "status": "Estado",
+    "allStatuses": "Todos los estados"
+  },
+  "delete": {
+    "confirm": "¿Querés eliminar este vestido?",
+    "error": "No se pudo eliminar el vestido."
+  },
+  "images": {
+    "title": "Imágenes",
+    "noImage": "Sin foto",
+    "mainImage": "Imagen principal",
+    "uploadError": "No se pudo subir la imagen.",
+    "deleteError": "No se pudo eliminar la imagen.",
+    "setPrimaryError": "No se pudo actualizar la imagen principal."
+  },
+  "history": {
+    "title": "Historial de préstamos",
+    "empty": "Todavía no hay préstamos para este vestido.",
+    "customer": "Cliente",
+    "start": "Inicio",
+    "expectedReturn": "Devolución esperada",
+    "actualReturn": "Devolución real"
+  },
+  "edit": {
+    "title": "Editar vestido",
+    "loadError": "No se pudo cargar el vestido.",
+    "saveError": "No se pudo guardar el vestido.",
+    "notFound": "Vestido no encontrado"
+  },
+  "form": {
+    "title": "Crear vestido",
+    "placeholders": {
+      "code": "Ej: DR-001",
+      "name": "Ej: Vestido noche negro",
+      "description": "Detalle del vestido",
+      "size": "Ej: M",
+      "color": "Ej: Negro",
+      "purchasePrice": "Ej: 120000",
+      "rentalPrice": "Ej: 35000"
+    },
+    "validation": {
+      "required": "Código y nombre son obligatorios."
+    },
+    "messages": {
+      "created": "Vestido creado correctamente.",
+      "error": "No se pudo crear el vestido."
+    }
+  }
+}

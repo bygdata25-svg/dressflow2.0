@@ -1,0 +1,69 @@
+{
+  "appName": "DressFlow",
+  "navigation": {
+    "home": "Home",
+    "dresses": "Dresses",
+    "loans": "Loans",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
+    "fabrics": "Fabrics",
+    "fabricRolls": "Rolls",
+    "fabricMovements": "Movements",
+    "productionOrders": "Production Orders",
+    "trims": "Trims",
+    "settings": "Settings",
+    "users": "Users",
+    "textileInventory": "Textile Inventory"
+  },
+  "home": {
+    "title": "DressFlow v2",
+    "subtitle": "Professional multi-tenant SaaS ERP for fashion."
+  },
+  "status": {
+    "loading": "Loading...",
+    "saving": "Saving..."
+  },
+  "errors": {
+    "loadingData": "Could not load data."
+  },
+  "actions": {
+    "create": "Create",
+    "clear": "Clear",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "actions": "Actions",
+    "edit": "Edit",
+    "back": "Back",
+    "logout": "Logout",
+    "viewInventory": "View inventory",
+    "seeAll": "See all",
+    "saveChanges": "Save changes",
+    "setAsMain": "Set as main",
+    "viewDetail": "View detail",
+    "reserve": "Reserve",
+    "issue": "Issue to workshop"
+  },
+  "viewMode": {
+    "table": "Table",
+    "grid": "Grid"
+  },
+  "pagination": {
+    "showing": "Showing",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of"
+  },
+  "topbar": {
+    "searchPlaceholder": "Search..."
+  },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Access your fashion operations workspace.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "error": "Could not sign in."
+  }
+}

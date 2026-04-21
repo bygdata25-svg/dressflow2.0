@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 from fastapi.staticfiles import StaticFiles
 
+from app.core.database import Base, engine
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.services.storage_service import ensure_upload_dirs
@@ -44,3 +45,8 @@ from app.core.database import Base, engine
 Base.metadata.create_all(bind=engine)
 
 print("DB creada")
+
+@app.get("/init-db")
+def init_db():
+    Base.metadata.create_all(bind=engine)
+    return {"status": "ok"}

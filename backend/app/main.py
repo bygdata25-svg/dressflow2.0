@@ -50,3 +50,68 @@ print("DB creada")
 def init_db():
     Base.metadata.create_all(bind=engine)
     return {"status": "ok"}
+
+@app.get("/seed-admin")
+def seed_admin():
+    db: Session = SessionLocal()
+    try:
+        # 1. Crear tenant
+        tenant = db.query(Tenant).filter(Tenant.slug == "demo").first()
+
+        if not tenant:
+            tenant = Tenant(
+                name="DressFlow Demo",
+                slug="demo",
+                status="ACTIVE",
+                currency="ARS",
+            )
+            db.add(tenant)
+            db.commit()
+            db.refresh(tenant)
+
+        # 2. Crear usuario
+        user = db.query(User).filter(User.email == "admin@dressflow.ai").first()
+
+        if not user:
+            user = User(
+                email="admin@dressflow.ai",
+                password_hash=hash_password("Admin1234!"),
+                first_name="Admin",
+                last_name="User",
+                is_active=True,
+                is_superuser=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        # 3. Vincular usuario con tenant
+        membership = (
+            db.query(UserTenant)
+            .filter(
+                UserTenant.user_id == user.id,
+                UserTenant.tenant_id == tenant.id,
+            )
+            .first()
+        )
+
+        if not membership:
+            membership = UserTenant(
+                user_id=user.id,
+                tenant_id=tenant.id,
+                role="admin",
+                is_default=True,
+            )
+            db.add(membership)
+            db.commit()
+
+        return {
+            "status": "ok",
+            "user": "admin@dressflow.ai",
+            "password": "Admin1234!",
+            "tenant": "demo",
+        }
+
+    finally:
+        db.close()
+

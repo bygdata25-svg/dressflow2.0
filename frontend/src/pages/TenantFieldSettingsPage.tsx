@@ -178,13 +178,16 @@ export default function TenantFieldSettingsPage() {
       prev.map((row, i) => {
         if (i !== index) return row;
 
-        const nextRules = { ...(row.validation_rules_override || {}) };
+        const nextRules: ValidationRules = { ...(row.validation_rules_override || {}) };
 
         if (value === "") {
           delete nextRules[key];
         } else {
-          nextRules[key] =
-            key === "pattern" ? value : Number(value);
+          if (key === "pattern") {
+            (nextRules as any)[key] = value;
+          } else {
+            (nextRules as any)[key] = Number(value);
+          }
         }
 
         return {
@@ -229,14 +232,18 @@ export default function TenantFieldSettingsPage() {
 
       if (currentIndex < 0 || targetIndex < 0 || targetIndex >= sorted.length) return prev;
 
-      const current = sorted[currentIndex];
-      const target = sorted[targetIndex];
+      const current = { ...sorted[currentIndex] };
+      const target = { ...sorted[targetIndex] };
       const currentOrder = current.order_index;
 
       current.order_index = target.order_index;
       target.order_index = currentOrder;
 
-      return [...sorted].sort((a, b) => a.order_index - b.order_index);
+      const next = [...sorted];
+      next[currentIndex] = current;
+      next[targetIndex] = target;
+
+      return next.sort((a, b) => a.order_index - b.order_index);
     });
   }
 
@@ -345,7 +352,10 @@ export default function TenantFieldSettingsPage() {
     [sortedRows]
   );
 
-  const dirty = useMemo(() => JSON.stringify(rows) !== JSON.stringify(originalRows), [rows, originalRows]);
+  const dirty = useMemo(
+    () => JSON.stringify(rows) !== JSON.stringify(originalRows),
+    [rows, originalRows]
+  );
 
   return (
     <section className="df-pro-page">
@@ -584,13 +594,17 @@ export default function TenantFieldSettingsPage() {
                             label="Listado"
                             checked={row.list_visible}
                             disabled={!row.visible}
-                            onChange={(checked) => updateRow(originalIndex, { list_visible: checked })}
+                            onChange={(checked) =>
+                              updateRow(originalIndex, { list_visible: checked })
+                            }
                           />
                           <ToggleCard
                             label="Formulario"
                             checked={row.form_visible}
                             disabled={!row.visible}
-                            onChange={(checked) => updateRow(originalIndex, { form_visible: checked })}
+                            onChange={(checked) =>
+                              updateRow(originalIndex, { form_visible: checked })
+                            }
                           />
                           <ToggleCard
                             label="Obligatorio"
@@ -947,6 +961,7 @@ function previewInputStyle(editable: boolean): React.CSSProperties {
     color: editable ? "#111827" : "#667085",
     padding: "0 14px",
     outline: "none",
+    boxSizing: "border-box",
   };
 }
 

@@ -5,20 +5,8 @@ import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid"
 import { Modal } from "../components/common/Modal";
 import { PrimaryButton } from "../components/common/buttons";
 import { SupplierForm } from "../components/forms/SupplierForm";
-import { useFieldConfig } from "../hooks/useFieldConfig";
-import "./DressesPage.css";
-
-type Supplier = {
-  id: string;
-  tenant_id: string;
-  name: string;
-  supplier_code?: string | null;
-  origin?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  notes?: string | null;
-  supplier_type: string;
-};
+import type { Supplier } from "../types/supplier";
+import "../styles/pro-pages.css";
 
 type PaginatedSupplierResponse = {
   items: Supplier[];
@@ -47,22 +35,16 @@ function TrashIcon() {
   );
 }
 
-function translateSupplierType(value?: string | null) {
-  switch ((value || "").toUpperCase()) {
-    case "FABRIC_SUPPLIER":
-      return "Proveedor de telas";
-    case "WORKSHOP":
-      return "Taller";
-    case "BOTH":
-      return "Ambos";
-    default:
-      return value || "—";
-  }
+function supplierTypeLabel(value?: string | null) {
+  const raw = String(value || "").toUpperCase();
+  if (raw === "FABRIC_SUPPLIER") return "Proveedor de telas";
+  if (raw === "WORKSHOP") return "Taller";
+  if (raw === "BOTH") return "Ambos";
+  return value || "—";
 }
 
 export default function SuppliersPage() {
   const { t } = useTranslation(["common", "suppliers"]);
-  const fieldConfig = useFieldConfig("supplier");
 
   const [rows, setRows] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
@@ -92,10 +74,12 @@ export default function SuppliersPage() {
         },
       });
 
-      setRows(response.data.items || []);
-      setTotal(response.data.total || 0);
+      setRows(Array.isArray(response.data?.items) ? response.data.items : []);
+      setTotal(Number(response.data?.total || 0));
     } catch (err: any) {
       setError(err?.response?.data?.detail || "Error cargando proveedores");
+      setRows([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -110,8 +94,10 @@ export default function SuppliersPage() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar proveedor?")) return;
+  const handleDelete = async (id?: string) => {
+    if (!id) return;
+    if (!window.confirm("¿Eliminar proveedor?")) return;
+
     try {
       await api.delete(`/suppliers/${id}`);
       await loadSuppliers();
@@ -120,108 +106,104 @@ export default function SuppliersPage() {
     }
   };
 
-  const allColumns = useMemo<DataGridColumn<Supplier>[]>(() => [
-    {
-      key: "name",
-      label: fieldConfig.getLabel("name", "Nombre"),
-      render: (r) => r.name,
-    },
-    {
-      key: "supplier_code",
-      label: fieldConfig.getLabel("supplier_code", "Código"),
-      render: (r) => r.supplier_code || "—",
-    },
-    {
-      key: "supplier_type",
-      label: fieldConfig.getLabel("supplier_type", "Tipo"),
-      render: (r) => translateSupplierType(r.supplier_type),
-    },
-    {
-      key: "origin",
-      label: fieldConfig.getLabel("origin", "Origen"),
-      render: (r) => r.origin || "—",
-    },
-    {
-      key: "email",
-      label: fieldConfig.getLabel("email", "Email"),
-      render: (r) => r.email || "—",
-    },
-    {
-      key: "phone",
-      label: fieldConfig.getLabel("phone", "Teléfono"),
-      render: (r) => r.phone || "—",
-    },
-    {
-      key: "actions",
-      label: "",
-      render: (row) => (
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <button
-            type="button"
-            title={t("common:actions.delete")}
-            aria-label={t("common:actions.delete")}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(row.id);
-            }}
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              border: "1px solid #f1c0c0",
-              background: "#fff",
-              color: "#b42318",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              transition: "all 160ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#fee2e2";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#fff";
-            }}
-          >
-            <TrashIcon />
-          </button>
-        </div>
-      ),
-    },
-  ], [fieldConfig, t]);
-
-  const columns = useMemo(() => {
-    return allColumns.filter((col) => {
-      if (col.key === "actions") return true;
-      return fieldConfig.isListVisible(String(col.key));
-    });
-  }, [allColumns, fieldConfig]);
-
-  const filteredRows = useMemo(() => {
-    const q = searchInput.trim().toLowerCase();
-    if (!q) return rows;
-
-    return rows.filter((row) =>
-      [
-        row.name,
-        row.supplier_code || "",
-        row.email || "",
-        row.phone || "",
-        row.supplier_type || "",
-        row.origin || "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [rows, searchInput]);
+  const columns = useMemo<DataGridColumn<Supplier>[]>(() => {
+    return [
+      {
+        key: "name",
+        label: "Nombre",
+        render: (row) => (
+          <div style={{ display: "grid", gap: 4 }}>
+            <strong style={{ color: "#32273c", fontSize: 14 }}>{row.name}</strong>
+            <span style={{ color: "#8b8193", fontSize: 12 }}>
+              {row.supplier_code || "Sin código"}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: "supplier_type",
+        label: "Tipo",
+        render: (row) => (
+          <span className="df-status-badge df-status-badge--active">
+            {supplierTypeLabel(row.supplier_type)}
+          </span>
+        ),
+      },
+      {
+        key: "origin",
+        label: "Origen",
+        render: (row) => row.origin || "—",
+      },
+      {
+        key: "email",
+        label: "Email",
+        render: (row) => row.email || "—",
+      },
+      {
+        key: "phone",
+        label: "Teléfono",
+        render: (row) => row.phone || "—",
+      },
+      {
+        key: "actions",
+        label: "",
+        render: (row) => (
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <button
+              type="button"
+              title={t("common:actions.delete")}
+              aria-label={t("common:actions.delete")}
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDelete(row.id);
+              }}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                border: "1px solid #f1c0c0",
+                background: "#fff",
+                color: "#b42318",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 160ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#fee2e2";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#fff";
+              }}
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        ),
+      },
+    ];
+  }, [t]);
 
   return (
     <section className="df-pro-page">
-      <header className="df-pro-page__hero">
+      <header
+        className="df-pro-page__hero"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 20,
+          flexWrap: "wrap",
+          width: "100%",
+        }}
+      >
         <div>
-          <h1>Proveedores</h1>
+          <p className="df-pro-page__eyebrow">Abastecimiento</p>
+          <h1 className="df-pro-page__title">Proveedores</h1>
+          <p className="df-pro-page__subtitle">
+            Gestioná proveedores de telas, talleres y contactos operativos.
+          </p>
         </div>
 
         <PrimaryButton
@@ -229,126 +211,116 @@ export default function SuppliersPage() {
             setEditingSupplier(null);
             setShowModal(true);
           }}
+          style={{ flexShrink: 0 }}
         >
           Nuevo proveedor
         </PrimaryButton>
       </header>
 
       <section className="df-pro-card">
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-            flexWrap: "wrap",
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setPage(1);
+            setSearch(searchInput.trim());
           }}
+          className="df-pro-filter-grid df-pro-filter-grid--3"
         >
-          <input
-            type="text"
-            placeholder="Buscar por nombre, código, email, teléfono o tipo..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            style={{
-              minWidth: 280,
-              flex: 1,
-              maxWidth: 420,
-              border: "1px solid #d0d5dd",
-              borderRadius: 12,
-              padding: "10px 14px",
-              outline: "none",
+          <div>
+            <label className="df-pro-label">Buscar</label>
+            <input
+              className="df-pro-input"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Nombre, email, teléfono..."
+            />
+          </div>
+
+          <button type="submit">{t("common:actions.search")}</button>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput("");
+              setSearch("");
+              setPage(1);
             }}
-          />
-
-          <div style={{ display: "flex", gap: 10 }}>
-            <button
-              type="button"
-              className="gf-btn gf-btn-secondary"
-              onClick={() => {
-                setPage(1);
-                setSearch(searchInput.trim());
-              }}
-            >
-              Buscar
-            </button>
-
-            <button
-              type="button"
-              className="gf-btn gf-btn-secondary"
-              onClick={() => {
-                setSearchInput("");
-                setSearch("");
-                setPage(1);
-              }}
-            >
-              Limpiar
-            </button>
-          </div>
-        </div>
-
-        {error ? <div className="gf-alert gf-alert-error">{error}</div> : null}
-
-        <DataGrid
-          rows={filteredRows}
-          columns={columns}
-          getRowKey={(r) => r.id}
-          onRowClick={handleEdit}
-          loading={loading || fieldConfig.loading}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: 16,
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ color: "#667085", fontSize: 14 }}>
-            Total: <strong>{total}</strong>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button
-              type="button"
-              className="gf-btn gf-btn-secondary"
-              disabled={page <= 1}
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            >
-              Anterior
-            </button>
-
-            <span style={{ fontSize: 14, color: "#344054" }}>
-              Página {page} de {totalPages}
-            </span>
-
-            <button
-              type="button"
-              className="gf-btn gf-btn-secondary"
-              disabled={page >= totalPages}
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+          >
+            {t("common:actions.clear")}
+          </button>
+        </form>
       </section>
+
+      {error ? (
+        <section className="df-pro-card">
+          <div
+            style={{
+              padding: "10px 12px",
+              borderRadius: 12,
+              background: "#fdecec",
+              color: "#9a2f2f",
+            }}
+          >
+            {error}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="df-pro-card">
+        {loading ? (
+          <p>Cargando proveedores...</p>
+        ) : rows.length === 0 ? (
+          <p>No hay proveedores para mostrar.</p>
+        ) : (
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            getRowKey={(r) => String(r.id || r.name)}
+            onRowClick={(supplier) => handleEdit(supplier)}
+          />
+        )}
+      </section>
+
+      <footer className="df-pro-pagination">
+        <div>
+          {t("common:pagination.showing")} {rows.length} / {total}
+        </div>
+        <div className="df-pro-actions-row">
+          <button type="button" onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
+            {t("common:pagination.previous")}
+          </button>
+          <span>
+            {t("common:pagination.page")} {page} {t("common:pagination.of")} {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={page >= totalPages}
+          >
+            {t("common:pagination.next")}
+          </button>
+        </div>
+      </footer>
 
       <Modal
         open={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          setEditingSupplier(null);
+        }}
         title={editingSupplier ? "Editar proveedor" : "Nuevo proveedor"}
+        width="min(920px, 100%)"
       >
         <SupplierForm
           supplier={editingSupplier}
-          onSuccess={() => {
+          onSuccess={async () => {
             setShowModal(false);
-            void loadSuppliers();
+            setEditingSupplier(null);
+            await loadSuppliers();
           }}
-          onCancel={() => setShowModal(false)}
+          onCancel={() => {
+            setShowModal(false);
+            setEditingSupplier(null);
+          }}
         />
       </Modal>
     </section>

@@ -19,6 +19,12 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const { t } = useTranslation("common");
   const { tenantSlug } = useParams();
   
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [branding, setBranding] = useState<TenantBrandingResponse | null>(null);
+
   useEffect(() => {
     if (branding?.name) {
       setBrowserTitle(`${branding.name} | DressFlow`);
@@ -28,12 +34,6 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       setBrowserFavicon("/logo-icon.png");
     }
   }, [branding]);
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [branding, setBranding] = useState<TenantBrandingResponse | null>(null);
 
   useEffect(() => {
     const loadBranding = async () => {

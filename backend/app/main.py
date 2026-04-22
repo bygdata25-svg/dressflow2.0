@@ -22,9 +22,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 ensure_upload_dirs()
 
+origins = settings.cors_origins
+
+if isinstance(origins, str):
+    origins = [o.strip() for o in origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins.split(","),
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

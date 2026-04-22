@@ -53,7 +53,6 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
   const [loadingExecute, setLoadingExecute] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const hasPreview = useMemo(() => !!previewData, [previewData]);
   const canExecute = useMemo(
     () => !!file && !!previewData && !loadingExecute,
     [file, previewData, loadingExecute]

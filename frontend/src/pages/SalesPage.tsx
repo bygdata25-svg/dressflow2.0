@@ -365,17 +365,6 @@ export default function SalesPage() {
     }
   }
 
-  function exportExcel() {
-    const params = new URLSearchParams();
-    if (filters.q) params.append("q", filters.q);
-    if (filters.status) params.append("status", filters.status);
-    if (filters.payment_method) params.append("payment_method", filters.payment_method);
-
-    const qs = params.toString();
-    const url = `/api/v1/reports/dress-sales/export${qs ? `?${qs}` : ""}`;
-    window.open(url, "_blank");
-  }
-
   const totals = useMemo(() => {
     const completed = items.filter((item) => item.status === "COMPLETED");
     const totalAmount = completed.reduce(
@@ -848,7 +837,7 @@ export default function SalesPage() {
                   <option key={method} value={method}>
                     {paymentMethodLabel(method)}
                   </option>
-                ))} 
+                ))}
               </select>
             </div>
 

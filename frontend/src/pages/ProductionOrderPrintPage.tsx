@@ -48,11 +48,6 @@ type CostSummary = {
   currency: string;
 };
 
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString();
-}
-
 function resolvePhoto(url?: string | null) {
   if (!url) return null;
   if (url.startsWith("http")) return url;
@@ -102,7 +97,7 @@ export default function ProductionOrderPrintPage() {
       setLoading(false);
     }
 
-    load();
+    void load();
   }, [id, mode]);
 
   const handlePrint = () => {
@@ -135,7 +130,6 @@ export default function ProductionOrderPrintPage() {
 
   if (loading || !order) return null;
 
-  const logo = resolvePhoto(order.tenant_logo_url);
   const image = resolvePhoto(order.design_photo_url);
   const currency = costSummary?.currency || order.currency || "USD";
 
@@ -195,7 +189,6 @@ export default function ProductionOrderPrintPage() {
 
       <div className="po-print-area">
         <div className="page">
-
           <div className="toolbar no-print">
             <button
               className="btn"

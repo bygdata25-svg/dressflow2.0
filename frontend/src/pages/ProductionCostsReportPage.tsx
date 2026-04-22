@@ -61,15 +61,6 @@ function statusLabel(value?: string | null) {
   return value || "—";
 }
 
-function priorityLabel(value?: string | null) {
-  const raw = String(value || "").toUpperCase();
-  if (raw === "LOW") return "Baja";
-  if (raw === "NORMAL") return "Normal";
-  if (raw === "HIGH") return "Alta";
-  if (raw === "URGENT") return "Urgente";
-  return value || "—";
-}
-
 export default function ProductionCostsReportPage() {
   const [rows, setRows] = useState<ProductionCostsRow[]>([]);
   const [loading, setLoading] = useState(false);

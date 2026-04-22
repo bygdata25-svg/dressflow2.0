@@ -936,7 +936,19 @@ const mergedDescription = previousNotes
         <DressForm
           key={editingDress?.id || "new"}
           mode={editingDress ? "edit" : "create"}
-          initialData={editingDress || undefined}
+          initialData={
+  editingDress
+    ? {
+        ...editingDress,
+        description: editingDress.description ?? "",
+        size: editingDress.size ?? "",
+        color: editingDress.color ?? "",
+        sale_price: editingDress.sale_price ?? "",
+        rental_price: editingDress.rental_price ?? "",
+        capsule_id: editingDress.capsule_id ?? "",
+      }
+    : undefined
+}
           onCreated={async () => {
             setShowModal(false);
             setEditingDress(null);

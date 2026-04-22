@@ -155,26 +155,6 @@ function statusAccent(status: string) {
   }
 }
 
-function statusSoft(status: string) {
-  switch (String(status || "").toUpperCase()) {
-    case "AVAILABLE":
-      return "#ecfdf3";
-    case "CLEANING":
-      return "#ecfeff";
-    case "MAINTENANCE":
-      return "#fff7ed";
-    case "LOANED":
-      return "#f5f3ff";
-    case "RENTED":
-      return "#fff7ed";
-    case "SOLD":
-      return "#f5f3ff";
-    case "RETIRED":
-      return "#f3f4f6";
-    default:
-      return "#f5f3ff";
-  }
-}
 
 function userInitials(user?: string) {
   if (!user) return "?";

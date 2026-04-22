@@ -24,8 +24,6 @@ ensure_upload_dirs()
 
 origins = settings.cors_origins
 
-if isinstance(origins, str):
-    origins = [o.strip() for o in origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,

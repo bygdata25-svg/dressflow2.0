@@ -1,9 +1,31 @@
-from fastapi import UploadFile, File
+from fastapi import UploadFile, File, APIRouter, Depends
 import shutil
 import os
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.api.deps import get_current_membership
+from app.models.tenant import Tenant
 
 UPLOAD_DIR = "static/tenant_logos"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+router = APIRouter(prefix="/tenant-branding", tags=["tenant-branding"])
+
+
+@router.put("")
+def update_branding(
+    payload: dict,
+    db: Session = Depends(get_db),
+    membership=Depends(get_current_membership),
+):
+    tenant = db.get(Tenant, membership.tenant_id)
+
+    if "primary_color" in payload:
+        tenant.primary_color = payload["primary_color"]
+
+    db.commit()
+
+    return {"ok": True}
 
 
 @router.post("/upload-logo")

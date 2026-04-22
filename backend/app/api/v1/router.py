@@ -27,6 +27,7 @@ from app.api.v1.endpoints import (
     sales_unified,
     ui_config,
     my_ui_config,
+    tenant_branding,
 )
 
 api_router = APIRouter()
@@ -56,3 +57,4 @@ api_router.include_router(my_ui_config.router)
 api_router.include_router(accessory_movements.router)
 api_router.include_router(accessory_sales.router)
 api_router.include_router(sales_unified.router)
+api_router.include_router(tenant_branding.router)

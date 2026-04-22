@@ -7,6 +7,8 @@ import {
   setToken,
   type TenantBrandingResponse,
 } from "../lib/auth";
+
+import { setBrowserFavicon, setBrowserTitle } from "../lib/browserBranding";
 import "../styles/login-premium.css";
 
 type LoginPageProps = {
@@ -16,6 +18,16 @@ type LoginPageProps = {
 export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const { t } = useTranslation("common");
   const { tenantSlug } = useParams();
+  
+  useEffect(() => {
+    if (branding?.name) {
+      setBrowserTitle(`${branding.name} | DressFlow`);
+      setBrowserFavicon(branding.logo_url || "/logo-icon.png");
+    } else {
+      setBrowserTitle("Ingresar | DressFlow");
+      setBrowserFavicon("/logo-icon.png");
+    }
+  }, [branding]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

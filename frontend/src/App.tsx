@@ -40,6 +40,8 @@ import AccessoriesPage from "./pages/AccessoriesPage";
 import AccessoryMovementsPage from "./pages/AccessoryMovementsPage";
 import AccessorySalesPage from "./pages/AccessorySalesPage";
 import FinancialDashboardPage from "./pages/FinancialDashboardPage";
+import AppLoader from "./components/AppLoader";
+import { setBrowserFavicon, setBrowserTitle } from "./lib/browserBranding";
 
 import { applyTenantBranding } from "./lib/tenantBranding";
 import { api } from "./lib/api";
@@ -555,6 +557,18 @@ function AppShell({
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [lateLoansCount, setLateLoansCount] = useState(0);
+
+  useEffect(() => {
+    const tenantName = me.tenant_name?.trim();
+
+    setBrowserTitle(
+      tenantName
+        ? `${tenantName} | DressFlow`
+        : "DressFlow | AI • FASHION • ERP"
+   );
+
+    setBrowserFavicon(me.tenant_logo_url || "/logo-icon.png");
+  }, [me.tenant_name, me.tenant_logo_url]);
 
   useEffect(() => {
     applyTenantBranding({
@@ -1254,7 +1268,7 @@ export default function App() {
   };
 
   if (loadingMe) {
-    return <div style={{ padding: 24 }}>Validando acceso...</div>;
+    return <AppLoader title="DressFlow" subtitle="AI • FASHION • ERP" />;
   }
 
   // 🔥 PRINT MODE (SIN APP SHELL)

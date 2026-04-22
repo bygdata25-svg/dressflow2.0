@@ -129,23 +129,6 @@ function formatMoney(amount: number, currency: CurrencyCode) {
   }).format(Number(amount || 0));
 }
 
-function paymentMethodLabel(method: PaymentMethod) {
-  switch (method) {
-    case "cash":
-      return "Efectivo";
-    case "transfer":
-      return "Transferencia";
-    case "debit":
-      return "Débito";
-    case "credit":
-      return "Crédito";
-    case "mercadopago":
-      return "Mercado Pago";
-    default:
-      return "Otro";
-  }
-}
-
 function getPaymentMethodLabel(method?: string) {
   switch (String(method || "").toLowerCase()) {
     case "cash":

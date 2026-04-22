@@ -228,21 +228,7 @@ export default function DressesPage() {
 ) => {
   try {
     setError("");
-
-    const now = new Date().toLocaleString("es-AR");
-const statusLabelMap: Record<string, string> = {
-  AVAILABLE: "Disponible",
-  CLEANING: "Limpieza",
-  MAINTENANCE: "Mantenimiento",
-};
-
-const previousNotes = row.description ?? "";
-const statusLogLine = `[${now}] Cambio de estado: ${statusLabelMap[status] ?? status}`;
-const mergedDescription = previousNotes
-  ? `${previousNotes}\n${statusLogLine}`
-  : statusLogLine;
-
-  await api.put(`/dresses/${row.id}`, {
+    await api.put(`/dresses/${row.id}`, {
   code: row.code,
   name: row.name,
   description: row.description ?? "", // 👈 NO modificar más
@@ -937,18 +923,25 @@ const mergedDescription = previousNotes
           key={editingDress?.id || "new"}
           mode={editingDress ? "edit" : "create"}
           initialData={
-  editingDress
-    ? {
-        ...editingDress,
-        description: editingDress.description ?? "",
-        size: editingDress.size ?? "",
-        color: editingDress.color ?? "",
-        sale_price: editingDress.sale_price ?? "",
-        rental_price: editingDress.rental_price ?? "",
-        capsule_id: editingDress.capsule_id ?? "",
-      }
-    : undefined
-}
+            editingDress
+              ? {
+                  id: editingDress.id,
+                  code: editingDress.code,
+                  name: editingDress.name,
+                  description: editingDress.description ?? "",
+                  size: editingDress.size ?? "",
+                  color: editingDress.color ?? "",
+                  status: editingDress.status,
+                  main_image_url: editingDress.main_image_url ?? null,
+                  capsule_id: editingDress.capsule_id ?? "",
+                  rental_price:
+                    editingDress.rental_price !== undefined &&
+                    editingDress.rental_price !== null
+                      ? String(editingDress.rental_price)
+                      : "",
+                }
+              : undefined
+          }
           onCreated={async () => {
             setShowModal(false);
             setEditingDress(null);

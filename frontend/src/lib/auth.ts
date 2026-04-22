@@ -33,9 +33,8 @@ export type TenantBrandingResponse = {
   primary_color?: string | null;
 };
 
-
 function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  return import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 }
 
 export function getToken(): string | null {
@@ -57,7 +56,7 @@ export async function fetchMe(): Promise<MeResponse> {
     throw new Error("No hay token de sesión");
   }
 
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/auth/me`, {
+  const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -83,7 +82,7 @@ export async function impersonateMembership(
   }
 
   const res = await fetch(
-    `${getApiBaseUrl()}/api/v1/auth/impersonate/${membershipId}`,
+    `${getApiBaseUrl()}/auth/impersonate/${membershipId}`,
     {
       method: "POST",
       headers: {
@@ -108,7 +107,7 @@ export async function exitImpersonation(): Promise<TokenResponse> {
     throw new Error("No hay token de sesión");
   }
 
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/auth/exit-impersonation`, {
+  const res = await fetch(`${getApiBaseUrl()}/auth/exit-impersonation`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -127,12 +126,15 @@ export async function exitImpersonation(): Promise<TokenResponse> {
 export async function fetchTenantBranding(
   slug: string
 ): Promise<TenantBrandingResponse> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/public/tenant-branding/${slug}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const res = await fetch(
+    `${getApiBaseUrl()}/public/tenant-branding/${slug}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

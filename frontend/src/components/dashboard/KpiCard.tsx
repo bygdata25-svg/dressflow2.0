@@ -1,6 +1,10 @@
-// components/dashboard/KpiCard.tsx
+type KpiCardProps = {
+  title: string;
+  value: string | number;
+  trend: number;
+};
 
-export default function KpiCard({ title, value, trend }) {
+export default function KpiCard({ title, value, trend }: KpiCardProps) {
   return (
     <div className="kpi-card">
       <div className="kpi-title">{title}</div>

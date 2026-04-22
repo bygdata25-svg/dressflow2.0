@@ -1,5 +1,3 @@
-// components/charts/SalesChart.tsx
-
 import {
   LineChart,
   Line,
@@ -9,7 +7,16 @@ import {
   CartesianGrid,
 } from "recharts";
 
-export default function SalesChart({ data }) {
+type SalesChartPoint = {
+  day: string;
+  amount: number;
+};
+
+type SalesChartProps = {
+  data: SalesChartPoint[];
+};
+
+export default function SalesChart({ data }: SalesChartProps) {
   return (
     <div className="card">
       <h3>Ventas del mes</h3>

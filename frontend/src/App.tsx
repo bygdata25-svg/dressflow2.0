@@ -9,7 +9,6 @@ import {
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Toaster } from "react-hot-toast";
-import { TrendingUp } from "lucide-react";
 
 import HomePage from "./pages/HomePage";
 import DressesPage from "./pages/DressesPage";
@@ -40,7 +39,6 @@ import SalesUnifiedPage from "./pages/SalesUnifiedPage";
 import AccessoriesPage from "./pages/AccessoriesPage";
 import AccessoryMovementsPage from "./pages/AccessoryMovementsPage";
 import AccessorySalesPage from "./pages/AccessorySalesPage";
-import AccessorySalesReportPage from "./pages/reports/AccessorySalesReportPage";
 import FinancialDashboardPage from "./pages/FinancialDashboardPage";
 
 import { applyTenantBranding } from "./lib/tenantBranding";
@@ -678,7 +676,6 @@ function AppShell({
         ),
       },
       {
-        label: "Ventas",
         to: "/sales",
         label: (
           <>

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
+import { Modal } from "../components/common/Modal";
 import ProductionOrderDetailPanel from "../components/production-orders/ProductionOrderDetailPanel";
 import "../styles/pro-pages.css";
 
@@ -155,6 +156,12 @@ export default function ProductionOrdersPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const closeCreateModal = () => {
+    if (creating) return;
+    setIsCreateOpen(false);
+    setForm(INITIAL_FORM);
+  };
+
   const loadOrders = async () => {
     try {
       setLoading(true);
@@ -202,7 +209,7 @@ export default function ProductionOrdersPage() {
   };
 
   useEffect(() => {
-    loadOrders();
+    void loadOrders();
   }, [page, search, statusFilter]);
 
   const createOrder = async (event: React.FormEvent) => {
@@ -447,7 +454,7 @@ export default function ProductionOrdersPage() {
             </div>
           </section>
 
-          {error && <div className="po-inline-error">{error}</div>}
+          {error && !isCreateOpen && <div className="po-inline-error">{error}</div>}
 
           <section className="po-filters-card">
             <div className="po-filters-card__top">
@@ -493,7 +500,9 @@ export default function ProductionOrdersPage() {
                 >
                   <option value="">{t("production-orders:filters.allStatuses")}</option>
                   <option value="DRAFT">{t("production-orders:status.DRAFT")}</option>
-                  <option value="MATERIALS_RESERVED">{t("production-orders:status.MATERIALS_RESERVED")}</option>
+                  <option value="MATERIALS_RESERVED">
+                    {t("production-orders:status.MATERIALS_RESERVED")}
+                  </option>
                   <option value="IN_PRODUCTION">{t("production-orders:status.IN_PRODUCTION")}</option>
                   <option value="COMPLETED">{t("production-orders:status.COMPLETED")}</option>
                   <option value="CANCELLED">{t("production-orders:status.CANCELLED")}</option>
@@ -540,13 +549,23 @@ export default function ProductionOrdersPage() {
             </div>
 
             <div className="df-pro-actions-row">
-              <button className="po-secondary-btn" onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
+              <button
+                type="button"
+                className="po-secondary-btn"
+                onClick={() => setPage((prev) => prev - 1)}
+                disabled={page <= 1}
+              >
                 {t("common:pagination.previous")}
               </button>
               <span>
                 {t("common:pagination.page")} {page} {t("common:pagination.of")} {totalPages}
               </span>
-              <button className="po-secondary-btn" onClick={() => setPage((prev) => prev + 1)} disabled={page >= totalPages}>
+              <button
+                type="button"
+                className="po-secondary-btn"
+                onClick={() => setPage((prev) => prev + 1)}
+                disabled={page >= totalPages}
+              >
                 {t("common:pagination.next")}
               </button>
             </div>
@@ -554,197 +573,226 @@ export default function ProductionOrdersPage() {
         </div>
 
         <aside className="po-orders-detail">
-            {selectedOrderId ? <ProductionOrderDetailPanel orderId={selectedOrderId} /> : null}
+          {selectedOrderId ? <ProductionOrderDetailPanel orderId={selectedOrderId} /> : null}
         </aside>
       </div>
 
-      {isCreateOpen && (
-        <div className="po-modal-backdrop" onClick={() => !creating && setIsCreateOpen(false)}>
-          <div className="po-modal" onClick={(e) => e.stopPropagation()}>
-            <form onSubmit={createOrder}>
-              <div className="po-modal-header">
-                <div>
-                  <h2 className="po-modal-title">Nueva orden de producción</h2>
-                  <p className="po-modal-subtitle">
-                    Modal SaaS prolijo, consistente con el resto de DressFlow.
-                  </p>
+      <Modal
+        open={isCreateOpen}
+        onClose={closeCreateModal}
+        title="Nueva orden de producción"
+        width="min(1080px, 100%)"
+      >
+        <form onSubmit={createOrder}>
+          <div style={{ display: "grid", gap: 20 }}>
+            <section>
+              <p
+                style={{
+                  margin: "0 0 10px",
+                  color: "var(--df-text-muted, #6b7280)",
+                  fontSize: 15,
+                }}
+              >
+                Modal SaaS prolijo, consistente con el resto de DressFlow.
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
+                  gap: 16,
+                }}
+              >
+                <div style={{ gridColumn: "span 4" }}>
+                  <label className="df-pro-label">{t("production-orders:fields.orderNumber")}</label>
+                  <input
+                    className="df-pro-input"
+                    value={form.order_number}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, order_number: e.target.value }))
+                    }
+                    required
+                  />
                 </div>
 
-                <button
-                  type="button"
-                  className="po-secondary-btn"
-                  onClick={() => !creating && setIsCreateOpen(false)}
-                >
-                  Cerrar
-                </button>
+                <div style={{ gridColumn: "span 4" }}>
+                  <label className="df-pro-label">{t("production-orders:fields.workshop")}</label>
+                  <select
+                    className="df-pro-select"
+                    value={form.workshop_supplier_id}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, workshop_supplier_id: e.target.value }))
+                    }
+                    required
+                  >
+                    <option value="">Seleccionar taller</option>
+                    {workshops.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ gridColumn: "span 4" }}>
+                  <label className="df-pro-label">{t("production-orders:fields.priority")}</label>
+                  <select
+                    className="df-pro-select"
+                    value={form.priority}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, priority: e.target.value }))
+                    }
+                  >
+                    <option value="LOW">{t("production-orders:priority.LOW")}</option>
+                    <option value="NORMAL">{t("production-orders:priority.NORMAL")}</option>
+                    <option value="HIGH">{t("production-orders:priority.HIGH")}</option>
+                    <option value="URGENT">{t("production-orders:priority.URGENT")}</option>
+                  </select>
+                </div>
               </div>
+            </section>
 
-              <div className="po-modal-body">
-                <section className="po-modal-section">
-                  <h3 className="po-modal-section-title">Datos principales</h3>
+            <section>
+              <h3
+                style={{
+                  margin: "0 0 14px",
+                  fontSize: 18,
+                  color: "var(--df-text-strong, #111827)",
+                }}
+              >
+                Vestido objetivo
+              </h3>
 
-                  <div className="po-form-grid">
-                    <div className="po-field po-span-4">
-                      <label>{t("production-orders:fields.orderNumber")}</label>
-                      <input
-                        className="df-pro-input"
-                        value={form.order_number}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, order_number: e.target.value }))
-                        }
-                        required
-                      />
-                    </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
+                  gap: 16,
+                }}
+              >
+                <div style={{ gridColumn: "span 6" }}>
+                  <label className="df-pro-label">{t("production-orders:fields.targetDressName")}</label>
+                  <input
+                    className="df-pro-input"
+                    value={form.target_dress_name}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, target_dress_name: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
 
-                    <div className="po-field po-span-4">
-                      <label>{t("production-orders:fields.workshop")}</label>
-                      <select
-                        className="df-pro-select"
-                        value={form.workshop_supplier_id}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, workshop_supplier_id: e.target.value }))
-                        }
-                        required
-                      >
-                        <option value="">Seleccionar taller</option>
-                        {workshops.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                <div style={{ gridColumn: "span 3" }}>
+                  <label className="df-pro-label">Código</label>
+                  <input
+                    className="df-pro-input"
+                    value={form.target_dress_code}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, target_dress_code: e.target.value }))
+                    }
+                  />
+                </div>
 
-                    <div className="po-field po-span-4">
-                      <label>{t("production-orders:fields.priority")}</label>
-                      <select
-                        className="df-pro-select"
-                        value={form.priority}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, priority: e.target.value }))
-                        }
-                      >
-                        <option value="LOW">{t("production-orders:priority.LOW")}</option>
-                        <option value="NORMAL">{t("production-orders:priority.NORMAL")}</option>
-                        <option value="HIGH">{t("production-orders:priority.HIGH")}</option>
-                        <option value="URGENT">{t("production-orders:priority.URGENT")}</option>
-                      </select>
-                    </div>
-                  </div>
-                </section>
+                <div style={{ gridColumn: "span 3" }}>
+                  <label className="df-pro-label">Talle</label>
+                  <input
+                    className="df-pro-input"
+                    value={form.target_size}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, target_size: e.target.value }))
+                    }
+                  />
+                </div>
 
-                <section className="po-modal-section">
-                  <h3 className="po-modal-section-title">Vestido objetivo</h3>
+                <div style={{ gridColumn: "span 3" }}>
+                  <label className="df-pro-label">Color</label>
+                  <input
+                    className="df-pro-input"
+                    value={form.target_color}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, target_color: e.target.value }))
+                    }
+                  />
+                </div>
 
-                  <div className="po-form-grid">
-                    <div className="po-field po-span-6">
-                      <label>{t("production-orders:fields.targetDressName")}</label>
-                      <input
-                        className="df-pro-input"
-                        value={form.target_dress_name}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, target_dress_name: e.target.value }))
-                        }
-                        required
-                      />
-                    </div>
+                <div style={{ gridColumn: "span 3" }}>
+                  <label className="df-pro-label">{t("production-orders:fields.plannedQuantity")}</label>
+                  <input
+                    className="df-pro-input"
+                    type="number"
+                    min={1}
+                    value={form.planned_quantity}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, planned_quantity: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
 
-                    <div className="po-field po-span-3">
-                      <label>Código</label>
-                      <input
-                        className="df-pro-input"
-                        value={form.target_dress_code}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, target_dress_code: e.target.value }))
-                        }
-                      />
-                    </div>
-
-                    <div className="po-field po-span-3">
-                      <label>Talle</label>
-                      <input
-                        className="df-pro-input"
-                        value={form.target_size}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, target_size: e.target.value }))
-                        }
-                      />
-                    </div>
-
-                    <div className="po-field po-span-3">
-                      <label>Color</label>
-                      <input
-                        className="df-pro-input"
-                        value={form.target_color}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, target_color: e.target.value }))
-                        }
-                      />
-                    </div>
-
-                    <div className="po-field po-span-3">
-                      <label>{t("production-orders:fields.plannedQuantity")}</label>
-                      <input
-                        className="df-pro-input"
-                        type="number"
-                        min={1}
-                        value={form.planned_quantity}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, planned_quantity: e.target.value }))
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="po-field po-span-3">
-                      <label>{t("production-orders:fields.dueDate")}</label>
-                      <input
-                        className="df-pro-input"
-                        type="date"
-                        value={form.due_date}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, due_date: e.target.value }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <section className="po-modal-section">
-                  <h3 className="po-modal-section-title">Observaciones</h3>
-
-                  <div className="po-form-grid">
-                    <div className="po-field po-span-12">
-                      <label>Notas</label>
-                      <textarea
-                        className="df-pro-input"
-                        value={form.notes}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, notes: e.target.value }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </section>
+                <div style={{ gridColumn: "span 3" }}>
+                  <label className="df-pro-label">{t("production-orders:fields.dueDate")}</label>
+                  <input
+                    className="df-pro-input"
+                    type="date"
+                    value={form.due_date}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, due_date: e.target.value }))
+                    }
+                  />
+                </div>
               </div>
+            </section>
 
-              <div className="po-modal-footer">
-                <button
-                  type="button"
-                  className="po-secondary-btn"
-                  onClick={() => !creating && setIsCreateOpen(false)}
-                >
-                  Cancelar
-                </button>
+            <section>
+              <h3
+                style={{
+                  margin: "0 0 14px",
+                  fontSize: 18,
+                  color: "var(--df-text-strong, #111827)",
+                }}
+              >
+                Observaciones
+              </h3>
 
-                <button type="submit" className="po-primary-btn" disabled={creating}>
-                  {creating ? "Creando..." : t("common:actions.create")}
-                </button>
+              <div>
+                <label className="df-pro-label">Notas</label>
+                <textarea
+                  className="df-pro-input"
+                  rows={4}
+                  value={form.notes}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, notes: e.target.value }))
+                  }
+                />
               </div>
-            </form>
+            </section>
+
+            {error ? <div className="po-inline-error">{error}</div> : null}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 12,
+                paddingTop: 8,
+              }}
+            >
+              <button
+                type="button"
+                className="po-secondary-btn"
+                onClick={closeCreateModal}
+                disabled={creating}
+              >
+                Cancelar
+              </button>
+
+              <button type="submit" className="po-primary-btn" disabled={creating}>
+                {creating ? "Creando..." : t("common:actions.create")}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </section>
   );
 }

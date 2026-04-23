@@ -98,6 +98,9 @@ export default function FabricsPage() {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState<FabricFormState>(initialForm);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+
   const isFieldReadOnlyOnEdit = (fieldName: string) =>
     Boolean(fc.getUiProps(fieldName)?.read_only_on_edit);
 
@@ -154,10 +157,16 @@ export default function FabricsPage() {
     setExpandedFabricId(fabricId);
   }
 
+  function resetImageState() {
+    setSelectedFile(null);
+    setImagePreview("");
+  }
+
   function openCreateModal() {
     setEditingId(null);
     setForm(initialForm);
     setFormError("");
+    resetImageState();
     setShowCreateModal(true);
   }
 
@@ -170,6 +179,8 @@ export default function FabricsPage() {
       notes: fabric.notes || "",
     });
     setFormError("");
+    setSelectedFile(null);
+    setImagePreview(resolvePhoto(fabric.photo_url) || "");
     setShowCreateModal(true);
   }
 
@@ -178,6 +189,19 @@ export default function FabricsPage() {
     setEditingId(null);
     setForm(initialForm);
     setFormError("");
+    resetImageState();
+  }
+
+  function handleFileChange(file: File | null) {
+    setSelectedFile(file);
+
+    if (!file) {
+      setImagePreview(editingId ? imagePreview : "");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
   }
 
   async function saveFabric(e: FormEvent<HTMLFormElement>) {
@@ -192,17 +216,24 @@ export default function FabricsPage() {
       setSaving(true);
       setFormError("");
 
-      const payload = {
-        name: form.name.trim(),
-        fabric_type: form.fabric_type.trim() || null,
-        color: form.color.trim() || null,
-        notes: form.notes.trim() || null,
-      };
+      const formData = new FormData();
+      formData.append("name", form.name.trim());
+      formData.append("fabric_type", form.fabric_type.trim() || "");
+      formData.append("color", form.color.trim() || "");
+      formData.append("notes", form.notes.trim() || "");
+
+      if (selectedFile) {
+        formData.append("file", selectedFile);
+      }
 
       if (editingId) {
-        await api.patch(`/fabrics/${editingId}`, payload);
+        await api.patch(`/fabrics/${editingId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       } else {
-        await api.post("/fabrics", payload);
+        await api.post("/fabrics", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       }
 
       closeModal();
@@ -217,6 +248,14 @@ export default function FabricsPage() {
   useEffect(() => {
     void loadFabrics();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const filteredFabrics = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -591,6 +630,32 @@ export default function FabricsPage() {
                     {Boolean(editingId) && isFieldReadOnlyOnEdit("color") ? readOnlyHint : null}
                   </div>
                 )}
+
+                <div className="gf-form-grid-full">
+                  <label>Imagen</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                  />
+                </div>
+
+                {imagePreview ? (
+                  <div className="gf-form-grid-full">
+                    <label>Vista previa</label>
+                    <img
+                      src={imagePreview}
+                      alt="Vista previa tela"
+                      style={{
+                        width: 140,
+                        height: 140,
+                        objectFit: "cover",
+                        borderRadius: 18,
+                        border: "1px solid #ece6f1",
+                      }}
+                    />
+                  </div>
+                ) : null}
 
                 {fc.isFormVisible("notes") && (
                   <div className="gf-form-grid-full">

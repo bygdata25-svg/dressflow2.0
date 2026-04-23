@@ -27,6 +27,7 @@ class Fabric(UUIDMixin, TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     deleted_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    photo_public_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     code: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     base_name: Mapped[str | None] = mapped_column(String(150), nullable=True)

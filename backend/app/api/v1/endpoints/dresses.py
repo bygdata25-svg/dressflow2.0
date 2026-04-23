@@ -19,7 +19,7 @@ from app.schemas.dress import (
     DressImageResponse,
 )
 from app.services.audit_service import create_audit_log
-from app.services.storage_service import save_dress_image, delete_local_file
+from app.services.cloudinary_service import upload_image, delete_image
 from app.models.dress_status_history import DressStatusHistory
 
 router = APIRouter(prefix="/dresses", tags=["dresses"])
@@ -58,10 +58,10 @@ def build_dress_response(db: Session, dress: Dress) -> DressResponse:
         rental_price=dress.rental_price,
         status=dress.status,
         main_image_url=(
-             main_image.file_url
-             if main_image
-             else dress.photo_url
-         ),
+            main_image.file_url
+            if main_image
+            else dress.photo_url
+        ),
         capsule_id=getattr(dress, "capsule_id", None),
         capsule_name=capsule_name,
     )
@@ -307,7 +307,7 @@ def update_dress(
         tenant_id=membership.tenant_id,
         capsule_id=getattr(payload, "capsule_id", None),
     )
-    
+
     previous_status = dress.status
     new_status = payload.status
 
@@ -321,7 +321,6 @@ def update_dress(
     dress.sale_price = payload.sale_price
     dress.rental_price = payload.rental_price
 
-    # 👇 ESTA ES LA CLAVE
     if previous_status != new_status:
         history = DressStatusHistory(
             tenant_id=membership.tenant_id,
@@ -445,7 +444,17 @@ def upload_dress_image(
     if content_type not in {"image/jpeg", "image/png", "image/webp", "image/jpg"}:
         raise AppException(400, "Unsupported image format", "IMAGE_INVALID_FORMAT")
 
-    file_path, file_url = save_dress_image(file, str(membership.tenant_id), str(dress_id))
+    tenant_slug = None
+    if getattr(membership, "tenant", None) and getattr(membership.tenant, "slug", None):
+        tenant_slug = membership.tenant.slug
+    else:
+        tenant = db.execute(
+            select(Dress.tenant_id).where(Dress.id == dress_id)
+        ).scalar_one_or_none()
+        tenant_slug = str(membership.tenant_id)
+
+    folder = f"dressflow/tenants/{tenant_slug}/dresses/{dress.code}"
+    file_url, public_id = upload_image(file, folder)
 
     current_count = db.execute(
         select(func.count()).select_from(
@@ -463,7 +472,7 @@ def upload_dress_image(
     image = DressImage(
         tenant_id=membership.tenant_id,
         dress_id=dress_id,
-        file_path=file_path,
+        file_path=public_id,
         file_url=file_url,
         is_primary=has_primary is None,
         position=current_count,
@@ -471,6 +480,11 @@ def upload_dress_image(
 
     db.add(image)
     db.flush()
+
+    if image.is_primary:
+        dress.photo_url = file_url
+        if hasattr(dress, "photo_public_id"):
+            dress.photo_public_id = public_id
 
     create_audit_log(
         db=db,
@@ -484,6 +498,7 @@ def upload_dress_image(
 
     db.commit()
     db.refresh(image)
+    db.refresh(dress)
 
     return image
 
@@ -495,6 +510,17 @@ def set_primary_dress_image(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
+    dress = db.execute(
+        select(Dress).where(
+            Dress.id == dress_id,
+            Dress.tenant_id == membership.tenant_id,
+            Dress.deleted_at.is_(None),
+        )
+    ).scalar_one_or_none()
+
+    if not dress:
+        raise AppException(404, "Dress not found", "DRESS_NOT_FOUND")
+
     image = db.execute(
         select(DressImage).where(
             DressImage.id == image_id,
@@ -516,6 +542,9 @@ def set_primary_dress_image(
     )
 
     image.is_primary = True
+    dress.photo_url = image.file_url
+    if hasattr(dress, "photo_public_id"):
+        dress.photo_public_id = image.file_path
 
     create_audit_log(
         db=db,
@@ -531,13 +560,13 @@ def set_primary_dress_image(
 
     return {"message": "Primary image updated"}
 
+
 @router.get("/{dress_id}/status-history")
 def get_dress_status_history(
     dress_id: UUIDType,
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager", "staff")),
 ):
-    from app.models.dress_status_history import DressStatusHistory
     from app.models.user import User
 
     rows = db.execute(
@@ -582,6 +611,17 @@ def delete_dress_image(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
+    dress = db.execute(
+        select(Dress).where(
+            Dress.id == dress_id,
+            Dress.tenant_id == membership.tenant_id,
+            Dress.deleted_at.is_(None),
+        )
+    ).scalar_one_or_none()
+
+    if not dress:
+        raise AppException(404, "Dress not found", "DRESS_NOT_FOUND")
+
     image = db.execute(
         select(DressImage).where(
             DressImage.id == image_id,
@@ -593,24 +633,38 @@ def delete_dress_image(
     if not image:
         raise AppException(404, "Dress image not found", "DRESS_IMAGE_NOT_FOUND")
 
+    deleted_public_id = image.file_path
     was_primary = image.is_primary
-    file_path = image.file_path
 
     db.delete(image)
     db.flush()
 
-    if was_primary:
-        replacement = db.execute(
-            select(DressImage)
-            .where(
-                DressImage.dress_id == dress_id,
-                DressImage.tenant_id == membership.tenant_id,
-            )
-            .order_by(DressImage.position.asc(), DressImage.created_at.asc())
-        ).scalars().first()
+    try:
+        delete_image(deleted_public_id)
+    except Exception:
+        pass
 
-        if replacement:
-            replacement.is_primary = True
+    next_primary = db.execute(
+        select(DressImage)
+        .where(
+            DressImage.dress_id == dress_id,
+            DressImage.tenant_id == membership.tenant_id,
+        )
+        .order_by(
+            DressImage.position.asc(),
+            DressImage.created_at.asc(),
+        )
+    ).scalars().first()
+
+    if next_primary and was_primary:
+        next_primary.is_primary = True
+        dress.photo_url = next_primary.file_url
+        if hasattr(dress, "photo_public_id"):
+            dress.photo_public_id = next_primary.file_path
+    elif was_primary:
+        dress.photo_url = None
+        if hasattr(dress, "photo_public_id"):
+            dress.photo_public_id = None
 
     create_audit_log(
         db=db,
@@ -623,6 +677,5 @@ def delete_dress_image(
     )
 
     db.commit()
-    delete_local_file(file_path)
 
     return {"message": "Dress image deleted"}

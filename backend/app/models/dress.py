@@ -34,4 +34,5 @@ class Dress(UUIDMixin, TimestampMixin, Base):
     sale_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     rental_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    photo_public_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     deleted_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)

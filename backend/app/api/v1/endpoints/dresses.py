@@ -444,17 +444,15 @@ def upload_dress_image(
     if content_type not in {"image/jpeg", "image/png", "image/webp", "image/jpg"}:
         raise AppException(400, "Unsupported image format", "IMAGE_INVALID_FORMAT")
 
-    tenant_slug = None
-    if getattr(membership, "tenant", None) and getattr(membership.tenant, "slug", None):
-        tenant_slug = membership.tenant.slug
-    else:
-        tenant = db.execute(
-            select(Dress.tenant_id).where(Dress.id == dress_id)
-        ).scalar_one_or_none()
-        tenant_slug = str(membership.tenant_id)
-
-    folder = f"dressflow/tenants/{tenant_slug}/dresses/{dress.code}"
-    file_url, public_id = upload_image(file, folder)
+    result = upload_image(
+        file_obj=file.file,
+        tenant_slug=str(membership.tenant_id),
+        entity="dresses",
+        asset_key=dress.code,
+        overwrite=True,
+    )
+    file_url = result["url"]
+    public_id = result["public_id"]
 
     current_count = db.execute(
         select(func.count()).select_from(
@@ -501,7 +499,6 @@ def upload_dress_image(
     db.refresh(dress)
 
     return image
-
 
 @router.post("/{dress_id}/images/{image_id}/set-primary")
 def set_primary_dress_image(

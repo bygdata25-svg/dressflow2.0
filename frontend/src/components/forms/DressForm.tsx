@@ -394,7 +394,7 @@ export function DressForm({
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError(t("common:errors.savingData"));
+      else setError("No se pudo guardar la imagen del vestido.");
     } finally {
       setSubmitting(false);
     }

@@ -26,3 +26,4 @@ class Tenant(UUIDMixin, TimestampMixin, Base):
     branding_accent_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     branding_surface_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     branding_sidebar_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    logo_public_id = Column(String, nullable=True)

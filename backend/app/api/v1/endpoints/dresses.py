@@ -444,13 +444,18 @@ def upload_dress_image(
     if content_type not in {"image/jpeg", "image/png", "image/webp", "image/jpg"}:
         raise AppException(400, "Unsupported image format", "IMAGE_INVALID_FORMAT")
 
+    tenant = db.execute(
+        select(Tenant).where(Tenant.id == membership.tenant_id)
+    ).scalar_one()
+
     result = upload_image(
         file_obj=file.file,
-        tenant_slug=str(membership.tenant_id),
+        tenant_slug=tenant.slug,
         entity="dresses",
         asset_key=dress.code,
         overwrite=True,
-    )
+    ) 
+
     file_url = result["url"]
     public_id = result["public_id"]
 

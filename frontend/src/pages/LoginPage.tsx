@@ -7,8 +7,8 @@ import {
   setToken,
   type TenantBrandingResponse,
 } from "../lib/auth";
-
 import { setBrowserFavicon, setBrowserTitle } from "../lib/browserBranding";
+import { getTenantSlugFromHostname } from "../lib/tenantHost";
 import "../styles/login-premium.css";
 
 type LoginPageProps = {
@@ -17,8 +17,11 @@ type LoginPageProps = {
 
 export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const { t } = useTranslation("common");
-  const { tenantSlug } = useParams();
-  
+  const { tenantSlug: routeTenantSlug } = useParams();
+
+  const hostTenantSlug = getTenantSlugFromHostname();
+  const tenantSlug = routeTenantSlug || hostTenantSlug || undefined;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -69,6 +72,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       const response = await api.post("/auth/login", {
         email,
         password,
+        tenant_slug: tenantSlug || null,
       });
 
       setToken(response.data.access_token);
@@ -83,6 +87,8 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
       if (typeof detail === "string") {
         setError(detail);
+      } else if (Array.isArray(detail)) {
+        setError(detail.map((item) => item.msg).join(" | "));
       } else if (detail?.message) {
         setError(detail.message);
       } else if (err instanceof Error && err.message) {
@@ -134,7 +140,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               ) : (
                 <div
                   className="df-login-tenant-fallback"
-                  style={{ background: "var(--tenant-primary)"}}
+                  style={{ background: "var(--tenant-primary)" }}
                 >
                   {branding.name?.[0]?.toUpperCase() || "T"}
                 </div>
@@ -149,7 +155,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
           <div className="df-login-field">
             <label htmlFor="login-email" className="df-login-label">
-              Usuario
+              Email
             </label>
             <input
               id="login-email"

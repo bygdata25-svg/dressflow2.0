@@ -5,7 +5,6 @@ import {
   Link,
   Navigate,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Toaster } from "react-hot-toast";
@@ -42,6 +41,7 @@ import AccessorySalesPage from "./pages/AccessorySalesPage";
 import FinancialDashboardPage from "./pages/FinancialDashboardPage";
 import AppLoader from "./components/AppLoader";
 import { setBrowserFavicon, setBrowserTitle } from "./lib/browserBranding";
+import { getTenantSlugFromHostname } from "./lib/tenantHost";
 
 import { applyTenantBranding } from "./lib/tenantBranding";
 import { api } from "./lib/api";
@@ -553,7 +553,6 @@ function AppShell({
 }) {
   const { t, i18n } = useTranslation("common");
   const location = useLocation();
-  const navigate = useNavigate();
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [lateLoansCount, setLateLoansCount] = useState(0);
@@ -565,7 +564,7 @@ function AppShell({
       tenantName
         ? `${tenantName} | DressFlow`
         : "DressFlow | AI • FASHION • ERP"
-   );
+    );
 
     setBrowserFavicon(me.tenant_logo_url || "/logo-icon.png");
   }, [me.tenant_name, me.tenant_logo_url]);
@@ -834,7 +833,7 @@ function AppShell({
               <span>Dashboard financiero</span>
             </>
           ),
-        }
+        },
       ],
     },
     {
@@ -1080,7 +1079,9 @@ function AppShell({
 
           <AlertBell
             count={lateLoansCount}
-            onClick={() => navigate("/loans")}
+            onClick={() => {
+              window.location.href = "/loans";
+            }}
           />
 
           <div className="df-user-chip">
@@ -1226,6 +1227,7 @@ export default function App() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loadingMe, setLoadingMe] = useState(true);
   const location = useLocation();
+  const hostTenantSlug = getTenantSlugFromHostname();
 
   const isPrintRoute = location.pathname.includes("/print");
 
@@ -1271,7 +1273,6 @@ export default function App() {
     return <AppLoader title="DressFlow" subtitle="AI • FASHION • ERP" />;
   }
 
-  // 🔥 PRINT MODE (SIN APP SHELL)
   if (isPrintRoute) {
     return (
       <Routes>
@@ -1294,7 +1295,15 @@ export default function App() {
           path="/login/:tenantSlug"
           element={<LoginPage onLoginSuccess={loadSession} />}
         />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to={hostTenantSlug ? "/login" : "/login"}
+              replace
+            />
+          }
+        />
       </Routes>
     );
   }

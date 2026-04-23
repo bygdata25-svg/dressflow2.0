@@ -26,6 +26,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    tenant_slug: str | None = None
 
 
 class TokenResponse(BaseModel):
@@ -66,17 +67,46 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             detail="Inactive user",
         )
 
-    membership = db.execute(
-        select(UserTenant)
-        .where(UserTenant.user_id == user.id)
-        .order_by(UserTenant.is_default.desc(), UserTenant.created_at.asc())
-    ).scalars().first()
+    membership = None
 
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User has no tenant membership",
-        )
+    tenant_slug = (payload.tenant_slug or "").strip().lower()
+
+    if tenant_slug:
+        tenant = db.execute(
+            select(Tenant).where(Tenant.slug == tenant_slug)
+        ).scalar_one_or_none()
+
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tenant not found",
+            )
+
+        membership = db.execute(
+            select(UserTenant).where(
+                UserTenant.user_id == user.id,
+                UserTenant.tenant_id == tenant.id,
+            )
+        ).scalar_one_or_none()
+
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User has no membership for this tenant",
+            )
+
+    else:
+        membership = db.execute(
+            select(UserTenant)
+            .where(UserTenant.user_id == user.id)
+            .order_by(UserTenant.is_default.desc(), UserTenant.created_at.asc())
+        ).scalars().first()
+
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User has no tenant membership",
+            )
 
     token_data = {
         "sub": str(user.id),

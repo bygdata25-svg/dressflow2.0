@@ -28,6 +28,7 @@ type ProductionOrderListItem = {
   priority: string;
   due_date?: string | null;
   notes?: string | null;
+  design_photo_url?: string | null;
 };
 
 type PaginatedResponse<T> = {
@@ -50,6 +51,7 @@ const INITIAL_FORM = {
   priority: "NORMAL",
   due_date: "",
   notes: "",
+  design_photo_url: "",
 };
 
 function formatDate(value?: string | null, locale = "es-AR") {
@@ -220,7 +222,7 @@ export default function ProductionOrdersPage() {
       setError("");
 
       const res = await api.post("/production-orders", {
-        order_number: form.order_number,
+        order_number: form.order_number.trim() || null,
         workshop_supplier_id: form.workshop_supplier_id,
         target_dress_name: form.target_dress_name,
         target_dress_code: form.target_dress_code || null,
@@ -230,6 +232,7 @@ export default function ProductionOrdersPage() {
         priority: form.priority,
         due_date: form.due_date || null,
         notes: form.notes || null,
+        design_photo_url: form.design_photo_url || null,
       });
 
       setForm(INITIAL_FORM);
@@ -611,8 +614,11 @@ export default function ProductionOrdersPage() {
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, order_number: e.target.value }))
                     }
-                    required
+                    placeholder="Automático"
                   />
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--df-text-muted, #6b7280)" }}>
+                    Dejalo vacío para generar automáticamente el próximo número OP.
+                  </p>
                 </div>
 
                 <div style={{ gridColumn: "span 4" }}>
@@ -740,6 +746,29 @@ export default function ProductionOrdersPage() {
                     }
                   />
                 </div>
+
+                <div style={{ gridColumn: "span 6" }}>
+                  <label className="df-pro-label">Imagen diseño</label>
+                  <input
+                    className="df-pro-input"
+                    value={form.design_photo_url}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, design_photo_url: e.target.value }))
+                    }
+                    placeholder="URL de imagen"
+                  />
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--df-text-muted, #6b7280)" }}>
+                    Podés pegar una URL de imagen del diseño o referencia de la orden.
+                  </p>
+                </div>
+
+                {form.design_photo_url ? (
+                  <div style={{ gridColumn: "span 6" }}>
+                    <div style={{ border: "1px solid rgba(148, 163, 184, 0.35)", borderRadius: 18, padding: 10, background: "rgba(248, 250, 252, 0.8)" }}>
+                      <img src={form.design_photo_url} alt="Vista previa del diseño" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 14, display: "block" }} />
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </section>
 

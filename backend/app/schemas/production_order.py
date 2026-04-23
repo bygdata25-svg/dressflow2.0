@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProductionOrderCreate(BaseModel):
-    order_number: str = Field(min_length=1, max_length=50)
+    order_number: str | None = Field(default=None, min_length=1, max_length=50)
     workshop_supplier_id: UUID
     target_dress_name: str = Field(min_length=1, max_length=150)
     target_dress_code: str | None = Field(default=None, max_length=100)

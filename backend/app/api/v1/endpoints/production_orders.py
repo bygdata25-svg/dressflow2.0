@@ -197,6 +197,7 @@ def build_order_response(db: Session, order: ProductionOrder) -> ProductionOrder
         estimated_total_cost=order.estimated_total_cost,
         actual_total_cost=order.actual_total_cost,
         currency=order.currency,
+        design_photo_url=order.design_photo_url,
     )
 
 
@@ -503,6 +504,7 @@ def create_production_order(
         priority=payload.priority,
         due_date=payload.due_date,
         notes=payload.notes,
+        design_photo_url=payload.design_photo_url,
         created_by_user_id=membership.user_id,
         status="DRAFT",
         labor_cost=Decimal("0"),

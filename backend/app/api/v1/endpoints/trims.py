@@ -10,6 +10,7 @@ from app.api.deps import require_roles
 from app.core.database import get_db
 from app.core.exceptions import AppException
 from app.models.trim import Trim
+from app.models.tenant import Tenant
 from app.schemas.trim import TrimResponse
 from app.services.audit_service import create_audit_log
 from app.services.cloudinary_service import delete_image, upload_image
@@ -86,7 +87,20 @@ def create_trim(
     photo_public_id = None
 
     if file is not None:
-        photo_url, photo_public_id = upload_image(file, "dressflow/trims")
+        tenant = db.execute(
+            select(Tenant).where(Tenant.id == membership.tenant_id)
+        ).scalar_one()
+
+        result = upload_image(
+            file_obj=file.file,
+            tenant_slug=tenant.slug,
+            entity="trims",
+            asset_key=code.strip(),
+            overwrite=True,
+        )
+
+        photo_url = result["url"]
+        photo_public_id = result["public_id"]
 
     trim = Trim(
         tenant_id=membership.tenant_id,
@@ -173,10 +187,22 @@ def update_trim(
     trim.notes = notes.strip() if notes else None
 
     if file is not None:
+        tenant = db.execute(
+            select(Tenant).where(Tenant.id == membership.tenant_id)
+        ).scalar_one()
+
         old_public_id = getattr(trim, "photo_public_id", None)
-        photo_url, photo_public_id = upload_image(file, "dressflow/trims")
-        trim.photo_url = photo_url
-        trim.photo_public_id = photo_public_id
+
+        result = upload_image(
+            file_obj=file.file,
+            tenant_slug=tenant.slug,
+            entity="trims",
+            asset_key=trim.code,
+            overwrite=True,
+        )
+
+        trim.photo_url = result["url"]
+        trim.photo_public_id = result["public_id"]
 
         if old_public_id:
             delete_image(old_public_id)

@@ -11,6 +11,7 @@ from app.models.capsule import Capsule
 from app.models.customer import Customer
 from app.models.dress import Dress
 from app.models.dress_image import DressImage
+from app.models.tenant import Tenant
 from app.models.loan import Loan
 from app.schemas.dress import (
     DressCreate,

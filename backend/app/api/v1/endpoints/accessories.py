@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_membership
 from app.core.database import get_db
 from app.models.accessory import Accessory
+from app.models.tenant import Tenant
 from app.schemas.accessory import (
     AccessoryResponse,
     PaginatedAccessoryResponse,
@@ -157,7 +158,22 @@ def create_accessory(
     photo_public_id = None
 
     if file is not None:
-        photo_url, photo_public_id = upload_image(file, "dressflow/accessories")
+        tenant = db.execute(
+            select(Tenant).where(Tenant.id == tenant_id)
+        ).scalar_one()
+
+        asset_key = normalized_code or name.strip().replace(" ", "_")
+
+        result = upload_image(
+            file_obj=file.file,
+            tenant_slug=tenant.slug,
+            entity="accessories",
+            asset_key=asset_key,
+            overwrite=True,
+        )
+
+        photo_url = result["url"]
+        photo_public_id = result["public_id"]
 
     accessory = Accessory(
         tenant_id=tenant_id,
@@ -257,10 +273,24 @@ def update_accessory(
         accessory.notes = notes.strip() or None
 
     if file is not None:
+        tenant = db.execute(
+            select(Tenant).where(Tenant.id == tenant_id)
+        ).scalar_one()
+
         old_public_id = getattr(accessory, "photo_public_id", None)
-        photo_url, photo_public_id = upload_image(file, "dressflow/accessories")
-        accessory.photo_url = photo_url
-        accessory.photo_public_id = photo_public_id
+
+        asset_key = accessory.code or accessory.name.replace(" ", "_")
+
+        result = upload_image(
+            file_obj=file.file,
+            tenant_slug=tenant.slug,
+            entity="accessories",
+            asset_key=asset_key,
+            overwrite=True,
+        )
+
+        accessory.photo_url = result["url"]
+        accessory.photo_public_id = result["public_id"]
 
         if old_public_id:
             delete_image(old_public_id)

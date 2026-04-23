@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { applyTenantBranding } from "../lib/tenantBranding";
 import "./DressesPage.css";
@@ -15,10 +15,71 @@ export default function TenantBrandingPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  const saveTimeout = useRef<number | null>(null);
+  const successTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     void loadBranding();
+
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+      }
+      if (successTimeout.current) {
+        clearTimeout(successTimeout.current);
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+
+    applyTenantBranding({
+      logo_url: logo,
+      primary_color: primaryColor,
+    });
+
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+    }
+
+    saveTimeout.current = window.setTimeout(async () => {
+      try {
+        setSaving(true);
+        setError("");
+        setSuccess("");
+
+        await api.put("/tenant-branding", {
+          primary_color: primaryColor,
+        });
+
+        setSuccess("Color guardado automáticamente.");
+
+        if (successTimeout.current) {
+          clearTimeout(successTimeout.current);
+        }
+
+        successTimeout.current = window.setTimeout(() => {
+          setSuccess("");
+        }, 1800);
+      } catch (err: any) {
+        const detail = err?.response?.data?.detail;
+        if (typeof detail === "string") setError(detail);
+        else if (detail?.message) setError(detail.message);
+        else setError("No se pudo guardar el color.");
+      } finally {
+        setSaving(false);
+      }
+    }, 800);
+
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+      }
+    };
+  }, [primaryColor, logo, loaded]);
 
   const loadBranding = async () => {
     try {
@@ -34,6 +95,8 @@ export default function TenantBrandingPage() {
         logo_url: currentLogo,
         primary_color: currentColor,
       });
+
+      setLoaded(true);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
@@ -67,6 +130,14 @@ export default function TenantBrandingPage() {
       });
 
       setSuccess("Logo actualizado correctamente.");
+
+      if (successTimeout.current) {
+        clearTimeout(successTimeout.current);
+      }
+
+      successTimeout.current = window.setTimeout(() => {
+        setSuccess("");
+      }, 1800);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
@@ -74,32 +145,6 @@ export default function TenantBrandingPage() {
       else setError("No se pudo subir el logo.");
     } finally {
       setUploading(false);
-    }
-  };
-
-  const saveColor = async () => {
-    try {
-      setSaving(true);
-      setError("");
-      setSuccess("");
-
-      await api.put("/tenant-branding", {
-        primary_color: primaryColor,
-      });
-
-      applyTenantBranding({
-        logo_url: logo,
-        primary_color: primaryColor,
-      });
-
-      setSuccess("Color principal actualizado correctamente.");
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
-      if (typeof detail === "string") setError(detail);
-      else if (detail?.message) setError(detail.message);
-      else setError("No se pudo guardar el color.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -246,6 +291,8 @@ export default function TenantBrandingPage() {
             value={primaryColor}
             onChange={(e) => {
               const color = e.target.value;
+              setError("");
+              setSuccess("");
               setPrimaryColor(color);
 
               applyTenantBranding({
@@ -273,6 +320,16 @@ export default function TenantBrandingPage() {
           >
             {primaryColor}
           </span>
+
+          <span
+            style={{
+              fontSize: 12,
+              color: saving ? "#8a7f78" : "#98a2b3",
+              fontWeight: 600,
+            }}
+          >
+            {saving ? "Guardando..." : "Autosave activado"}
+          </span>
         </div>
 
         <div
@@ -285,6 +342,7 @@ export default function TenantBrandingPage() {
             display: "grid",
             gap: 8,
             boxShadow: "0 10px 24px rgba(61, 54, 72, 0.10)",
+            transition: "background 180ms ease",
           }}
         >
           <span style={{ fontSize: 14, opacity: 0.85 }}>Vista previa</span>
@@ -292,22 +350,6 @@ export default function TenantBrandingPage() {
           <span style={{ fontSize: 14, opacity: 0.92 }}>
             Así se verán botones, acentos y elementos principales de la interfaz.
           </span>
-        </div>
-
-        <div
-          style={{
-            marginTop: 18,
-            display: "flex",
-            justifyContent: "flex-end",
-          }}
-        >
-          <button
-            className="df-button-primary"
-            onClick={saveColor}
-            disabled={saving}
-          >
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </button>
         </div>
       </section>
     </section>

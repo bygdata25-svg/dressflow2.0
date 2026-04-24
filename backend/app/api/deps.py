@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User, UserTenant
-from app.api.deps import get_current_user
 
 security = HTTPBearer()
 

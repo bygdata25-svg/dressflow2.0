@@ -207,7 +207,6 @@ def stock_valuation_report(
 
         items.append(
             {
-                "sale_number": getattr(sale, "sale_number", None), 
                 "id": str(row["id"]),
                 "name": row["name"],
                 "color": row["color"],

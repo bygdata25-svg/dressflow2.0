@@ -36,6 +36,7 @@ type CustomerFormState = {
   email: string;
   phone: string;
   notes: string;
+  tax_id: string;
 };
 
 const PAGE_SIZE = 20;

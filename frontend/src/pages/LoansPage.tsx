@@ -404,7 +404,7 @@ export default function LoansPage() {
           <p className="df-pro-page__subtitle">
             {t(
               "loans:hero.subtitle",
-              "Gestioná préstamos activos, devoluciones y operaciones con clientes con un flujo editorial y limpio."
+              "Gestioná préstamos activos, devoluciones y operaciones con clientes."
             )}
           </p>
         </div>

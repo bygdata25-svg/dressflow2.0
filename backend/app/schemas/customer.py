@@ -9,6 +9,7 @@ class CustomerCreate(BaseModel):
     last_name: str = Field(min_length=1, max_length=100)
     email: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=50)
+    tax_id: str | None = Field(default=None, max_length=32)
     notes: str | None = Field(default=None, max_length=2000)
 
 
@@ -18,6 +19,7 @@ class CustomerUpdate(BaseModel):
     last_name: str | None = Field(default=None, max_length=100)
     email: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=50)
+    tax_id: str | None = Field(default=None, max_length=32)
     notes: str | None = Field(default=None, max_length=2000)
 
 
@@ -31,6 +33,7 @@ class CustomerResponse(BaseModel):
     last_name: str
     email: str | None = None
     phone: str | None = None
+    tax_id: str | None = None
     notes: str | None = None
 
 

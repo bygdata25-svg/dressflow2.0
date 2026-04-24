@@ -19,6 +19,7 @@ type Customer = {
   email?: string | null;
   phone?: string | null;
   notes?: string | null;
+  tax_id?: string | null;
 };
 
 type PaginatedCustomerResponse = {
@@ -46,6 +47,7 @@ const initialForm: CustomerFormState = {
   email: "",
   phone: "",
   notes: "",
+  tax_id: "",
 };
 
 function TrashIcon() {
@@ -145,6 +147,7 @@ export default function CustomersPage() {
       email: customer.email || "",
       phone: customer.phone || "",
       notes: customer.notes || "",
+      tax_id: customer.tax_id || "",
     });
     setShowModal(true);
   };
@@ -199,6 +202,7 @@ export default function CustomersPage() {
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         notes: form.notes.trim() || null,
+        tax_id: form.tax_id.trim() || null,
       };
 
       if (editingCustomer) {
@@ -228,6 +232,7 @@ export default function CustomersPage() {
       email: (row: Customer) => row.email || "—",
       phone: (row: Customer) => row.phone || "—",
       notes: (row: Customer) => row.notes || "—",
+      tax_id: (row: Customer) => row.tax_id || "—",
     }),
     []
   );

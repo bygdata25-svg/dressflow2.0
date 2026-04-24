@@ -61,6 +61,7 @@ def list_customers(
                 Customer.email.ilike(pattern),
                 Customer.phone.ilike(pattern),
                 Customer.notes.ilike(pattern),
+                Customer.tax_id.ilike(pattern),  # 🔥 NUEVO
             )
         )
 
@@ -79,6 +80,7 @@ def list_customers(
                 Customer.email.ilike(pattern),
                 Customer.phone.ilike(pattern),
                 Customer.notes.ilike(pattern),
+                Customer.tax_id.ilike(pattern),  # 🔥 NUEVO
             )
         )
 
@@ -143,6 +145,7 @@ def create_customer(
         email=payload.email.strip() if payload.email else None,
         phone=payload.phone.strip() if payload.phone else None,
         notes=payload.notes.strip() if payload.notes else None,
+        tax_id=payload.tax_id.strip() if payload.tax_id else None,  # 🔥 NUEVO
     )
 
     db.add(customer)
@@ -199,6 +202,9 @@ def update_customer(
 
     if "notes" in data:
         customer.notes = data["notes"].strip() if data["notes"] else None
+
+    if "tax_id" in data:  # 🔥 NUEVO
+        customer.tax_id = data["tax_id"].strip() if data["tax_id"] else None
 
     customer.updated_at = datetime.utcnow()
 

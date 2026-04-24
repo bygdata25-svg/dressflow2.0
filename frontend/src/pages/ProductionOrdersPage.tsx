@@ -593,7 +593,6 @@ export default function ProductionOrdersPage() {
                   fontSize: 15,
                 }}
               >
-                Modal SaaS prolijo, consistente con el resto de DressFlow.
               </p>
 
               <div

@@ -557,7 +557,7 @@ export default function AccessoriesPage() {
           <p className="df-pro-page__eyebrow">Inventario</p>
           <h1 className="df-pro-page__title">Accesorios</h1>
           <p className="df-pro-page__subtitle">
-            Gestioná catálogo, stock y precios de accesorios con el mismo flujo prolijo del resto de DressFlow.
+            Gestioná catálogo, stock y precios de accesorios.
           </p>
         </div>
 

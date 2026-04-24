@@ -1076,8 +1076,7 @@ export default function SalesUnifiedPage() {
           <div className="sales-kicker">Operaciones</div>
           <h1>Ventas</h1>
           <p>
-            Gestioná ventas unificadas de vestidos y accesorios con una
-            operatoria simple, clara y profesional.
+            Gestioná ventas unificadas de vestidos y accesorios
           </p>
         </div>
 

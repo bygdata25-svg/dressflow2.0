@@ -22,4 +22,5 @@ class Customer(UUIDMixin, TimestampMixin, Base):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tax_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     deleted_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)

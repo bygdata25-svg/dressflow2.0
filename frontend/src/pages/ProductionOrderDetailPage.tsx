@@ -381,8 +381,9 @@ export default function ProductionOrderDetailPage() {
   const [costForm, setCostForm] = useState({
     labor_cost: "0",
     additional_cost: "0",
-    currency: "USD",
+    currency: "ARS",
     price_multiplier: "2.5",
+    exchange_rate: "1000",
   });
 
   const [outputForm, setOutputForm] = useState({
@@ -474,13 +475,15 @@ export default function ProductionOrderDetailPage() {
         status: orderRes.data.status === "COMPLETED" ? "COMPLETED" : "PARTIALLY_RECEIVED",
         received_notes: orderRes.data.received_notes || "",
       });
-
+      
       setCostForm({
         labor_cost: String(orderRes.data.labor_cost ?? "0"),
         additional_cost: String(orderRes.data.additional_cost ?? "0"),
-        currency: orderRes.data.currency || "USD",
+        currency: orderRes.data.currency || "ARS",
         price_multiplier: "2.5",
-      });
+        exchange_rate: "1000",
+      }); 
+
     } catch (err: any) {
       setError(
         err?.response?.data?.detail?.message ||

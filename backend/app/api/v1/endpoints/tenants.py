@@ -1,6 +1,7 @@
 import shutil
 import uuid
 from pathlib import Path
+from uuid import UUID
 
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status

@@ -69,6 +69,7 @@ type Me = {
   is_superuser?: boolean;
   impersonated?: boolean;
   must_change_password?: boolean;
+  features?: string[];
 };
 
 type NavItem = {
@@ -622,6 +623,13 @@ function AppShell({
     };
   }, []);
 
+  const featureSet = useMemo(() => new Set(me.features || []), [me.features]);
+
+  const hasFeature = (featureKey: string) => {
+    if (me.is_superuser) return true;
+    return featureSet.has(featureKey);
+  };
+
   const topLevelItems: NavItem[] = useMemo(() => {
     const items: NavItem[] = [
       {
@@ -633,7 +641,10 @@ function AppShell({
           </>
         ),
       },
-      {
+    ];
+
+    if (hasFeature("dresses")) {
+      items.push({
         to: "/dresses",
         label: (
           <>
@@ -641,8 +652,11 @@ function AppShell({
             <span>{t("navigation.dresses")}</span>
           </>
         ),
-      },
-      {
+      });
+    }
+
+    if (hasFeature("accessories")) {
+      items.push({
         to: "/accessories",
         label: (
           <>
@@ -650,8 +664,11 @@ function AppShell({
             <span>Accesorios</span>
           </>
         ),
-      },
-      {
+      });
+    }
+
+    if (hasFeature("accessory_movements")) {
+      items.push({
         to: "/accessory-movements",
         label: (
           <>
@@ -659,8 +676,11 @@ function AppShell({
             <span>Movimientos accesorios</span>
           </>
         ),
-      },
-      {
+      });
+    }
+
+    if (hasFeature("capsules")) {
+      items.push({
         to: "/capsules",
         label: (
           <>
@@ -668,8 +688,11 @@ function AppShell({
             <span>Capsulas</span>
           </>
         ),
-      },
-      {
+      });
+    }
+
+    if (hasFeature("loans")) {
+      items.push({
         to: "/loans",
         label: (
           <>
@@ -688,8 +711,11 @@ function AppShell({
             </div>
           </>
         ),
-      },
-      {
+      });
+    }
+
+    if (hasFeature("sales")) {
+      items.push({
         to: "/sales",
         label: (
           <>
@@ -697,8 +723,11 @@ function AppShell({
             <span>Ventas</span>
           </>
         ),
-      },
-      {
+      });
+    }
+
+    if (hasFeature("production_orders")) {
+      items.push({
         to: "/production-orders",
         label: (
           <>
@@ -706,8 +735,8 @@ function AppShell({
             <span>{t("navigation.productionOrders")}</span>
           </>
         ),
-      },
-    ];
+      });
+    }
 
     if (me.is_superuser) {
       items.push({
@@ -722,186 +751,232 @@ function AppShell({
     }
 
     return items;
-  }, [t, lateLoansCount, me.is_superuser]);
+  }, [t, lateLoansCount, me.is_superuser, featureSet]);
 
-  const groupedItems: NavGroup[] = [
-    {
-      key: "textileInventory",
-      label: (
-        <>
-          <SidebarIcon><FabricIcon /></SidebarIcon>
-          <span>{t("navigation.textileInventory")}</span>
-        </>
-      ),
-      items: [
-        {
-          to: "/fabrics",
-          label: (
-            <>
-              <SidebarIcon><FabricIcon /></SidebarIcon>
-              <span>{t("navigation.fabrics")}</span>
-            </>
-          ),
-        },
-        {
-          to: "/fabric-rolls",
-          label: (
-            <>
-              <SidebarIcon><RollIcon /></SidebarIcon>
-              <span>{t("navigation.fabricRolls")}</span>
-            </>
-          ),
-        },
-        {
-          to: "/trims",
-          label: (
-            <>
-              <SidebarIcon><TrimIcon /></SidebarIcon>
-              <span>{t("navigation.trims")}</span>
-            </>
-          ),
-        },
-        {
-          to: "/fabric-movements",
-          label: (
-            <>
-              <SidebarIcon><MovementIcon /></SidebarIcon>
-              <span>{t("navigation.fabricMovements")}</span>
-            </>
-          ),
-        },
-      ],
-    },
-    {
-      key: "reports",
-      label: (
-        <>
-          <SidebarIcon><ReportsIcon /></SidebarIcon>
-          <span>Reportes</span>
-        </>
-      ),
-      items: [
-        {
-          to: "/reports/stock-valuation",
-          label: (
-            <>
-              <SidebarIcon><StockIcon /></SidebarIcon>
-              <span>Stock valorizado</span>
-            </>
-          ),
-        },
-        {
-          to: "/reports/dress-stock",
-          label: (
-            <>
-              <SidebarIcon><StockIcon /></SidebarIcon>
-              <span>Stock vestidos</span>
-            </>
-          ),
-        },
-        {
-          to: "/reports/fabric-movements",
-          label: (
-            <>
-              <SidebarIcon><MovementsReportIcon /></SidebarIcon>
-              <span>Movimientos de tela</span>
-            </>
-          ),
-        },
-        {
-          to: "/reports/loans",
-          label: (
-            <>
-              <SidebarIcon><LoansReportIcon /></SidebarIcon>
-              <span>Préstamos</span>
-            </>
-          ),
-        },
-        {
-          to: "/reports/production-costs",
-          label: (
-            <>
-              <SidebarIcon><StockIcon /></SidebarIcon>
-              <span>Costos de producción</span>
-            </>
-          ),
-        },
-        {
-          to: "/reports/sales-unified",
-          label: (
-            <>
-              <SidebarIcon><SalesReportIcon /></SidebarIcon>
-              <span>Ventas</span>
-            </>
-          ),
-        },
-        {
-          to: "/dashboard/financial",
-          label: (
-            <>
-              <SidebarIcon><ReportsIcon /></SidebarIcon>
-              <span>Dashboard financiero</span>
-            </>
-          ),
-        },
-      ],
-    },
-    {
-      key: "settings",
-      label: (
-        <>
-          <SidebarIcon><BrandingIcon /></SidebarIcon>
-          <span>{t("navigation.settings")}</span>
-        </>
-      ),
-      items: [
-        {
-          to: "/tenant-branding",
-          label: (
-            <>
-              <SidebarIcon><BrandingIcon /></SidebarIcon>
-              <span>Branding</span>
-            </>
-          ),
-        },
-        {
-          to: "/users",
-          label: (
-            <>
-              <SidebarIcon><UsersIcon /></SidebarIcon>
-              <span>{t("navigation.users")}</span>
-            </>
-          ),
-        },
-        {
-          to: "/suppliers",
-          label: (
-            <>
-              <SidebarIcon><SupplierIcon /></SidebarIcon>
-              <span>{t("navigation.suppliers")}</span>
-            </>
-          ),
-        },
-        {
-          to: "/customers",
-          label: (
-            <>
-              <SidebarIcon><CustomerIcon /></SidebarIcon>
-              <span>{t("navigation.customers")}</span>
-            </>
-          ),
-        },
-        ...(me.is_superuser
-          ? [
-              {
-                to: "/settings/field-config",
-                label: "Configuración de campos",
-              },
-            ]
-          : []),
-      ],
-    },
-  ];
+  const groupedItems: NavGroup[] = useMemo(() => {
+    const groups: NavGroup[] = [];
+
+    const textileItems: NavItem[] = [
+      hasFeature("fabrics")
+        ? {
+            to: "/fabrics",
+            label: (
+              <>
+                <SidebarIcon><FabricIcon /></SidebarIcon>
+                <span>{t("navigation.fabrics")}</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("fabric_rolls")
+        ? {
+            to: "/fabric-rolls",
+            label: (
+              <>
+                <SidebarIcon><RollIcon /></SidebarIcon>
+                <span>{t("navigation.fabricRolls")}</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("trims")
+        ? {
+            to: "/trims",
+            label: (
+              <>
+                <SidebarIcon><TrimIcon /></SidebarIcon>
+                <span>{t("navigation.trims")}</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("fabric_movements")
+        ? {
+            to: "/fabric-movements",
+            label: (
+              <>
+                <SidebarIcon><MovementIcon /></SidebarIcon>
+                <span>{t("navigation.fabricMovements")}</span>
+              </>
+            ),
+          }
+        : null,
+    ].filter(Boolean) as NavItem[];
+
+    if (textileItems.length > 0) {
+      groups.push({
+        key: "textileInventory",
+        label: (
+          <>
+            <SidebarIcon><FabricIcon /></SidebarIcon>
+            <span>{t("navigation.textileInventory")}</span>
+          </>
+        ),
+        items: textileItems,
+      });
+    }
+
+    const reportItems: NavItem[] = [
+      hasFeature("reports_stock_valuation")
+        ? {
+            to: "/reports/stock-valuation",
+            label: (
+              <>
+                <SidebarIcon><StockIcon /></SidebarIcon>
+                <span>Stock valorizado</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("reports_dress_stock")
+        ? {
+            to: "/reports/dress-stock",
+            label: (
+              <>
+                <SidebarIcon><StockIcon /></SidebarIcon>
+                <span>Stock vestidos</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("reports_fabric_movements")
+        ? {
+            to: "/reports/fabric-movements",
+            label: (
+              <>
+                <SidebarIcon><MovementsReportIcon /></SidebarIcon>
+                <span>Movimientos de tela</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("reports_loans")
+        ? {
+            to: "/reports/loans",
+            label: (
+              <>
+                <SidebarIcon><LoansReportIcon /></SidebarIcon>
+                <span>Préstamos</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("reports_production_costs")
+        ? {
+            to: "/reports/production-costs",
+            label: (
+              <>
+                <SidebarIcon><StockIcon /></SidebarIcon>
+                <span>Costos de producción</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("reports_sales")
+        ? {
+            to: "/reports/sales-unified",
+            label: (
+              <>
+                <SidebarIcon><SalesReportIcon /></SidebarIcon>
+                <span>Ventas</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("financial_dashboard")
+        ? {
+            to: "/dashboard/financial",
+            label: (
+              <>
+                <SidebarIcon><ReportsIcon /></SidebarIcon>
+                <span>Dashboard financiero</span>
+              </>
+            ),
+          }
+        : null,
+    ].filter(Boolean) as NavItem[];
+
+    if (hasFeature("reports") && reportItems.length > 0) {
+      groups.push({
+        key: "reports",
+        label: (
+          <>
+            <SidebarIcon><ReportsIcon /></SidebarIcon>
+            <span>Reportes</span>
+          </>
+        ),
+        items: reportItems,
+      });
+    }
+
+    const settingsItems: NavItem[] = [
+      hasFeature("branding")
+        ? {
+            to: "/tenant-branding",
+            label: (
+              <>
+                <SidebarIcon><BrandingIcon /></SidebarIcon>
+                <span>Branding</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("users")
+        ? {
+            to: "/users",
+            label: (
+              <>
+                <SidebarIcon><UsersIcon /></SidebarIcon>
+                <span>{t("navigation.users")}</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("suppliers")
+        ? {
+            to: "/suppliers",
+            label: (
+              <>
+                <SidebarIcon><SupplierIcon /></SidebarIcon>
+                <span>{t("navigation.suppliers")}</span>
+              </>
+            ),
+          }
+        : null,
+      hasFeature("customers")
+        ? {
+            to: "/customers",
+            label: (
+              <>
+                <SidebarIcon><CustomerIcon /></SidebarIcon>
+                <span>{t("navigation.customers")}</span>
+              </>
+            ),
+          }
+        : null,
+      me.is_superuser
+        ? {
+            to: "/settings/field-config",
+            label: "Configuración de campos",
+          }
+        : null,
+    ].filter(Boolean) as NavItem[];
+
+    if (settingsItems.length > 0) {
+      groups.push({
+        key: "settings",
+        label: (
+          <>
+            <SidebarIcon><BrandingIcon /></SidebarIcon>
+            <span>{t("navigation.settings")}</span>
+          </>
+        ),
+        items: settingsItems,
+      });
+    }
+
+    return groups;
+  }, [t, me.is_superuser, featureSet]);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -1337,6 +1412,7 @@ export default function App() {
           is_superuser: me.is_superuser,
           impersonated: me.impersonated,
           must_change_password: me.must_change_password,
+          features: (me as MeResponse & { features?: string[] }).features || [],
         }}
         onLogout={handleLogout}
       />

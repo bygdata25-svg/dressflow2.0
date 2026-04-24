@@ -18,6 +18,7 @@ from app.core.database import get_db
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.models.impersonation_audit import ImpersonationAudit
 from app.models.tenant import Tenant
+from app.models.tenant_feature import TenantFeature
 from app.models.user import User, UserTenant
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -68,7 +69,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         )
 
     membership = None
-
     tenant_slug = (payload.tenant_slug or "").strip().lower()
 
     if tenant_slug:
@@ -94,7 +94,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User has no membership for this tenant",
             )
-
     else:
         membership = db.execute(
             select(UserTenant)
@@ -139,6 +138,13 @@ def me(
         select(Tenant).where(Tenant.id == current_membership.tenant_id)
     ).scalar_one_or_none()
 
+    features = db.execute(
+        select(TenantFeature.feature_key).where(
+            TenantFeature.tenant_id == current_membership.tenant_id,
+            TenantFeature.enabled.is_(True),
+        )
+    ).scalars().all()
+
     return {
         "id": str(current_user.id),
         "email": current_user.email,
@@ -154,6 +160,7 @@ def me(
         "tenant_primary_color": tenant.primary_color if tenant else None,
         "membership_id": str(current_membership.id),
         "role": current_membership.role,
+        "features": list(features),
         "impersonated": bool(token_payload.get("impersonated", False)),
         "impersonated_by": token_payload.get("impersonated_by"),
         "original_sub": token_payload.get("original_sub"),

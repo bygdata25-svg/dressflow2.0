@@ -15,6 +15,7 @@ from app.schemas.tenant import TenantBrandingResponse, TenantBrandingUpdateReque
 from app.schemas.tenant import TenantBrandingRead, TenantBrandingUpdate
 from app.services.tenant_branding import build_tenant_branding
 from app.models.tenant_feature import TenantFeature
+from app.api.deps import require_superuser
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 

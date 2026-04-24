@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CustomerCreate(BaseModel):
@@ -42,3 +42,15 @@ class PaginatedCustomerResponse(BaseModel):
     page: int
     page_size: int
     total: int
+
+@field_validator("tax_id")
+def validate_tax_id(cls, v):
+    if not v:
+        return v
+
+    digits = ''.join(filter(str.isdigit, v))
+
+    if len(digits) not in (7, 8, 11):
+        raise ValueError("Documento inválido")
+
+    return digits

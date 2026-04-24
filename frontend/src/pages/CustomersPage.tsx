@@ -51,6 +51,32 @@ const initialForm: CustomerFormState = {
   tax_id: "",
 };
 
+function normalizeTaxId(value?: string | null): string {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function isValidTaxId(value?: string | null): boolean {
+  const digits = normalizeTaxId(value);
+
+  if (!digits) return true;
+  if (digits.length === 7 || digits.length === 8) return true; // DNI
+  if (digits.length === 11) return true; // CUIT / CUIL
+
+  return false;
+}
+
+function formatTaxId(value?: string | null): string {
+  const digits = normalizeTaxId(value);
+
+  if (!digits) return "—";
+
+  if (digits.length === 11) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
+  }
+
+  return digits;
+}
+
 function TrashIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -148,7 +174,7 @@ export default function CustomersPage() {
       email: customer.email || "",
       phone: customer.phone || "",
       notes: customer.notes || "",
-      tax_id: customer.tax_id || "",
+      tax_id: normalizeTaxId(customer.tax_id),
     });
     setShowModal(true);
   };
@@ -192,6 +218,11 @@ export default function CustomersPage() {
       return;
     }
 
+    if (!isValidTaxId(form.tax_id)) {
+      setError("El documento debe ser un DNI de 7 u 8 números, o un CUIT/CUIL de 11 números.");
+      return;
+    }
+
     try {
       setSaving(true);
       setError("");
@@ -203,7 +234,7 @@ export default function CustomersPage() {
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         notes: form.notes.trim() || null,
-        tax_id: form.tax_id.trim() || null,
+        tax_id: normalizeTaxId(form.tax_id) || null,
       };
 
       if (editingCustomer) {
@@ -233,7 +264,7 @@ export default function CustomersPage() {
       email: (row: Customer) => row.email || "—",
       phone: (row: Customer) => row.phone || "—",
       notes: (row: Customer) => row.notes || "—",
-      tax_id: (row: Customer) => row.tax_id || "—",
+      tax_id: (row: Customer) => formatTaxId(row.tax_id),
     }),
     []
   );
@@ -287,6 +318,14 @@ export default function CustomersPage() {
       includeActions: actionColumn,
     });
   }, [fc.fields, renderers, actionColumn]);
+
+  const dynamicFormValues = useMemo(
+    () => ({
+      ...form,
+      tax_id: formatTaxId(form.tax_id) === "—" ? "" : formatTaxId(form.tax_id),
+    }),
+    [form]
+  );
 
   return (
     <section className="df-pro-page">
@@ -395,13 +434,44 @@ export default function CustomersPage() {
       >
         <form className="gf-form" onSubmit={saveCustomer}>
           <DynamicForm
-             fields={fc.fields}
-             values={form}
-             isEditing={Boolean(editingCustomer)}
-             onChange={(field, value) =>
-               setForm((prev) => ({ ...prev, [field]: value }))
-             }
-           />
+            fields={fc.fields}
+            values={dynamicFormValues}
+            isEditing={Boolean(editingCustomer)}
+            onChange={(field, value) => {
+              if (field === "tax_id") {
+                setForm((prev) => ({
+                  ...prev,
+                  tax_id: normalizeTaxId(String(value || "")),
+                }));
+                return;
+              }
+
+              setForm((prev) => ({
+                ...prev,
+                [field]: value,
+              }));
+            }}
+          />
+
+          {form.tax_id ? (
+            <div
+              style={{
+                marginTop: 10,
+                padding: "10px 12px",
+                borderRadius: 12,
+                background: "#f8f4ef",
+                color: "#6b5e55",
+                fontSize: 13,
+              }}
+            >
+              Documento detectado:{" "}
+              <strong>
+                {normalizeTaxId(form.tax_id).length === 11 ? "CUIT / CUIL" : "DNI"}
+              </strong>{" "}
+              · {formatTaxId(form.tax_id)}
+            </div>
+          ) : null}
+
           {error ? (
             <div
               style={{

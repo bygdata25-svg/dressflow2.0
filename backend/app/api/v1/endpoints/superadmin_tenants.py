@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
+from uuid import UUID
+
 from app.api.deps_superadmin import require_superuser
 from app.core.database import get_db
 from app.core.exceptions import AppException

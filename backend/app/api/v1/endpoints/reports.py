@@ -1638,16 +1638,31 @@ def dress_stock_valuation_report(
         }
     }
 
+def _dress_status_label(value: str | None) -> str:
+    raw = (value or "").upper()
+    if raw == "AVAILABLE":
+        return "Disponible"
+    if raw == "LOANED":
+        return "Prestado"
+    if raw == "RENTED":
+        return "Alquilado"
+    if raw == "CLEANING":
+        return "Limpieza"
+    if raw == "MAINTENANCE":
+        return "Reparación"
+    if raw == "SOLD":
+        return "Vendido"
+    if raw == "RETIRED":
+        return "Retirado"
+    return value or ""
+
+
 @router.get("/dress-stock-valuation/export")
-def export_dress_stock_valuation(
+def export_dress_stock_valuation_report(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager", "staff")),
+    search: str | None = Query(default=None),
 ):
-    from openpyxl import Workbook
-    from fastapi.responses import StreamingResponse
-    from io import BytesIO
-    from decimal import Decimal
-
     sql = """
         SELECT
             d.code,
@@ -1656,22 +1671,43 @@ def export_dress_stock_valuation(
             d.size,
             d.color,
             d.status,
-            d.sale_price,
-            d.rental_price
+            COALESCE(d.sale_price, 0) AS sale_price,
+            COALESCE(d.rental_price, 0) AS rental_price
         FROM dresses d
-        LEFT JOIN capsules c ON c.id = d.capsule_id
+        LEFT JOIN capsules c
+            ON c.id = d.capsule_id
         WHERE d.tenant_id = :tenant_id
           AND d.deleted_at IS NULL
           AND d.status != 'SOLD'
     """
 
-    rows = db.execute(text(sql), {"tenant_id": membership.tenant_id}).mappings().all()
+    params: dict[str, object] = {
+        "tenant_id": membership.tenant_id,
+    }
+
+    if search:
+        sql += """
+          AND (
+            LOWER(COALESCE(d.code, '')) LIKE :search
+            OR LOWER(COALESCE(d.name, '')) LIKE :search
+            OR LOWER(COALESCE(c.name, '')) LIKE :search
+            OR LOWER(COALESCE(d.size, '')) LIKE :search
+            OR LOWER(COALESCE(d.color, '')) LIKE :search
+          )
+        """
+        params["search"] = f"%{search.strip().lower()}%"
+
+    sql += """
+        ORDER BY d.name ASC, d.code ASC
+    """
+
+    rows = db.execute(text(sql), params).mappings().all()
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Stock Vestidos"
+    ws.title = "Stock vestidos"
 
-    ws.append([
+    headers = [
         "Código",
         "Vestido",
         "Cápsula",
@@ -1680,31 +1716,70 @@ def export_dress_stock_valuation(
         "Estado",
         "Precio venta (USD)",
         "Precio alquiler (USD)",
-    ])
+    ]
+    _apply_header_style(ws, headers)
 
-    for r in rows:
-        ws.append([
-            r["code"],
-            r["name"],
-            r["capsule"],
-            r["size"],
-            r["color"],
-            r["status"],
-            float(Decimal(str(r["sale_price"] or 0))),
-            float(Decimal(str(r["rental_price"] or 0))),
-        ])
+    total_sale = Decimal("0")
+    total_rental = Decimal("0")
 
-    stream = BytesIO()
-    wb.save(stream)
-    stream.seek(0)
+    for row in rows:
+        sale_price = Decimal(str(row["sale_price"] or 0))
+        rental_price = Decimal(str(row["rental_price"] or 0))
 
-    return StreamingResponse(
-        stream,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": "attachment; filename=stock_vestidos.xlsx"
-        },
+        total_sale += sale_price
+        total_rental += rental_price
+
+        ws.append(
+            [
+                row["code"],
+                row["name"],
+                row["capsule"],
+                row["size"],
+                row["color"],
+                _dress_status_label(row["status"]),
+                float(sale_price),
+                float(rental_price),
+            ]
+        )
+
+    total_row_idx = ws.max_row + 2
+
+    ws.cell(row=total_row_idx, column=6, value="TOTAL")
+    ws.cell(row=total_row_idx, column=6).font = Font(bold=True)
+    ws.cell(row=total_row_idx, column=6).alignment = Alignment(
+        horizontal="right",
+        vertical="center",
     )
+
+    ws.cell(row=total_row_idx, column=7, value=float(total_sale))
+    ws.cell(row=total_row_idx, column=7).font = Font(bold=True)
+
+    ws.cell(row=total_row_idx, column=8, value=float(total_rental))
+    ws.cell(row=total_row_idx, column=8).font = Font(bold=True)
+
+    for row_cells in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=7, max_col=8):
+        for cell in row_cells:
+            if isinstance(cell.value, (int, float)):
+                cell.number_format = '#,##0.00 "USD"'
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+
+    for row_cells in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=6, max_col=6):
+        for cell in row_cells:
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 30
+    ws.column_dimensions["C"].width = 24
+    ws.column_dimensions["D"].width = 12
+    ws.column_dimensions["E"].width = 18
+    ws.column_dimensions["F"].width = 16
+    ws.column_dimensions["G"].width = 20
+    ws.column_dimensions["H"].width = 22
+
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:H{ws.max_row}"
+
+    return _excel_response(wb, "stock_valorizado_vestidos.xlsx")
 
 @router.get("/sales-unified")
 def sales_unified_report(

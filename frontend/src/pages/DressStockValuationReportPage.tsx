@@ -35,104 +35,101 @@ export default function DressStockValuationReportPage() {
   useEffect(() => {
     load();
   }, []);
-
+  
   return (
-    <section className="df-pro-page">
+  <section className="df-pro-page">
 
-      {/* HEADER */}
-      <div className="df-pro-page__header">
-        <div>
-          <p className="df-pro-page__eyebrow">REPORTES</p>
-          <h1 className="df-pro-page__title">Stock valorizado de vestidos</h1>
-          <p className="df-pro-page__subtitle">
-            Valor del inventario de vestidos disponible para venta y alquiler.
-          </p>
-        </div>
+    {/* HEADER */}
+    <div className="df-pro-page__header">
+      <div>
+        <p className="df-pro-page__eyebrow">REPORTES</p>
+        <h1 className="df-pro-page__title">Stock valorizado de vestidos</h1>
+        <p className="df-pro-page__subtitle">
+          Valor del inventario de vestidos disponible para venta y alquiler.
+        </p>
+      </div>
 
+      <div>
         <button className="df-pro-btn" onClick={exportExcel}>
           Exportar Excel
         </button>
       </div>
+    </div>
 
-      {/* HERO CARD */}
-      <div className="df-pro-hero">
-        <div className="df-pro-hero__content">
-          <span className="df-pro-hero__label">TOTAL INVENTARIO</span>
-          <h2 className="df-pro-hero__value">
-            {money((kpis.total_sale_value || 0) + (kpis.total_rental_value || 0))}
-          </h2>
-          <p className="df-pro-hero__subtitle">
-            Suma de valor de venta + alquiler
-          </p>
-        </div>
+    {/* HERO */}
+    <div className="df-pro-hero df-pro-hero--purple">
+      <div className="df-pro-hero__content">
+        <span className="df-pro-hero__label">TOTAL INVENTARIO</span>
+        <h2 className="df-pro-hero__value">
+          {money((kpis.total_sale_value || 0) + (kpis.total_rental_value || 0))}
+        </h2>
+        <p className="df-pro-hero__subtitle">
+          Suma de valor de venta + alquiler
+        </p>
+      </div>
+    </div>
+
+    {/* KPIs */}
+    <div className="df-pro-kpis-grid">
+      <div className="df-pro-kpi-card">
+        <span>Total vestidos</span>
+        <strong>{kpis.total_items || 0}</strong>
       </div>
 
-      {/* KPIs */}
-      <div className="df-pro-kpis">
-        <div className="df-pro-kpi">
-          <span>Total vestidos</span>
-          <strong>{kpis.total_items || 0}</strong>
-        </div>
-
-        <div className="df-pro-kpi">
-          <span>Disponibles</span>
-          <strong>{kpis.available_items || 0}</strong>
-        </div>
-
-        <div className="df-pro-kpi">
-          <span>Valor venta</span>
-          <strong>{money(kpis.total_sale_value)}</strong>
-        </div>
-
-        <div className="df-pro-kpi">
-          <span>Valor alquiler</span>
-          <strong>{money(kpis.total_rental_value)}</strong>
-        </div>
+      <div className="df-pro-kpi-card">
+        <span>Disponibles</span>
+        <strong>{kpis.available_items || 0}</strong>
       </div>
 
-      {/* GRID */}
-      <div className="df-pro-card">
-        {loading ? (
-          <div className="df-pro-loading">Cargando...</div>
-        ) : rows.length === 0 ? (
-          <div className="df-pro-empty">Sin datos</div>
-        ) : (
-          <DataGrid
-            rows={rows}
-            getRowKey={(r) => r.id}
-            columns={[
-              { key: "code", label: "Código" },
-              { key: "name", label: "Vestido" },
-              { key: "capsule", label: "Cápsula" },
-              { key: "size", label: "Talle" },
-              { key: "color", label: "Color" },
-              { key: "status", label: "Estado" },
-
-              {
-                key: "sale_price",
-                label: "Precio venta",
-                render: (r) => money(r.sale_price),
-              },
-              {
-                key: "rental_price",
-                label: "Precio alquiler",
-                render: (r) => money(r.rental_price),
-              },
-
-              {
-                key: "sale_value",
-                label: "Valor venta",
-                render: (r) => money(r.sale_price),
-              },
-              {
-                key: "rental_value",
-                label: "Valor alquiler",
-                render: (r) => money(r.rental_price),
-              },
-            ]}
-          />
-        )}
+      <div className="df-pro-kpi-card">
+        <span>Valor venta</span>
+        <strong>{money(kpis.total_sale_value)}</strong>
       </div>
-    </section>
-  );
+
+      <div className="df-pro-kpi-card">
+        <span>Valor alquiler</span>
+        <strong>{money(kpis.total_rental_value)}</strong>
+      </div>
+    </div>
+
+    {/* TABLA */}
+    <div className="df-pro-table-card">
+      <DataGrid
+        rows={rows}
+        getRowKey={(r) => r.id}
+        columns={[
+          { key: "code", label: "Código" },
+          { key: "name", label: "Vestido" },
+          { key: "capsule", label: "Cápsula" },
+          { key: "size", label: "Talle" },
+          { key: "color", label: "Color" },
+          { key: "status", label: "Estado" },
+
+          {
+            key: "sale_price",
+            label: "Precio venta",
+            render: (r) => money(r.sale_price),
+          },
+          {
+            key: "rental_price",
+            label: "Precio alquiler",
+            render: (r) => money(r.rental_price),
+          },
+          {
+            key: "sale_value",
+            label: "Valor venta",
+            render: (r) => money(r.sale_price),
+          },
+          {
+            key: "rental_value",
+            label: "Valor alquiler",
+            render: (r) => money(r.rental_price),
+          },
+        ]}
+      />
+    </div>
+
+  </section>
+);
+
 }

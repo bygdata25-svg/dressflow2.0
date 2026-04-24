@@ -75,8 +75,6 @@ export default function DressStockValuationReportPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
-  const totalInventoryValue =
-    Number(kpis.total_sale_value || 0) + Number(kpis.total_rental_value || 0);
 
   const loadReport = async () => {
     try {
@@ -581,10 +579,10 @@ export default function DressStockValuationReportPage() {
       <section className="df-dress-stock-hero">
         <div className="df-dress-stock-hero__inner">
           <div>
-            <span className="df-dress-stock-hero__label">Total inventario</span>
-            <h2 className="df-dress-stock-hero__value">{money(totalInventoryValue)}</h2>
+            <span className="df-dress-stock-hero__label">Valorización de venta</span>
+            <h2 className="df-dress-stock-hero__value">{money(kpis.total_sale_value)}</h2>
             <p className="df-dress-stock-hero__subtitle">
-              Suma de valor de venta + valor de alquiler expresado en USD.
+              Valor potencial del inventario disponible para venta.
             </p>
           </div>
 

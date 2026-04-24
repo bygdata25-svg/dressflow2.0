@@ -43,6 +43,9 @@ from app.schemas.production_output import (
 )
 from app.services.sequences import get_next_code
 
+from app.models.tenant import Tenant
+from app.services.cloudinary_service import upload_image
+
 router = APIRouter(prefix="/production-orders", tags=["production-orders"])
 
 
@@ -1239,30 +1242,25 @@ def upload_design_image(
 ):
     order = _get_order_or_404(db, membership.tenant_id, order_id)
 
-    allowed_content_types = {
-        "image/jpeg": ".jpg",
-        "image/png": ".png",
-        "image/webp": ".webp",
-    }
+    if not file:
+        raise AppException(400, "File is required", "FILE_REQUIRED")
 
-    ext = allowed_content_types.get(file.content_type or "")
-    if not ext:
-        raise AppException(
-            400,
-            "Only JPG, PNG or WEBP images are allowed",
-            "INVALID_IMAGE_TYPE",
-        )
+    # 🔥 obtener tenant (igual que trims)
+    tenant = db.execute(
+        select(Tenant).where(Tenant.id == membership.tenant_id)
+    ).scalar_one()
 
-    upload_dir = Path("static/uploads/production-orders")
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    # 🔥 subir a Cloudinary
+    result = upload_image(
+        file_obj=file.file,
+        tenant_slug=tenant.slug,
+        entity="production-orders",
+        asset_key=order.order_number or str(order.id),
+        overwrite=True,
+    )
 
-    filename = f"{order.id}-{uuid4().hex}{ext}"
-    file_path = upload_dir / filename
-
-    with file_path.open("wb") as buffer:
-        buffer.write(file.file.read())
-
-    order.design_photo_url = f"/static/uploads/production-orders/{filename}"
+    # 🔥 guardar URL REAL
+    order.design_photo_url = result["url"]
 
     create_order_event(
         db=db,

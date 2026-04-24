@@ -21,7 +21,7 @@ type StockValuationResponse = {
 function money(value: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: "USD",
+    currency: "ARS",
     minimumFractionDigits: 2,
   }).format(value || 0);
 }

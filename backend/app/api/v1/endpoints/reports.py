@@ -133,6 +133,25 @@ def _payment_method_label(value: str | None) -> str:
     return value or ""
 
 
+def _fabric_movement_note(row) -> str | None:
+    """
+    Devuelve una nota legible para reportes de movimientos de tela.
+    En salidas por producción, prioriza la orden de producción por sobre el texto técnico.
+    """
+    movement_reason = (row["movement_reason"] or "").upper()
+    reference = row["reference"]
+
+    if movement_reason == "PRODUCTION_ISSUE" and reference:
+        ref = str(reference).replace("Production Order", "").strip()
+        return f"Orden de producción {ref}" if ref else "Orden de producción"
+
+    if movement_reason == "PRODUCTION_RETURN" and reference:
+        ref = str(reference).replace("Production Order", "").strip()
+        return f"Devolución de producción {ref}" if ref else "Devolución de producción"
+
+    return row["notes"]
+
+
 # =========================================================
 # STOCK VALORIZADO
 # =========================================================
@@ -383,7 +402,7 @@ def fabric_movements_report(
             "type": row["type"],
             "quantity": float(row["quantity"] or 0),
             "reference": row["reference"],
-            "notes": row["notes"],
+            "notes": _fabric_movement_note(row),
             "movement_reason": row["movement_reason"],
             "fabric_name": row["fabric_name"],
             "fabric_color": row["fabric_color"],
@@ -447,7 +466,7 @@ def export_fabric_movements_report(
                 float(row["quantity"] or 0),
                 row["reference"],
                 row["movement_reason"],
-                row["notes"],
+                _fabric_movement_note(row),
             ]
         )
 
@@ -874,7 +893,7 @@ def production_costs_report(
                 "total_actual": float(total_actual),
                 "unit_estimated": unit_estimated,
                 "unit_actual": unit_actual,
-                "currency": row["currency"] or "USD",
+                "currency": "ARS",
             }
         )
 
@@ -963,7 +982,7 @@ def export_production_costs_report(
                 float(total_actual),
                 unit_estimated,
                 unit_actual,
-                row["currency"] or "USD",
+                "ARS",
             ]
         )
 

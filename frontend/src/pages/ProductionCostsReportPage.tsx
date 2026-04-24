@@ -34,22 +34,13 @@ function toNumber(value?: number | string | null) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function money(value?: number | string | null, currency = "USD") {
-  const safeCurrency = currency || "USD";
-
-  try {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: safeCurrency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(toNumber(value));
-  } catch {
-    return `${new Intl.NumberFormat("es-AR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(toNumber(value))} ${safeCurrency}`;
-  }
+function money(value?: number | string | null) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(toNumber(value));
 }
 
 function number(value: number) {
@@ -247,18 +238,18 @@ export default function ProductionCostsReportPage() {
       {
         key: "material_cost",
         label: "Material",
-        render: (row: ProductionCostsRow) => money(visibleMaterialCost(row), row.currency),
+        render: (row: ProductionCostsRow) => money(visibleMaterialCost(row)),
       },
       {
         key: "labor_other",
         label: "Mano de obra / otros",
-        render: (row: ProductionCostsRow) => money(laborAndOtherCost(row), row.currency),
+        render: (row: ProductionCostsRow) => money(laborAndOtherCost(row)),
       },
       {
         key: "total_estimated",
         label: "Total estimado",
         render: (row: ProductionCostsRow) => (
-          <strong>{money(estimatedTotal(row), row.currency)}</strong>
+          <strong>{money(estimatedTotal(row))}</strong>
         ),
       },
     ];

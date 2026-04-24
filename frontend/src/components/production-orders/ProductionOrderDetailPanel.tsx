@@ -375,6 +375,20 @@ function buildPrintDocumentHtml({
       </div>
     `;
 
+  const financeMaterialCost = costSummary
+    ? Number(costSummary.actual_material_cost || 0) > 0
+      ? costSummary.actual_material_cost
+      : costSummary.estimated_material_cost
+    : 0;
+
+  const financeLaborAndOther = costSummary
+    ? Number(costSummary.labor_cost || 0) + Number(costSummary.additional_cost || 0)
+    : 0;
+
+  const financeTotal = costSummary
+    ? Number(financeMaterialCost || 0) + financeLaborAndOther
+    : 0;
+
   const financeBlock =
     mode === "finance" && costSummary
       ? `
@@ -388,11 +402,11 @@ function buildPrintDocumentHtml({
 
         <div class="finance-hero">
           <div class="finance-main">
-            <span class="finance-label">Costo unitario real</span>
+            <span class="finance-label">Total de costos</span>
             <strong>${safeText(
-              formatPrintMoney(costSummary.actual_unit_cost, currency)
+              formatPrintMoney(financeTotal, currency)
             )}</strong>
-            <p>Costo final por prenda producida según la información cargada en la orden.</p>
+            <p>Costo consolidado de materiales, mano de obra y costos adicionales.</p>
           </div>
 
           <div class="finance-side">
@@ -407,53 +421,23 @@ function buildPrintDocumentHtml({
           </div>
         </div>
 
-        <div class="finance-grid">
+        <div class="finance-grid finance-grid--compact">
           <div class="finance-card">
-            <span>Materiales estimados</span>
+            <span>Costo material</span>
             <strong>${safeText(
-              formatPrintMoney(costSummary.estimated_material_cost, currency)
+              formatPrintMoney(financeMaterialCost, currency)
             )}</strong>
           </div>
           <div class="finance-card">
-            <span>Materiales reales</span>
+            <span>Mano de obra / otros</span>
             <strong>${safeText(
-              formatPrintMoney(costSummary.actual_material_cost, currency)
+              formatPrintMoney(financeLaborAndOther, currency)
             )}</strong>
           </div>
           <div class="finance-card">
-            <span>Mano de obra</span>
+            <span>Total</span>
             <strong>${safeText(
-              formatPrintMoney(costSummary.labor_cost, currency)
-            )}</strong>
-          </div>
-          <div class="finance-card">
-            <span>Costos adicionales</span>
-            <strong>${safeText(
-              formatPrintMoney(costSummary.additional_cost, currency)
-            )}</strong>
-          </div>
-          <div class="finance-card">
-            <span>Total estimado</span>
-            <strong>${safeText(
-              formatPrintMoney(costSummary.estimated_total_cost, currency)
-            )}</strong>
-          </div>
-          <div class="finance-card">
-            <span>Total real</span>
-            <strong>${safeText(
-              formatPrintMoney(costSummary.actual_total_cost, currency)
-            )}</strong>
-          </div>
-          <div class="finance-card">
-            <span>Unitario estimado</span>
-            <strong>${safeText(
-              formatPrintMoney(costSummary.estimated_unit_cost, currency)
-            )}</strong>
-          </div>
-          <div class="finance-card">
-            <span>Unitario real</span>
-            <strong>${safeText(
-              formatPrintMoney(costSummary.actual_unit_cost, currency)
+              formatPrintMoney(financeTotal, currency)
             )}</strong>
           </div>
         </div>
@@ -916,6 +900,10 @@ function buildPrintDocumentHtml({
           display:grid;
           grid-template-columns:repeat(4, 1fr);
           gap:10px;
+        }
+
+        .finance-grid--compact{
+          grid-template-columns:repeat(3, 1fr);
         }
 
         .finance-card{

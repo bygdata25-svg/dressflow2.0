@@ -112,6 +112,35 @@ export default function ProductionOrderFinanceTab({
       ? highlightedSuggestedPrice
       : highlightedSuggestedPrice / exchangeRate;
 
+  const realTotal = toNumber(
+    actualMaterialCost > 0
+      ? costSummary?.actual_total_cost
+      : costSummary?.estimated_total_cost
+  );
+
+  const suggestedInEffectiveCurrency =
+    effectiveCurrency === "ARS" ? suggestedARS : suggestedUSD;
+
+  const estimatedMargin = suggestedInEffectiveCurrency - realTotal;
+  const estimatedMarginPercent = realTotal > 0 ? (estimatedMargin / realTotal) * 100 : 0;
+
+  const marginTone =
+    estimatedMarginPercent >= 30
+      ? "good"
+      : estimatedMarginPercent >= 10
+        ? "warning"
+        : "bad";
+
+  const marginLabel =
+    marginTone === "good"
+      ? "Rentable"
+      : marginTone === "warning"
+        ? "Margen bajo"
+        : "Riesgo";
+
+  const marginIcon =
+    marginTone === "good" ? "🟢" : marginTone === "warning" ? "🟡" : "🔴";
+
   return (
     <div className="po-fin-shell">
       <section className="po-fin-hero">
@@ -126,6 +155,27 @@ export default function ProductionOrderFinanceTab({
             Equivalente aprox. {formatCurrency(suggestedUSD, "USD")} · basado en costo unitario{" "}
             {actualMaterialCost > 0 ? "real" : "estimado"} × multiplicador
           </small>
+
+          <div
+            className={`po-fin-margin po-fin-margin--${marginTone}`}
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gap: 6,
+              padding: "12px 14px",
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.10)",
+              border: "1px solid rgba(255,255,255,0.16)",
+            }}
+          >
+            <span style={{ fontSize: 12, opacity: 0.78 }}>Margen estimado</span>
+            <strong style={{ fontSize: 18, lineHeight: 1.15 }}>
+              {marginIcon} {marginLabel} · {formatCurrency(estimatedMargin, effectiveCurrency)}
+            </strong>
+            <small style={{ opacity: 0.78 }}>
+              {estimatedMarginPercent.toFixed(1)}% sobre costo total estimado/real disponible
+            </small>
+          </div>
         </div>
 
         <div className="po-fin-kpis">
@@ -285,6 +335,18 @@ export default function ProductionOrderFinanceTab({
             <div className="po-fin-summary__item">
               <span>Total estimado</span>
               <strong>{formatCurrency(visibleTotalEstimated, effectiveCurrency)}</strong>
+            </div>
+
+            <div className="po-fin-summary__item">
+              <span>Margen estimado</span>
+              <strong>
+                {marginIcon} {formatCurrency(estimatedMargin, effectiveCurrency)}
+              </strong>
+            </div>
+
+            <div className="po-fin-summary__item">
+              <span>Rentabilidad estimada</span>
+              <strong>{estimatedMarginPercent.toFixed(1)}%</strong>
             </div>
 
             <div className="po-fin-summary__item">

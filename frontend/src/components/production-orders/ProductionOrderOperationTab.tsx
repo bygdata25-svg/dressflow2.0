@@ -202,15 +202,30 @@ function CompactMaterialCard({
           <div className="po-compact-card__title">
             {material.description_snapshot || (material.material_type === "TRIM" ? "Avío" : "Tela")}
           </div>
-
           <div className="po-compact-card__meta">
             <span>
               {material.planned_quantity} {material.unit}
             </span>
+
             {material.roll_code ? <span>{material.roll_code}</span> : null}
+
             {material.material_type === "FABRIC_ROLL" ? (
-              <span>Libre {Number(material.free || 0).toFixed(2)} {material.unit}</span>
+              <span>
+                Libre {Number(material.free || 0).toFixed(2)} {material.unit}
+              </span>
             ) : null}
+
+            {/* 🔥 NUEVO */}
+            {material.unit_cost_snapshot ? (
+              <span>
+                $ {Number(material.unit_cost_snapshot).toLocaleString("es-AR")} / {material.unit}
+              </span>
+            ) : null}
+
+            {/* 🔥 COSTO TOTAL */}
+            <span style={{ fontWeight: 600 }}>
+              Total: ${material.totalCost.toLocaleString("es-AR")}
+            </span>
           </div>
         </div>
 

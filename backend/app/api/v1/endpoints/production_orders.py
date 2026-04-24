@@ -1093,6 +1093,8 @@ def receive_production_order(
                 if duplicate_dress:
                     continue
 
+                suggested_sale_price = unit_cost * Decimal("2.5") if unit_cost else None
+
                 dress = Dress(
                     tenant_id=membership.tenant_id,
                     code=dress_code,
@@ -1101,7 +1103,7 @@ def receive_production_order(
                     color=order.target_color,
                     status="AVAILABLE",
                     photo_url=order.design_photo_url,
-                    sale_price=None,
+                    sale_price=suggested_sale_price,
                     rental_price=None,
                 )
                 db.add(dress)
@@ -1174,6 +1176,8 @@ def create_output(
     dress_id = None
 
     if payload.create_dress_records:
+        suggested_sale_price = (payload.unit_cost * Decimal("2.5")) if payload.unit_cost else None
+
         dress = Dress(
             tenant_id=membership.tenant_id,
             code=payload.code or f"PO-{str(order_id)[:8]}",
@@ -1182,6 +1186,7 @@ def create_output(
             color=payload.color,
             status="AVAILABLE",
             photo_url=order.design_photo_url,
+            sale_price=suggested_sale_price,
         )
         db.add(dress)
         db.flush()

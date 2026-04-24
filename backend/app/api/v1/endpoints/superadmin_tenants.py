@@ -15,6 +15,10 @@ from app.schemas.superadmin import (
     SuperadminTenantWithAdminResponse,
 )
 
+from pydantic import BaseModel
+from sqlalchemy import select
+from app.models.tenant_feature import TenantFeature
+
 router = APIRouter(prefix="/superadmin/tenants", tags=["superadmin-tenants"])
 
 
@@ -159,3 +163,40 @@ def create_tenant_with_admin(
         admin_user_email=admin_user.email,
     )
 
+class TenantFeatureUpdate(BaseModel):
+    enabled: bool
+
+
+@router.put("/{tenant_id}/features/{feature_key}")
+def update_tenant_feature(
+    tenant_id: UUID,
+    feature_key: str,
+    payload: TenantFeatureUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(require_superuser),
+):
+    feature = db.execute(
+        select(TenantFeature).where(
+            TenantFeature.tenant_id == tenant_id,
+            TenantFeature.feature_key == feature_key,
+        )
+    ).scalar_one_or_none()
+
+    if feature is None:
+        feature = TenantFeature(
+            tenant_id=tenant_id,
+            feature_key=feature_key,
+            enabled=payload.enabled,
+        )
+        db.add(feature)
+    else:
+        feature.enabled = payload.enabled
+
+    db.commit()
+    db.refresh(feature)
+
+    return {
+        "tenant_id": str(feature.tenant_id),
+        "feature_key": feature.feature_key,
+        "enabled": feature.enabled,
+    }

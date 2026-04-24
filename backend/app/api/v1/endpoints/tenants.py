@@ -2,6 +2,7 @@ import shutil
 import uuid
 from pathlib import Path
 
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ from app.models.user import User, UserTenant
 from app.schemas.tenant import TenantBrandingResponse, TenantBrandingUpdateRequest
 from app.schemas.tenant import TenantBrandingRead, TenantBrandingUpdate
 from app.services.tenant_branding import build_tenant_branding
-
+from app.models.tenant_feature import TenantFeature
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 
@@ -204,3 +205,41 @@ def patch_my_tenant_branding(
     db.refresh(tenant)
 
     return build_tenant_branding(tenant)
+
+class TenantFeatureUpdate(BaseModel):
+    enabled: bool
+
+
+@router.put("/tenants/{tenant_id}/features/{feature_key}")
+def update_tenant_feature(
+    tenant_id: UUID,
+    feature_key: str,
+    payload: TenantFeatureUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(require_superuser),
+):
+    feature = db.execute(
+        select(TenantFeature).where(
+            TenantFeature.tenant_id == tenant_id,
+            TenantFeature.feature_key == feature_key,
+        )
+    ).scalar_one_or_none()
+
+    if feature is None:
+        feature = TenantFeature(
+            tenant_id=tenant_id,
+            feature_key=feature_key,
+            enabled=payload.enabled,
+        )
+        db.add(feature)
+    else:
+        feature.enabled = payload.enabled
+
+    db.commit()
+    db.refresh(feature)
+
+    return {
+        "tenant_id": str(feature.tenant_id),
+        "feature_key": feature.feature_key,
+        "enabled": feature.enabled,
+    }

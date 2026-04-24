@@ -32,7 +32,7 @@ function money(value?: number | string | null) {
   const parsed = Number(value ?? 0);
   const safe = Number.isFinite(parsed) ? parsed : 0;
 
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,

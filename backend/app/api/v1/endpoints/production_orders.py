@@ -1021,7 +1021,6 @@ def return_material(
     db.commit()
     return {"message": "Material return recorded successfully"}
 
-
 @router.post("/{order_id}/receive", response_model=ProductionOrderResponse)
 def receive_production_order(
     order_id: UUIDType,
@@ -1037,6 +1036,51 @@ def receive_production_order(
 
     if payload.status == "COMPLETED":
         order.finished_at = _now_utc()
+
+        # 🔥 CALCULAR COSTOS
+        totals = calculate_order_costs(db, order)
+        unit_cost = totals["actual_unit_cost"]
+
+        # 🔥 CREAR VESTIDOS AUTOMÁTICAMENTE
+        for i in range(payload.produced_quantity):
+            dress_code = order.target_dress_code
+
+            if not dress_code:
+                dress_code = get_next_code(db, membership.tenant_id, "dress")
+
+            else:
+                # si hay más de uno, evitar duplicados
+                if payload.produced_quantity > 1:
+                    dress_code = f"{dress_code}-{i+1}"
+
+            dress = Dress(
+                tenant_id=membership.tenant_id,
+                code=dress_code,
+                name=order.target_dress_name,
+                size=order.target_size,
+                color=order.target_color,
+                status="AVAILABLE",
+                photo_url=order.design_photo_url,  # 🔥 IMAGEN
+                sale_price=None,
+                rental_price=None,
+            )
+
+            db.add(dress)
+
+        # 🔥 CREAR OUTPUT AUTOMÁTICO
+        output = ProductionOrderOutput(
+            tenant_id=membership.tenant_id,
+            production_order_id=order.id,
+            name=order.target_dress_name,
+            code=order.target_dress_code,
+            size=order.target_size,
+            color=order.target_color,
+            quantity=payload.produced_quantity,
+            unit_cost=unit_cost,
+            notes="Generado automáticamente al completar la orden",
+        )
+
+        db.add(output)
 
     sync_order_totals(db, order)
 

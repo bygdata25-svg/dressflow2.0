@@ -5,10 +5,7 @@ from decimal import Decimal
 from io import BytesIO
 from uuid import UUID as UUIDType
 
-from pathlib import Path
-from uuid import uuid4
-
-from fastapi import APIRouter, Depends, Query, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.responses import Response
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -24,6 +21,7 @@ from app.models.production_order_event import ProductionOrderEvent
 from app.models.production_order_material import ProductionOrderMaterial
 from app.models.production_order_output import ProductionOrderOutput
 from app.models.supplier import Supplier
+from app.models.tenant import Tenant
 from app.models.trim import Trim
 from app.models.trim_movement import TrimMovement
 from app.schemas.production_order import (
@@ -41,10 +39,8 @@ from app.schemas.production_output import (
     ProductionOrderOutputCreate,
     ProductionOrderOutputResponse,
 )
-from app.services.sequences import get_next_code
-
-from app.models.tenant import Tenant
 from app.services.cloudinary_service import upload_image
+from app.services.sequences import get_next_code
 
 router = APIRouter(prefix="/production-orders", tags=["production-orders"])
 
@@ -131,11 +127,27 @@ def calculate_order_costs(db: Session, order: ProductionOrder) -> dict:
     actual_material_cost = Decimal("0")
 
     for material in materials:
+        # unit_cost_snapshot guarda el costo unitario congelado al asignar
+        # el material: FabricRoll.price_per_meter para telas y Trim.unit_cost para avíos.
         unit_cost = _decimal(material.unit_cost_snapshot)
         planned_quantity = _decimal(material.planned_quantity)
-        consumed_quantity = _decimal(material.consumed_quantity)
+        delivered_quantity = _decimal(material.delivered_quantity)
+        returned_quantity = _decimal(material.returned_quantity)
+        waste_quantity = _decimal(material.waste_quantity)
 
         estimated_material_cost += planned_quantity * unit_cost
+
+        # Real = consumido. Si consumed_quantity todavía no está persistido,
+        # lo calculamos desde entregado - devuelto - desperdicio.
+        consumed_quantity = _decimal(material.consumed_quantity)
+        calculated_consumed = delivered_quantity - returned_quantity - waste_quantity
+
+        if consumed_quantity <= 0 and calculated_consumed > 0:
+            consumed_quantity = calculated_consumed
+
+        if consumed_quantity < 0:
+            consumed_quantity = Decimal("0")
+
         actual_material_cost += consumed_quantity * unit_cost
 
     labor_cost = _decimal(order.labor_cost)
@@ -633,7 +645,7 @@ def add_fabric_material(
     if not roll:
         raise AppException(404, "Fabric roll not found", "FABRIC_ROLL_NOT_FOUND")
 
-    unit_cost_snapshot = getattr(roll, "cost_per_unit", None)
+    unit_cost_snapshot = getattr(roll, "price_per_meter", None)
 
     material = ProductionOrderMaterial(
         tenant_id=membership.tenant_id,
@@ -1027,6 +1039,7 @@ def return_material(
     db.commit()
     return {"message": "Material return recorded successfully"}
 
+
 @router.post("/{order_id}/receive", response_model=ProductionOrderResponse)
 def receive_production_order(
     order_id: UUIDType,
@@ -1043,52 +1056,73 @@ def receive_production_order(
     if payload.status == "COMPLETED":
         order.finished_at = _now_utc()
 
-        # 🔥 CALCULAR COSTOS
-        totals = calculate_order_costs(db, order)
-        unit_cost = totals["actual_unit_cost"]
+    sync_order_totals(db, order)
 
-        # 🔥 CREAR VESTIDOS AUTOMÁTICAMENTE
-        for i in range(payload.produced_quantity):
-            dress_code = order.target_dress_code
+    if payload.status == "COMPLETED" and payload.produced_quantity > 0:
+        existing_output = db.execute(
+            select(ProductionOrderOutput).where(
+                ProductionOrderOutput.production_order_id == order.id,
+                ProductionOrderOutput.tenant_id == membership.tenant_id,
+            )
+        ).scalar_one_or_none()
 
-            if not dress_code:
-                dress_code = get_next_code(db, membership.tenant_id, "dress")
+        # Evita duplicar outputs/vestidos si se vuelve a guardar la recepción.
+        if not existing_output:
+            totals = calculate_order_costs(db, order)
+            unit_cost = totals["actual_unit_cost"] or totals["estimated_unit_cost"]
+            first_dress_id = None
 
-            else:
-                # si hay más de uno, evitar duplicados
-                if payload.produced_quantity > 1:
-                    dress_code = f"{dress_code}-{i+1}"
+            for index in range(payload.produced_quantity):
+                if order.target_dress_code:
+                    dress_code = (
+                        order.target_dress_code
+                        if payload.produced_quantity == 1
+                        else f"{order.target_dress_code}-{index + 1}"
+                    )
+                else:
+                    dress_code = get_next_code(db, membership.tenant_id, "dress")
 
-            dress = Dress(
+                duplicate_dress = db.execute(
+                    select(Dress).where(
+                        Dress.tenant_id == membership.tenant_id,
+                        Dress.code == dress_code,
+                        Dress.deleted_at.is_(None),
+                    )
+                ).scalar_one_or_none()
+
+                if duplicate_dress:
+                    continue
+
+                dress = Dress(
+                    tenant_id=membership.tenant_id,
+                    code=dress_code,
+                    name=order.target_dress_name,
+                    size=order.target_size,
+                    color=order.target_color,
+                    status="AVAILABLE",
+                    photo_url=order.design_photo_url,
+                    sale_price=None,
+                    rental_price=None,
+                )
+                db.add(dress)
+                db.flush()
+
+                if first_dress_id is None:
+                    first_dress_id = dress.id
+
+            output = ProductionOrderOutput(
                 tenant_id=membership.tenant_id,
-                code=dress_code,
+                production_order_id=order.id,
+                dress_id=first_dress_id,
                 name=order.target_dress_name,
+                code=order.target_dress_code,
                 size=order.target_size,
                 color=order.target_color,
-                status="AVAILABLE",
-                photo_url=order.design_photo_url,  # 🔥 IMAGEN
-                sale_price=None,
-                rental_price=None,
+                quantity=payload.produced_quantity,
+                unit_cost=unit_cost,
+                notes="Generado automáticamente al completar la orden",
             )
-
-            db.add(dress)
-
-        # 🔥 CREAR OUTPUT AUTOMÁTICO
-        output = ProductionOrderOutput(
-            tenant_id=membership.tenant_id,
-            production_order_id=order.id,
-            name=order.target_dress_name,
-            code=order.target_dress_code,
-            size=order.target_size,
-            color=order.target_color,
-            quantity=payload.produced_quantity,
-            unit_cost=unit_cost,
-            notes="Generado automáticamente al completar la orden",
-        )
-
-        db.add(output)
-
-    sync_order_totals(db, order)
+            db.add(output)
 
     create_order_event(
         db=db,
@@ -1135,7 +1169,7 @@ def create_output(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
-    _get_order_or_404(db, membership.tenant_id, order_id)
+    order = _get_order_or_404(db, membership.tenant_id, order_id)
 
     dress_id = None
 
@@ -1147,6 +1181,7 @@ def create_output(
             size=payload.size,
             color=payload.color,
             status="AVAILABLE",
+            photo_url=order.design_photo_url,
         )
         db.add(dress)
         db.flush()
@@ -1209,6 +1244,46 @@ def list_production_order_events(
     ]
 
 
+@router.post("/{order_id}/design-image", response_model=ProductionOrderResponse)
+def upload_design_image(
+    order_id: UUIDType,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    membership=Depends(require_roles("admin", "manager")),
+):
+    order = _get_order_or_404(db, membership.tenant_id, order_id)
+
+    if not file:
+        raise AppException(400, "File is required", "FILE_REQUIRED")
+
+    tenant = db.execute(
+        select(Tenant).where(Tenant.id == membership.tenant_id)
+    ).scalar_one()
+
+    result = upload_image(
+        file_obj=file.file,
+        tenant_slug=tenant.slug,
+        entity="production-orders",
+        asset_key=order.order_number or str(order.id),
+        overwrite=True,
+    )
+
+    order.design_photo_url = result["url"]
+
+    create_order_event(
+        db=db,
+        tenant_id=membership.tenant_id,
+        production_order_id=order.id,
+        created_by_user_id=membership.user_id,
+        event_type="DESIGN_IMAGE_UPDATED",
+        payload={"design_photo_url": order.design_photo_url},
+    )
+
+    db.commit()
+    db.refresh(order)
+    return build_order_response(db, order)
+
+
 @router.get("/{order_id}/pdf")
 def download_production_order_pdf(
     order_id: UUIDType,
@@ -1232,46 +1307,3 @@ def download_production_order_pdf(
             "Content-Disposition": f'attachment; filename="{filename}"'
         },
     )
-
-@router.post("/{order_id}/design-image", response_model=ProductionOrderResponse)
-def upload_design_image(
-    order_id: UUIDType,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    membership=Depends(require_roles("admin", "manager")),
-):
-    order = _get_order_or_404(db, membership.tenant_id, order_id)
-
-    if not file:
-        raise AppException(400, "File is required", "FILE_REQUIRED")
-
-    # 🔥 obtener tenant (igual que trims)
-    tenant = db.execute(
-        select(Tenant).where(Tenant.id == membership.tenant_id)
-    ).scalar_one()
-
-    # 🔥 subir a Cloudinary
-    result = upload_image(
-        file_obj=file.file,
-        tenant_slug=tenant.slug,
-        entity="production-orders",
-        asset_key=order.order_number or str(order.id),
-        overwrite=True,
-    )
-
-    # 🔥 guardar URL REAL
-    order.design_photo_url = result["url"]
-
-    create_order_event(
-        db=db,
-        tenant_id=membership.tenant_id,
-        production_order_id=order.id,
-        created_by_user_id=membership.user_id,
-        event_type="DESIGN_IMAGE_UPDATED",
-        payload={"design_photo_url": order.design_photo_url},
-    )
-
-    db.commit()
-    db.refresh(order)
-
-    return build_order_response(db, order)

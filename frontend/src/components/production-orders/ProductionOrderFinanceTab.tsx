@@ -38,6 +38,7 @@ type CostForm = {
   additional_cost: string;
   currency: string;
   price_multiplier: string;
+  exchange_rate: string;
 };
 
 type Props = {
@@ -54,76 +55,93 @@ type Props = {
   ) => number;
 };
 
+function toNumber(value?: string | number | null) {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function formatCurrency(value?: string | number | null, currency = "USD") {
+  const n = toNumber(value);
+
+  return `${new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n)} ${currency}`;
+}
+
 export default function ProductionOrderFinanceTab({
   order,
   costSummary,
   costForm,
   setCostForm,
   saveCosts,
-  formatMoney,
   calculateSuggestedPrice,
 }: Props) {
-  const effectiveCurrency = costForm.currency || costSummary?.currency || order.currency;
+  const effectiveCurrency = (costForm.currency || costSummary?.currency || order.currency || "USD").toUpperCase();
+
+  const estimatedMaterialCost = toNumber(costSummary?.estimated_material_cost);
+  const actualMaterialCost = toNumber(costSummary?.actual_material_cost);
+  const laborCost = toNumber(costSummary?.labor_cost);
+  const additionalCost = toNumber(costSummary?.additional_cost);
+  const laborAndOtherCosts = laborCost + additionalCost;
+
+  // Para pantalla usamos el material real solo cuando ya existe consumo real.
+  // Mientras no haya consumo, mostramos el estimado para evitar importes en cero.
+  const visibleMaterialCost = actualMaterialCost > 0 ? actualMaterialCost : estimatedMaterialCost;
+  const visibleTotalEstimated = estimatedMaterialCost + laborAndOtherCosts;
+
+  const unitCostForSuggestedPrice =
+    actualMaterialCost > 0
+      ? costSummary?.actual_unit_cost || 0
+      : costSummary?.estimated_unit_cost || 0;
 
   const highlightedSuggestedPrice = calculateSuggestedPrice(
-    costSummary?.actual_unit_cost || costSummary?.estimated_unit_cost || 0,
+    unitCostForSuggestedPrice,
     costForm.price_multiplier
   );
+
+  const exchangeRate = Math.max(toNumber(costForm.exchange_rate), 1);
+
+  const suggestedARS =
+    effectiveCurrency === "ARS"
+      ? highlightedSuggestedPrice
+      : highlightedSuggestedPrice * exchangeRate;
+
+  const suggestedUSD =
+    effectiveCurrency === "USD"
+      ? highlightedSuggestedPrice
+      : highlightedSuggestedPrice / exchangeRate;
 
   return (
     <div className="po-fin-shell">
       <section className="po-fin-hero">
         <div className="po-fin-hero__highlight">
           <span className="po-fin-hero__label">Precio sugerido por unidad</span>
+
           <strong className="po-fin-hero__value">
-            {formatMoney(highlightedSuggestedPrice, effectiveCurrency)}
+            {formatCurrency(suggestedARS, "ARS")}
           </strong>
+
           <small className="po-fin-hero__hint">
-            Basado en costo unitario {costSummary?.actual_unit_cost ? "real" : "estimado"} × multiplicador
+            Equivalente aprox. {formatCurrency(suggestedUSD, "USD")} · basado en costo unitario{" "}
+            {actualMaterialCost > 0 ? "real" : "estimado"} × multiplicador
           </small>
         </div>
 
         <div className="po-fin-kpis">
           <div className="po-fin-kpi">
-            <span>Material estimado</span>
-            <strong>
-              {formatMoney(costSummary?.estimated_material_cost, effectiveCurrency)}
-            </strong>
+            <span>Costo material</span>
+            <strong>{formatCurrency(visibleMaterialCost, effectiveCurrency)}</strong>
           </div>
 
           <div className="po-fin-kpi">
-            <span>Material real</span>
-            <strong>
-              {formatMoney(costSummary?.actual_material_cost, effectiveCurrency)}
-            </strong>
+            <span>Mano de obra / otros</span>
+            <strong>{formatCurrency(laborAndOtherCosts, effectiveCurrency)}</strong>
           </div>
 
           <div className="po-fin-kpi">
             <span>Total estimado</span>
-            <strong>
-              {formatMoney(costSummary?.estimated_total_cost, effectiveCurrency)}
-            </strong>
-          </div>
-
-          <div className="po-fin-kpi">
-            <span>Total real</span>
-            <strong>
-              {formatMoney(costSummary?.actual_total_cost, effectiveCurrency)}
-            </strong>
-          </div>
-
-          <div className="po-fin-kpi">
-            <span>Unitario estimado</span>
-            <strong>
-              {formatMoney(costSummary?.estimated_unit_cost, effectiveCurrency)}
-            </strong>
-          </div>
-
-          <div className="po-fin-kpi">
-            <span>Unitario real</span>
-            <strong>
-              {formatMoney(costSummary?.actual_unit_cost, effectiveCurrency)}
-            </strong>
+            <strong>{formatCurrency(visibleTotalEstimated, effectiveCurrency)}</strong>
           </div>
         </div>
       </section>
@@ -132,7 +150,7 @@ export default function ProductionOrderFinanceTab({
         <section className="po-section-card">
           <div className="po-section-head">
             <h3>Actualizar costos</h3>
-            <p>Solo variables económicas de la orden.</p>
+            <p>Mano de obra, costos adicionales, moneda y parámetros comerciales.</p>
           </div>
 
           <form onSubmit={saveCosts} className="po-fin-form">
@@ -166,13 +184,31 @@ export default function ProductionOrderFinanceTab({
               </div>
 
               <div>
-                <label className="df-pro-label">Moneda</label>
-                <input
-                  className="df-pro-input"
+                <label className="df-pro-label">Moneda de costos</label>
+                <select
+                  className="df-pro-select"
                   value={costForm.currency}
                   onChange={(e) =>
                     setCostForm((prev) => ({ ...prev, currency: e.target.value }))
                   }
+                >
+                  <option value="ARS">ARS</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="df-pro-label">Tipo de cambio</label>
+                <input
+                  className="df-pro-input"
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  value={costForm.exchange_rate}
+                  onChange={(e) =>
+                    setCostForm((prev) => ({ ...prev, exchange_rate: e.target.value }))
+                  }
+                  placeholder="Ej. 1000"
                 />
               </div>
 
@@ -202,7 +238,7 @@ export default function ProductionOrderFinanceTab({
         <section className="po-section-card">
           <div className="po-section-head">
             <h3>Resumen económico</h3>
-            <p>Contexto comercial de la orden.</p>
+            <p>Lectura rápida del costo comercial de la orden.</p>
           </div>
 
           <div className="po-fin-summary">
@@ -237,18 +273,28 @@ export default function ProductionOrderFinanceTab({
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Mano de obra</span>
-              <strong>{formatMoney(costSummary?.labor_cost, effectiveCurrency)}</strong>
+              <span>Costo material</span>
+              <strong>{formatCurrency(visibleMaterialCost, effectiveCurrency)}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Costos adicionales</span>
-              <strong>{formatMoney(costSummary?.additional_cost, effectiveCurrency)}</strong>
+              <span>Mano de obra / otros</span>
+              <strong>{formatCurrency(laborAndOtherCosts, effectiveCurrency)}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Precio sugerido</span>
-              <strong>{formatMoney(highlightedSuggestedPrice, effectiveCurrency)}</strong>
+              <span>Total estimado</span>
+              <strong>{formatCurrency(visibleTotalEstimated, effectiveCurrency)}</strong>
+            </div>
+
+            <div className="po-fin-summary__item">
+              <span>Precio sugerido ARS</span>
+              <strong>{formatCurrency(suggestedARS, "ARS")}</strong>
+            </div>
+
+            <div className="po-fin-summary__item">
+              <span>Precio sugerido USD</span>
+              <strong>{formatCurrency(suggestedUSD, "USD")}</strong>
             </div>
           </div>
         </section>

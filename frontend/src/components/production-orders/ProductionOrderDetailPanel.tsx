@@ -145,8 +145,12 @@ function toNumber(value?: string | null) {
 
 function formatMoney(value?: string | number | null, currency = "USD") {
   const n = Number(value ?? 0);
-  if (Number.isNaN(n)) return `0.00 ${currency}`;
-  return `${n.toFixed(2)} ${currency}`;
+  const safe = Number.isFinite(n) ? n : 0;
+
+  return `${new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(safe)} ${currency}`;
 }
 
 function calculateSuggestedPrice(
@@ -247,8 +251,12 @@ function safeText(value?: unknown, fallback = "-") {
 
 function formatPrintMoney(value?: string | number | null, currency = "USD") {
   const n = Number(value ?? 0);
-  if (Number.isNaN(n)) return `0.00 ${currency}`;
-  return `${n.toFixed(2)} ${currency}`;
+  const safe = Number.isFinite(n) ? n : 0;
+
+  return `${new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(safe)} ${currency}`;
 }
 
 function translatePrintUnit(unit?: string | null) {
@@ -1248,6 +1256,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     additional_cost: "0",
     currency: "USD",
     price_multiplier: "2.5",
+    exchange_rate: "1000",
   });
 
   const [outputForm, setOutputForm] = useState({
@@ -1316,12 +1325,13 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         received_notes: orderRes.data.received_notes || "",
       });
 
-      setCostForm({
+      setCostForm((prev) => ({
         labor_cost: String(orderRes.data.labor_cost ?? "0"),
         additional_cost: String(orderRes.data.additional_cost ?? "0"),
         currency: orderRes.data.currency || "USD",
-        price_multiplier: "2.5",
-      });
+        price_multiplier: prev.price_multiplier || "2.5",
+        exchange_rate: prev.exchange_rate || "1000",
+      }));
     } catch (err: any) {
       setError(err?.response?.data?.detail?.message || "No se pudo cargar la orden.");
     } finally {

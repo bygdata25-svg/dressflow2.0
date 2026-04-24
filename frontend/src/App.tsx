@@ -42,6 +42,7 @@ import FinancialDashboardPage from "./pages/FinancialDashboardPage";
 import AppLoader from "./components/AppLoader";
 import { setBrowserFavicon, setBrowserTitle } from "./lib/browserBranding";
 import { getTenantSlugFromHostname } from "./lib/tenantHost";
+import DressStockValuationReportPage from "./pages/DressStockValuationReportPage";
 
 import { applyTenantBranding } from "./lib/tenantBranding";
 import { api } from "./lib/api";
@@ -790,6 +791,15 @@ function AppShell({
           ),
         },
         {
+          to: "/reports/dress-stock",
+          label: (
+            <>
+              <SidebarIcon><StockIcon /></SidebarIcon>
+              <span>Stock vestidos</span>
+            </>
+          ),
+        }
+        {
           to: "/reports/fabric-movements",
           label: (
             <>
@@ -1199,6 +1209,7 @@ function AppShell({
             />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/reports/stock-valuation" element={<ReportsPage />} />
+            <Route path="/reports/dress-stock" element={<DressStockValuationReportPage />} />
             <Route
               path="/reports/fabric-movements"
               element={<FabricMovementsReportPage />}

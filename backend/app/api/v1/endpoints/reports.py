@@ -1559,6 +1559,85 @@ def _get_sales_unified_payments(db: Session, tenant_id, sale_id):
     """)
     return db.execute(sql, {"tenant_id": tenant_id, "sale_id": sale_id}).mappings().all()
 
+@router.get("/dress-stock-valuation")
+def dress_stock_valuation_report(
+    db: Session = Depends(get_db),
+    membership=Depends(require_roles("admin", "manager", "staff")),
+    search: str | None = Query(default=None),
+):
+    sql = """
+        SELECT
+            d.id,
+            d.code,
+            d.name,
+            d.size,
+            d.color,
+            d.status,
+            d.sale_price,
+            d.rental_price,
+            c.name AS capsule_name
+        FROM dresses d
+        LEFT JOIN capsules c ON c.id = d.capsule_id
+        WHERE d.tenant_id = :tenant_id
+          AND d.deleted_at IS NULL
+    """
+
+    params = {"tenant_id": membership.tenant_id}
+
+    if search:
+        sql += """
+          AND (
+            LOWER(d.code) LIKE :search
+            OR LOWER(d.name) LIKE :search
+            OR LOWER(COALESCE(d.color,'')) LIKE :search
+          )
+        """
+        params["search"] = f"%{search.lower()}%"
+
+    rows = db.execute(text(sql), params).mappings().all()
+
+    items = []
+    total_sale = Decimal("0")
+    total_rental = Decimal("0")
+    total_items = 0
+    available_items = 0
+
+    for r in rows:
+        if r["status"] != "SOLD":
+            total_items += 1
+
+            sale_price = Decimal(str(r["sale_price"] or 0))
+            rental_price = Decimal(str(r["rental_price"] or 0))
+
+            total_sale += sale_price
+            total_rental += rental_price
+
+            if r["status"] == "AVAILABLE":
+                available_items += 1
+
+            items.append({
+                "id": str(r["id"]),
+                "code": r["code"],
+                "name": r["name"],
+                "capsule": r["capsule_name"],
+                "size": r["size"],
+                "color": r["color"],
+                "status": r["status"],
+                "sale_price": float(sale_price),
+                "rental_price": float(rental_price),
+            })
+
+    return {
+        "items": items,
+        "total": len(items),
+        "kpis": {
+            "total_items": total_items,
+            "available_items": available_items,
+            "total_sale_value": float(total_sale),
+            "total_rental_value": float(total_rental),
+        }
+    }
+
 @router.get("/sales-unified")
 def sales_unified_report(
     db: Session = Depends(get_db),

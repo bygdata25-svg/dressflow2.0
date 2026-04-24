@@ -468,9 +468,6 @@ export default function ProductionOrdersPage() {
                 </p>
               </div>
 
-              <button type="button" className="po-ghost-btn" onClick={() => setIsCreateOpen(true)}>
-                Crear orden
-              </button>
             </div>
 
             <form

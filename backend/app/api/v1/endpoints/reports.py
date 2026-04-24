@@ -754,7 +754,11 @@ def _build_production_costs_query(
 
             COALESCE(
                 SUM(
-                    COALESCE(m.delivered_quantity, 0) * COALESCE(m.unit_cost_snapshot, 0)
+                    (
+                        COALESCE(m.delivered_quantity, 0)
+                        - COALESCE(m.returned_quantity, 0)
+                        - COALESCE(m.waste_quantity, 0)
+                    ) * COALESCE(m.unit_cost_snapshot, 0)
                 ),
                 0
             ) AS actual_material_cost

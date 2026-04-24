@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User, UserTenant
+from app.api.deps import get_current_user
 
 security = HTTPBearer()
 
@@ -157,3 +158,8 @@ def require_roles(*allowed_roles: str) -> Callable:
         return current_membership
 
     return dependency
+
+def require_superuser(user: User = Depends(get_current_user)) -> User:
+    if not user.is_superuser:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return user

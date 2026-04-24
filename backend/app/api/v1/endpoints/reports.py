@@ -1638,6 +1638,74 @@ def dress_stock_valuation_report(
         }
     }
 
+@router.get("/dress-stock-valuation/export")
+def export_dress_stock_valuation(
+    db: Session = Depends(get_db),
+    membership=Depends(require_roles("admin", "manager", "staff")),
+):
+    from openpyxl import Workbook
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO
+    from decimal import Decimal
+
+    sql = """
+        SELECT
+            d.code,
+            d.name,
+            c.name AS capsule,
+            d.size,
+            d.color,
+            d.status,
+            d.sale_price,
+            d.rental_price
+        FROM dresses d
+        LEFT JOIN capsules c ON c.id = d.capsule_id
+        WHERE d.tenant_id = :tenant_id
+          AND d.deleted_at IS NULL
+          AND d.status != 'SOLD'
+    """
+
+    rows = db.execute(text(sql), {"tenant_id": membership.tenant_id}).mappings().all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Stock Vestidos"
+
+    ws.append([
+        "Código",
+        "Vestido",
+        "Cápsula",
+        "Talle",
+        "Color",
+        "Estado",
+        "Precio venta (USD)",
+        "Precio alquiler (USD)",
+    ])
+
+    for r in rows:
+        ws.append([
+            r["code"],
+            r["name"],
+            r["capsule"],
+            r["size"],
+            r["color"],
+            r["status"],
+            float(Decimal(str(r["sale_price"] or 0))),
+            float(Decimal(str(r["rental_price"] or 0))),
+        ])
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=stock_vestidos.xlsx"
+        },
+    )
+
 @router.get("/sales-unified")
 def sales_unified_report(
     db: Session = Depends(get_db),

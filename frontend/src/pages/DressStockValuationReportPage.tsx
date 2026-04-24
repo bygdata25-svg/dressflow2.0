@@ -3,9 +3,11 @@ import { api } from "../lib/api";
 import { DataGrid } from "../components/data-grid/DataGrid";
 
 function money(v:number){
-  return new Intl.NumberFormat("es-AR", {
+  return new Intl.NumberFormat("en-US", {
     style:"currency",
-    currency:"ARS"
+    currency:"USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(v||0);
 }
 
@@ -20,12 +22,24 @@ export default function DressStockValuationReportPage(){
     setKpis(res.data.kpis);
   };
 
+  const exportExcel = () => {
+    window.open("/api/v1/reports/dress-stock-valuation/export", "_blank");
+  };
+
   useEffect(()=>{load()},[]);
 
   return (
     <section className="df-pro-page">
 
-      <h1>Stock valorizado de vestidos</h1>
+      <div className="df-pro-page__header">
+        <div>
+          <h1>Stock valorizado de vestidos</h1>
+        </div>
+
+        <button className="df-pro-btn" onClick={exportExcel}>
+          Exportar Excel
+        </button>
+      </div>
 
       {/* KPIs */}
       <div className="df-kpis">
@@ -45,8 +59,16 @@ export default function DressStockValuationReportPage(){
           {key:"size",label:"Talle"},
           {key:"color",label:"Color"},
           {key:"status",label:"Estado"},
-          {key:"sale_price",label:"Precio venta",render:r=>money(r.sale_price)},
-          {key:"rental_price",label:"Precio alquiler",render:r=>money(r.rental_price)},
+          {
+            key:"sale_price",
+            label:"Precio venta",
+            render:r=>money(r.sale_price)
+          },
+          {
+            key:"rental_price",
+            label:"Precio alquiler",
+            render:r=>money(r.rental_price)
+          },
         ]}
       />
 

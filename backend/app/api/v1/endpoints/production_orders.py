@@ -5,7 +5,10 @@ from decimal import Decimal
 from io import BytesIO
 from uuid import UUID as UUIDType
 
-from fastapi import APIRouter, Depends, Query
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, Query, File, UploadFile
 from fastapi.responses import Response
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -1226,3 +1229,51 @@ def download_production_order_pdf(
             "Content-Disposition": f'attachment; filename="{filename}"'
         },
     )
+
+@router.post("/{order_id}/design-image", response_model=ProductionOrderResponse)
+def upload_design_image(
+    order_id: UUIDType,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    membership=Depends(require_roles("admin", "manager")),
+):
+    order = _get_order_or_404(db, membership.tenant_id, order_id)
+
+    allowed_content_types = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+    }
+
+    ext = allowed_content_types.get(file.content_type or "")
+    if not ext:
+        raise AppException(
+            400,
+            "Only JPG, PNG or WEBP images are allowed",
+            "INVALID_IMAGE_TYPE",
+        )
+
+    upload_dir = Path("static/uploads/production-orders")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{order.id}-{uuid4().hex}{ext}"
+    file_path = upload_dir / filename
+
+    with file_path.open("wb") as buffer:
+        buffer.write(file.file.read())
+
+    order.design_photo_url = f"/static/uploads/production-orders/{filename}"
+
+    create_order_event(
+        db=db,
+        tenant_id=membership.tenant_id,
+        production_order_id=order.id,
+        created_by_user_id=membership.user_id,
+        event_type="DESIGN_IMAGE_UPDATED",
+        payload={"design_photo_url": order.design_photo_url},
+    )
+
+    db.commit()
+    db.refresh(order)
+
+    return build_order_response(db, order)

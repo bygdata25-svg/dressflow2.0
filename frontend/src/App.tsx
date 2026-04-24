@@ -798,7 +798,7 @@ function AppShell({
               <span>Stock vestidos</span>
             </>
           ),
-        }
+        },
         {
           to: "/reports/fabric-movements",
           label: (

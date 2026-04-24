@@ -211,8 +211,15 @@ function summarizeEvent(t: any, event: EventItem) {
 
 function resolvePhoto(photoUrl?: string | null) {
   if (!photoUrl) return null;
-  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) return photoUrl;
-  return `/${photoUrl.replace(/^\/+/, "")}`;
+
+  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
+    return photoUrl;
+  }
+
+  const apiBaseUrl =
+    import.meta.env.VITE_API_URL?.replace(/\/api\/v1\/?$/, "")?.replace(/\/$/, "") || "";
+
+  return `${apiBaseUrl}/${photoUrl.replace(/^\/+/, "")}`;
 }
 
 function payloadEntries(t: any, payload?: Record<string, unknown> | null) {

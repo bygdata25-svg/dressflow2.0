@@ -35,6 +35,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(api_router, prefix="/api/v1")
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/health")
 def health():

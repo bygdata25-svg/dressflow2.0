@@ -22,6 +22,7 @@ type Dress = {
   capsule_name?: string | null;
   purchase_price?: number | string | null;
   rental_price?: number | string | null;
+  sale_price?: number | string | null;
 };
 
 type Customer = {
@@ -236,7 +237,7 @@ export default function DressesPage() {
   color: row.color ?? "",
   status,
   capsule_id: row.capsule_id ?? null,
-  purchase_price: row.purchase_price ?? 0,
+  sale_price: row.sale_price ?? 0,
   rental_price: row.rental_price ?? 0,
 });
     
@@ -934,6 +935,11 @@ export default function DressesPage() {
                   status: editingDress.status,
                   main_image_url: editingDress.main_image_url ?? null,
                   capsule_id: editingDress.capsule_id ?? "",
+                  sale_price:
+                    editingDress.sale_price !== undefined &&
+                    editingDress.sale_price !== null
+                      ? String(editingDress.sale_price)
+                      : "",
                   rental_price:
                     editingDress.rental_price !== undefined &&
                     editingDress.rental_price !== null

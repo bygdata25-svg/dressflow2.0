@@ -189,21 +189,11 @@ export default function DressStockValuationReportPage() {
       {
         key: "sale_price",
         label: "Precio venta",
-        render: (row: DressStockRow) => money(row.sale_price),
+        render: (row: DressStockRow) => <strong>{money(row.sale_price)}</strong>,
       },
       {
         key: "rental_price",
         label: "Precio alquiler",
-        render: (row: DressStockRow) => money(row.rental_price),
-      },
-      {
-        key: "sale_value",
-        label: "Valor venta",
-        render: (row: DressStockRow) => <strong>{money(row.sale_price)}</strong>,
-      },
-      {
-        key: "rental_value",
-        label: "Valor alquiler",
         render: (row: DressStockRow) => <strong>{money(row.rental_price)}</strong>,
       },
     ];

@@ -18,11 +18,32 @@ import {
   Factory,
   TriangleAlert,
   PackageSearch,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { api } from "../lib/api";
 import "./HomePage.css";
+
+type DashboardAlert = {
+  type?: string;
+  level: string;
+  title: string;
+  message: string;
+  action?: {
+    label: string;
+    url: string;
+  } | null;
+};
+
+type DashboardInsight = {
+  type: string;
+  title: string;
+  value: string | number;
+  description?: string | null;
+  tone?: "neutral" | "success" | "warning" | "danger" | string;
+};
 
 type DashboardData = {
   dresses: {
@@ -73,11 +94,8 @@ type DashboardData = {
     code?: string | null;
     days_without_movement: number;
   }[];
-  alerts: {
-    level: string;
-    title: string;
-    message: string;
-  }[];
+  alerts: DashboardAlert[];
+  insights?: DashboardInsight[];
 };
 
 type OperationalData = {
@@ -128,6 +146,14 @@ function alertTone(level: string) {
   if (level === "high") return "danger";
   if (level === "medium") return "warning";
   return "info";
+}
+
+function insightTone(value?: string | null) {
+  const raw = String(value || "").toLowerCase();
+  if (raw === "danger") return "danger";
+  if (raw === "warning") return "warning";
+  if (raw === "success") return "success";
+  return "neutral";
 }
 
 function dueStateLabel(value: OperationalData["orders"][number]["due_state"]) {
@@ -244,6 +270,68 @@ export default function HomePage() {
     ];
   }, [data, ops]);
 
+
+  const smartInsights = useMemo<DashboardInsight[]>(() => {
+    if (!data || !ops) return [];
+
+    const backendInsights = Array.isArray(data.insights) ? data.insights : [];
+
+    if (backendInsights.length > 0) {
+      return backendInsights;
+    }
+
+    const fallback: DashboardInsight[] = [];
+
+    if (data.top_dresses.length > 0) {
+      const top = data.top_dresses[0];
+
+      fallback.push({
+        type: "TOP_DRESS",
+        title: "Vestido más utilizado",
+        value: top.name,
+        description: `${top.loan_count} préstamo(s). Ideal para analizar reposición o cápsulas similares.`,
+        tone: "success",
+      });
+    }
+
+    if (data.idle_dresses.length > 0) {
+      fallback.push({
+        type: "IDLE_DRESSES",
+        title: "Inventario sin rotación",
+        value: data.idle_dresses.length,
+        description: "Vestidos sin movimiento detectados. Revisá pricing, fotos o disponibilidad.",
+        tone: "warning",
+      });
+    }
+
+    if (ops.production.delayed > 0) {
+      fallback.push({
+        type: "PRODUCTION_DELAY",
+        title: "Riesgo operativo",
+        value: ops.production.delayed,
+        description: "Órdenes atrasadas que pueden afectar entregas o stock disponible.",
+        tone: "danger",
+      });
+    }
+
+    if (ops.workshops.length > 0) {
+      const busiestWorkshop = [...ops.workshops].sort(
+        (a, b) => b.active_orders - a.active_orders
+      )[0];
+
+      fallback.push({
+        type: "WORKSHOP_LOAD",
+        title: "Taller con mayor carga",
+        value: busiestWorkshop.name,
+        description: `${busiestWorkshop.active_orders} orden(es) activas.`,
+        tone: "neutral",
+      });
+    }
+
+    return fallback.slice(0, 4);
+  }, [data, ops]);
+
+
   if (loading) {
     return (
       <section className="home">
@@ -262,6 +350,141 @@ export default function HomePage() {
 
   return (
     <section className="home">
+      <style>{`
+        .home__smart-insights {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+          margin-top: 20px;
+        }
+
+        .home__insight-card {
+          border: 1px solid rgba(222, 211, 203, 0.92);
+          border-radius: 24px;
+          padding: 18px 18px 16px;
+          background:
+            radial-gradient(circle at top right, rgba(226, 155, 139, 0.12), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%);
+          box-shadow: 0 18px 38px rgba(62, 48, 39, 0.07);
+          display: grid;
+          gap: 10px;
+          min-height: 150px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .home__insight-card::after {
+          content: "";
+          position: absolute;
+          right: -42px;
+          bottom: -48px;
+          width: 120px;
+          height: 120px;
+          border-radius: 999px;
+          background: rgba(125, 88, 164, 0.08);
+        }
+
+        .home__insight-card--danger {
+          background:
+            radial-gradient(circle at top right, rgba(180, 35, 24, 0.12), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #fff7f6 100%);
+        }
+
+        .home__insight-card--warning {
+          background:
+            radial-gradient(circle at top right, rgba(213, 170, 104, 0.18), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #fffaf1 100%);
+        }
+
+        .home__insight-card--success {
+          background:
+            radial-gradient(circle at top right, rgba(47, 130, 96, 0.12), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #f5fffa 100%);
+        }
+
+        .home__insight-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .home__insight-kicker {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.13em;
+          font-weight: 800;
+          color: #8c7f75;
+        }
+
+        .home__insight-icon {
+          width: 34px;
+          height: 34px;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          background: #f8efe9;
+          color: #8f5e82;
+          flex-shrink: 0;
+        }
+
+        .home__insight-value {
+          position: relative;
+          z-index: 1;
+          font-size: 24px;
+          line-height: 1.05;
+          letter-spacing: -0.04em;
+          color: #32273c;
+          font-weight: 900;
+          word-break: break-word;
+        }
+
+        .home__insight-description {
+          position: relative;
+          z-index: 1;
+          margin: 0;
+          color: #7e7486;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+
+        .home__alert-action {
+          margin-top: 10px;
+          border: 1px solid rgba(50, 39, 60, 0.12);
+          background: rgba(255,255,255,0.76);
+          color: #32273c;
+          border-radius: 12px;
+          padding: 8px 11px;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          width: fit-content;
+          transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .home__alert-action:hover {
+          transform: translateY(-1px);
+          background: #ffffff;
+        }
+
+        @media (max-width: 1180px) {
+          .home__smart-insights {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 720px) {
+          .home__smart-insights {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
       <div className="home__hero">
         <div className="home__hero-main">
           <div className="home__eyebrow">{dateText}</div>
@@ -280,6 +503,43 @@ export default function HomePage() {
           <span className="home__hero-side-note">Actualización automática</span>
         </div>
       </div>
+
+      {smartInsights.length > 0 && (
+        <section className="home__section-block">
+          <div className="home__section-head home__section-head--soft">
+            <div>
+              <span className="home__section-kicker">Insights</span>
+              <h2 className="home__section-title">Lecturas inteligentes</h2>
+            </div>
+          </div>
+
+          <div className="home__smart-insights">
+            {smartInsights.map((insight) => (
+              <article
+                key={insight.type}
+                className={`home__insight-card home__insight-card--${insightTone(
+                  insight.tone
+                )}`}
+              >
+                <div className="home__insight-top">
+                  <span className="home__insight-kicker">{insight.title}</span>
+                  <span className="home__insight-icon">
+                    <Sparkles size={18} strokeWidth={1.8} />
+                  </span>
+                </div>
+
+                <strong className="home__insight-value">{insight.value}</strong>
+
+                {insight.description ? (
+                  <p className="home__insight-description">
+                    {insight.description}
+                  </p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="home__executive-grid">
         {executiveHighlights.map((item) => (
@@ -503,11 +763,22 @@ export default function HomePage() {
 
             {data.alerts.map((alert, index) => (
               <article
-                key={`${alert.title}-${index}`}
+                key={`${alert.type || alert.title}-${index}`}
                 className={`home__alert home__alert--${alertTone(alert.level)}`}
               >
                 <strong>{alert.title}</strong>
                 <span>{alert.message}</span>
+
+                {alert.action?.url ? (
+                  <button
+                    type="button"
+                    className="home__alert-action"
+                    onClick={() => navigate(alert.action?.url || "/")}
+                  >
+                    {alert.action.label || "Ver detalle"}
+                    <ArrowRight size={14} strokeWidth={2} />
+                  </button>
+                ) : null}
               </article>
             ))}
 
@@ -517,6 +788,14 @@ export default function HomePage() {
                 <span>
                   {ops.stock_alerts.accessories_low} accesorio(s) requieren reposición.
                 </span>
+                <button
+                  type="button"
+                  className="home__alert-action"
+                  onClick={() => navigate("/accessories")}
+                >
+                  Ver accesorios
+                  <ArrowRight size={14} strokeWidth={2} />
+                </button>
               </article>
             )}
 
@@ -526,6 +805,14 @@ export default function HomePage() {
                 <span>
                   {ops.stock_alerts.trims_low} avío(s) requieren reposición.
                 </span>
+                <button
+                  type="button"
+                  className="home__alert-action"
+                  onClick={() => navigate("/trims")}
+                >
+                  Ver avíos
+                  <ArrowRight size={14} strokeWidth={2} />
+                </button>
               </article>
             )}
           </div>

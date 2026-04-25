@@ -306,13 +306,16 @@ def dashboard_summary(
     alerts = []
 
     if loans_overdue > 0:
-        alerts.append(
-            {
-                "level": "high",
-                "title": "Préstamos vencidos",
-                "message": f"{loans_overdue} préstamo(s) requieren acción inmediata.",
+        alerts.append({
+            "type": "OVERDUE_LOANS",
+            "level": "high",
+            "title": "Préstamos vencidos",
+            "message": f"{loans_overdue} préstamo(s) requieren acción inmediata.",
+            "action": {
+                "label": "Ver préstamos",
+                "url": "/loans?filter=overdue"
             }
-        )
+        })
 
     if loans_due_soon > 0:
         alerts.append(
@@ -324,23 +327,29 @@ def dashboard_summary(
         )
 
     if rolls_depleted > 0:
-        alerts.append(
-                {
-                "level": "low",
-                "title": "Rollos agotados",
-                "message": f"{rolls_depleted} rollo(s) sin stock.",
-            }
-        )
-
+           alerts.append({
+               "type": "FABRIC_DEPLETED",
+               "level": "medium",
+               "title": "Rollos sin stock",
+               "message": f"{rolls_depleted} rollo(s) agotados.",
+               "action": {
+                   "label": "Ver telas",
+                   "url": "/fabric-rolls"
+               }
+           })
+            
     if idle_dresses:
-        alerts.append(
-            {
-                "level": "low",
-                "title": "Vestidos sin movimiento",
-                "message": f"{len(idle_dresses)} vestido(s) sin uso en 60+ días.",
-            }
-        )
-   
+          alerts.append({
+              "type": "IDLE_DRESSES",
+              "level": "low",
+              "title": "Vestidos sin movimiento",
+              "message": f"{len(idle_dresses)} vestidos sin uso en 60+ días.",
+              "action": {
+                  "label": "Ver vestidos",
+                  "url": "/dresses?filter=idle"
+              }
+          }) 
+
     if cleaning_delayed > 0:
         alerts.append({
             "level": "medium",

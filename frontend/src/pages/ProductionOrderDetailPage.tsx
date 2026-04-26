@@ -172,51 +172,140 @@ function formatDateTime(value?: string | null, locale = "es-AR") {
   }).format(date);
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Borrador",
-  APPROVED: "Aprobada",
-  MATERIALS_RESERVED: "Materiales reservados",
-  IN_PROGRESS: "En producción",
-  IN_PRODUCTION: "En producción",
-  PARTIALLY_RECEIVED: "Recepción parcial",
-  COMPLETED: "Completada",
-  CANCELLED: "Cancelada",
-};
+function normalizeEnum(value?: string | null) {
+  return String(value || "").trim().toUpperCase();
+}
 
-const PRIORITY_LABELS: Record<string, string> = {
-  LOW: "Baja",
-  NORMAL: "Normal",
-  HIGH: "Alta",
-  URGENT: "Urgente",
-};
+function translateOrderStatus(value?: string | null) {
+  const key = normalizeEnum(value);
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  CREATED: "Orden creada",
-  FABRIC_ASSIGNED: "Tela asignada",
-  TRIM_ASSIGNED: "Avío asignado",
-  MATERIAL_ASSIGNED: "Material asignado",
-  MATERIAL_RESERVED: "Material reservado",
-  MATERIAL_ISSUED: "Material entregado",
-  MATERIAL_RETURNED: "Material devuelto",
-  ORDER_RECEIVED: "Recepción registrada",
-  OUTPUT_CREATED: "Producción registrada",
-  COSTS_UPDATED: "Costos actualizados",
-  DESIGN_IMAGE_UPDATED: "Imagen de diseño actualizada",
-};
+  const labels: Record<string, string> = {
+    DRAFT: "Borrador",
+    APPROVED: "Aprobada",
+    MATERIALS_RESERVED: "Materiales reservados",
+    IN_PROGRESS: "En producción",
+    IN_PRODUCTION: "En producción",
+    PARTIALLY_RECEIVED: "Recepción parcial",
+    COMPLETED: "Completada",
+    CANCELLED: "Cancelada",
+  };
 
-const EVENT_SUMMARY_LABELS: Record<string, string> = {
-  CREATED: "Orden creada",
-  FABRIC_ASSIGNED: "Tela asignada a la orden",
-  TRIM_ASSIGNED: "Avío asignado a la orden",
-  MATERIAL_ASSIGNED: "Material asignado a la orden",
-  MATERIAL_RESERVED: "Material reservado para producción",
-  MATERIAL_ISSUED: "Material entregado al taller",
-  MATERIAL_RETURNED: "Material devuelto",
-  ORDER_RECEIVED: "Recepción de producción registrada",
-  OUTPUT_CREATED: "Producción registrada",
-  COSTS_UPDATED: "Costos actualizados",
-  DESIGN_IMAGE_UPDATED: "Imagen de diseño actualizada",
-};
+  return labels[key] || value || "—";
+}
+
+function translatePriority(value?: string | null) {
+  const key = normalizeEnum(value);
+
+  const labels: Record<string, string> = {
+    LOW: "Baja",
+    NORMAL: "Normal",
+    HIGH: "Alta",
+    URGENT: "Urgente",
+  };
+
+  return labels[key] || value || "—";
+}
+
+function translateEventType(value?: string | null) {
+  const key = normalizeEnum(value);
+
+  const labels: Record<string, string> = {
+    CREATED: "Orden creada",
+    FABRIC_ASSIGNED: "Tela asignada",
+    TRIM_ASSIGNED: "Avío asignado",
+    MATERIAL_ASSIGNED: "Material asignado",
+    MATERIAL_RESERVED: "Material reservado",
+    MATERIAL_ISSUED: "Material entregado",
+    MATERIAL_RETURNED: "Material devuelto",
+    ORDER_RECEIVED: "Recepción registrada",
+    OUTPUT_CREATED: "Producción registrada",
+    COSTS_UPDATED: "Costos actualizados",
+    DESIGN_IMAGE_UPDATED: "Imagen de diseño actualizada",
+  };
+
+  return labels[key] || value || "Movimiento";
+}
+
+function summarizeProductionEvent(event: EventItem) {
+  const key = normalizeEnum(event.event_type);
+
+  const labels: Record<string, string> = {
+    CREATED: "Se creó la orden.",
+    FABRIC_ASSIGNED: "Se asignó una tela a la orden.",
+    TRIM_ASSIGNED: "Se asignó un avío a la orden.",
+    MATERIAL_ASSIGNED: "Se asignó un material a la orden.",
+    MATERIAL_RESERVED: "Se reservó material para producción.",
+    MATERIAL_ISSUED: "Se entregó material al taller.",
+    MATERIAL_RETURNED: "Se registró devolución o merma de material.",
+    ORDER_RECEIVED: "Se registró la recepción de producción.",
+    OUTPUT_CREATED: "Se registró la producción generada.",
+    COSTS_UPDATED: "Se actualizaron los costos de la orden.",
+    DESIGN_IMAGE_UPDATED: "Se actualizó la imagen de diseño.",
+  };
+
+  return labels[key] || translateEventType(event.event_type);
+}
+
+function translatePayloadKey(value?: string | null) {
+  const key = String(value || "").trim();
+
+  const labels: Record<string, string> = {
+    order_number: "Orden",
+    orderNumber: "Orden",
+    roll_code: "Rollo",
+    rollCode: "Rollo",
+    trim_code: "Avío",
+    trimCode: "Avío",
+    material_id: "Material",
+    materialId: "Material",
+    material_type: "Tipo de material",
+    materialType: "Tipo de material",
+    reserved_quantity: "Cantidad reservada",
+    reservedQuantity: "Cantidad reservada",
+    issued_quantity: "Cantidad entregada",
+    issuedQuantity: "Cantidad entregada",
+    returned_quantity: "Cantidad devuelta",
+    returnedQuantity: "Cantidad devuelta",
+    waste_quantity: "Merma",
+    wasteQuantity: "Merma",
+    consumed_quantity: "Consumido",
+    consumedQuantity: "Consumido",
+    produced_quantity: "Cantidad producida",
+    producedQuantity: "Cantidad producida",
+    status: "Estado",
+    name: "Nombre",
+    quantity: "Cantidad",
+    labor_cost: "Mano de obra",
+    laborCost: "Mano de obra",
+    additional_cost: "Costo adicional",
+    additionalCost: "Costo adicional",
+    currency: "Moneda",
+    unit_cost_snapshot: "Costo unitario",
+    unitCostSnapshot: "Costo unitario",
+    design_photo_url: "Imagen de diseño",
+    designPhotoUrl: "Imagen de diseño",
+  };
+
+  return labels[key] || key;
+}
+
+function translatePayloadValue(key: string, value: unknown) {
+  if (value === null || value === undefined) return "—";
+
+  const normalizedKey = String(key || "").trim();
+
+  if (normalizedKey === "status") {
+    return translateOrderStatus(String(value));
+  }
+
+  if (normalizedKey === "material_type" || normalizedKey === "materialType") {
+    const raw = normalizeEnum(String(value));
+    if (raw === "FABRIC_ROLL") return "Tela";
+    if (raw === "TRIM") return "Avío";
+  }
+
+  return String(value);
+}
 
 function eventTone(eventType: string) {
   switch (eventType) {
@@ -244,7 +333,7 @@ function eventTone(eventType: string) {
 }
 
 function summarizeEvent(_t: any, event: EventItem) {
-  return EVENT_SUMMARY_LABELS[event.event_type] || EVENT_TYPE_LABELS[event.event_type] || event.event_type;
+  return summarizeProductionEvent(event);
 }
 
 function resolvePhoto(photoUrl?: string | null) {
@@ -260,13 +349,14 @@ function resolvePhoto(photoUrl?: string | null) {
   return `${apiBaseUrl}/${photoUrl.replace(/^\/+/, "")}`;
 }
 
-function payloadEntries(t: any, payload?: Record<string, unknown> | null) {
+function payloadEntries(_t: any, payload?: Record<string, unknown> | null) {
   if (!payload) return [];
   return Object.entries(payload).map(([key, value]) => {
-    const label = t(`production-orders:events.payload.${key}`, {
-      defaultValue: key,
-    });
-    return { key, label, value: String(value) };
+    return {
+      key,
+      label: translatePayloadKey(key),
+      value: translatePayloadValue(key, value),
+    };
   });
 }
 
@@ -326,7 +416,7 @@ function ProductionOrderEventsTab({
                 <div className="po-event-card__top">
                   <div className="po-event-card__main">
                     <span className={`df-status-badge df-status-badge--${eventTone(event.event_type)}`}>
-                      {EVENT_TYPE_LABELS[event.event_type] || event.event_type}
+                      {translateEventType(event.event_type)}
                     </span>
 
                     <strong className="po-event-card__summary">
@@ -912,14 +1002,14 @@ export default function ProductionOrderDetailPage() {
             <div className="po-meta-card">
               <span className="po-meta-card__label">Estado</span>
               <span className={`df-status-badge df-status-badge--${eventTone(order.status)}`}>
-                {STATUS_LABELS[order.status] || order.status}
+                {translateOrderStatus(order.status)}
               </span>
             </div>
 
             <div className="po-meta-card">
               <span className="po-meta-card__label">Prioridad</span>
               <span className="po-meta-card__value">
-                {PRIORITY_LABELS[order.priority] || order.priority}
+                {translatePriority(order.priority)}
               </span>
             </div>
 

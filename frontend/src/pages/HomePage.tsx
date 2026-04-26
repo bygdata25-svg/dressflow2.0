@@ -28,6 +28,9 @@ import "./HomePage.css";
 
 type DashboardAlert = {
   type?: string;
+  category?: string;
+  category_label?: string;
+  priority?: number;
   level: string;
   title: string;
   message: string;
@@ -144,9 +147,56 @@ function todayLabel() {
 
 function alertTone(level: string) {
   if (level === "high") return "danger";
-  if (level === "medium") return "warning";
+  if (level === "medium" || level === "warning") return "warning";
   return "info";
 }
+
+function alertCategory(alert: DashboardAlert) {
+  const explicit = String(alert.category || "").toLowerCase();
+  if (explicit) return explicit;
+
+  const raw = String(alert.type || "").toUpperCase();
+
+  if (raw.startsWith("PRODUCTION")) return "production";
+  if (raw.includes("STOCK") || raw.includes("FABRIC") || raw.includes("ROLL") || raw.includes("MATERIAL")) {
+    return "stock";
+  }
+  if (raw.includes("LOAN") || raw.includes("RETURN")) return "loans";
+  if (raw.includes("DRESS") || raw.includes("IDLE")) return "inventory";
+  if (raw.includes("COST") || raw.includes("PROFIT") || raw.includes("MARGIN")) return "financial";
+
+  return "general";
+}
+
+function alertCategoryLabel(alert: DashboardAlert) {
+  if (alert.category_label) return alert.category_label;
+
+  const category = alertCategory(alert);
+  if (category === "production") return "Producción";
+  if (category === "stock") return "Stock";
+  if (category === "loans") return "Préstamos";
+  if (category === "inventory") return "Inventario";
+  if (category === "financial") return "Finanzas";
+  return "General";
+}
+
+function alertPriority(alert: DashboardAlert) {
+  const level = String(alert.level || "info").toLowerCase();
+  if (typeof alert.priority === "number") return alert.priority;
+  if (level === "high") return 1;
+  if (level === "medium" || level === "warning") return 2;
+  if (level === "low") return 3;
+  return 4;
+}
+
+const ALERT_CATEGORY_ORDER: Record<string, number> = {
+  production: 1,
+  stock: 2,
+  loans: 3,
+  inventory: 4,
+  financial: 5,
+  general: 9,
+};
 
 function insightTone(value?: string | null) {
   const raw = String(value || "").toLowerCase();
@@ -269,6 +319,71 @@ export default function HomePage() {
       },
     ];
   }, [data, ops]);
+
+
+  const smartAlerts = useMemo<DashboardAlert[]>(() => {
+    if (!data || !ops) return [];
+
+    const alerts: DashboardAlert[] = Array.isArray(data.alerts) ? [...data.alerts] : [];
+
+    if (ops.stock_alerts.accessories_low > 0) {
+      alerts.push({
+        type: "ACCESSORIES_LOW_STOCK",
+        category: "stock",
+        level: "medium",
+        title: "Accesorios bajo mínimo",
+        message: `${ops.stock_alerts.accessories_low} accesorio(s) requieren reposición.`,
+        action: { label: "Ver accesorios", url: "/accessories" },
+      });
+    }
+
+    if (ops.stock_alerts.trims_low > 0) {
+      alerts.push({
+        type: "TRIMS_LOW_STOCK",
+        category: "stock",
+        level: "medium",
+        title: "Avíos bajo mínimo",
+        message: `${ops.stock_alerts.trims_low} avío(s) requieren reposición.`,
+        action: { label: "Ver avíos", url: "/trims" },
+      });
+    }
+
+    return alerts.sort((a, b) => {
+      const priorityDiff = alertPriority(a) - alertPriority(b);
+      if (priorityDiff !== 0) return priorityDiff;
+
+      const categoryDiff =
+        (ALERT_CATEGORY_ORDER[alertCategory(a)] || 9) -
+        (ALERT_CATEGORY_ORDER[alertCategory(b)] || 9);
+
+      if (categoryDiff !== 0) return categoryDiff;
+
+      return String(a.title || "").localeCompare(String(b.title || ""));
+    });
+  }, [data, ops]);
+
+  const groupedAlerts = useMemo(() => {
+    const groups = new Map<string, { key: string; label: string; alerts: DashboardAlert[] }>();
+
+    for (const alert of smartAlerts) {
+      const key = alertCategory(alert);
+      const existing = groups.get(key);
+
+      if (existing) {
+        existing.alerts.push(alert);
+      } else {
+        groups.set(key, {
+          key,
+          label: alertCategoryLabel(alert),
+          alerts: [alert],
+        });
+      }
+    }
+
+    return Array.from(groups.values()).sort(
+      (a, b) => (ALERT_CATEGORY_ORDER[a.key] || 9) - (ALERT_CATEGORY_ORDER[b.key] || 9)
+    );
+  }, [smartAlerts]);
 
 
   const smartInsights = useMemo<DashboardInsight[]>(() => {
@@ -470,6 +585,33 @@ export default function HomePage() {
         .home__alert-action:hover {
           transform: translateY(-1px);
           background: #ffffff;
+        }
+
+        .home__alert-group {
+          display: grid;
+          gap: 10px;
+        }
+
+        .home__alert-group-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 4px 2px 0;
+          color: #766a7e;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-weight: 900;
+        }
+
+        .home__alert-group-badge {
+          border-radius: 999px;
+          background: #f6efe8;
+          color: #8b5e4e;
+          padding: 4px 8px;
+          font-size: 11px;
+          letter-spacing: 0;
         }
 
         @media (max-width: 1180px) {
@@ -679,7 +821,7 @@ export default function HomePage() {
             <div className="home__kpi-top">
               <div className="home__kpi-content">
                 <span className="home__kpi-label">Alertas activas</span>
-                <strong className="home__kpi-value">{data.alerts.length}</strong>
+                <strong className="home__kpi-value">{smartAlerts.length}</strong>
                 <span className="home__kpi-meta">Seguimiento prioritario</span>
               </div>
               <div className="home__kpi-icon home__kpi-icon--stone">
@@ -757,64 +899,39 @@ export default function HomePage() {
           </div>
 
           <div className="home__stack">
-            {data.alerts.length === 0 && (
+            {smartAlerts.length === 0 && (
               <div className="home__placeholder">Sin alertas activas.</div>
             )}
 
-            {data.alerts.map((alert, index) => (
-              <article
-                key={`${alert.type || alert.title}-${index}`}
-                className={`home__alert home__alert--${alertTone(alert.level)}`}
-              >
-                <strong>{alert.title}</strong>
-                <span>{alert.message}</span>
+            {groupedAlerts.map((group) => (
+              <div key={group.key} className="home__alert-group">
+                <div className="home__alert-group-head">
+                  <span>{group.label}</span>
+                  <span className="home__alert-group-badge">{group.alerts.length}</span>
+                </div>
 
-                {alert.action?.url ? (
-                  <button
-                    type="button"
-                    className="home__alert-action"
-                    onClick={() => navigate(alert.action?.url || "/")}
+                {group.alerts.map((alert, index) => (
+                  <article
+                    key={`${alert.type || alert.title}-${index}`}
+                    className={`home__alert home__alert--${alertTone(alert.level)}`}
                   >
-                    {alert.action.label || "Ver detalle"}
-                    <ArrowRight size={14} strokeWidth={2} />
-                  </button>
-                ) : null}
-              </article>
+                    <strong>{alert.title}</strong>
+                    <span>{alert.message}</span>
+
+                    {alert.action?.url ? (
+                      <button
+                        type="button"
+                        className="home__alert-action"
+                        onClick={() => navigate(alert.action?.url || "/")}
+                      >
+                        {alert.action.label || "Ver detalle"}
+                        <ArrowRight size={14} strokeWidth={2} />
+                      </button>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
             ))}
-
-            {ops.stock_alerts.accessories_low > 0 && (
-              <article className="home__alert home__alert--warning">
-                <strong>Accesorios bajo mínimo</strong>
-                <span>
-                  {ops.stock_alerts.accessories_low} accesorio(s) requieren reposición.
-                </span>
-                <button
-                  type="button"
-                  className="home__alert-action"
-                  onClick={() => navigate("/accessories")}
-                >
-                  Ver accesorios
-                  <ArrowRight size={14} strokeWidth={2} />
-                </button>
-              </article>
-            )}
-
-            {ops.stock_alerts.trims_low > 0 && (
-              <article className="home__alert home__alert--warning">
-                <strong>Avíos bajo mínimo</strong>
-                <span>
-                  {ops.stock_alerts.trims_low} avío(s) requieren reposición.
-                </span>
-                <button
-                  type="button"
-                  className="home__alert-action"
-                  onClick={() => navigate("/trims")}
-                >
-                  Ver avíos
-                  <ArrowRight size={14} strokeWidth={2} />
-                </button>
-              </article>
-            )}
           </div>
         </section>
       </div>

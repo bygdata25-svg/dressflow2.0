@@ -27,6 +27,33 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 # SMART ALERTS / INSIGHTS
 # =========================
 
+ALERT_CATEGORY_LABELS = {
+    "loans": "Préstamos",
+    "stock": "Stock",
+    "production": "Producción",
+    "inventory": "Inventario",
+    "financial": "Finanzas",
+    "general": "General",
+}
+
+ALERT_CATEGORY_ORDER = {
+    "production": 1,
+    "stock": 2,
+    "loans": 3,
+    "inventory": 4,
+    "financial": 5,
+    "general": 9,
+}
+
+ALERT_LEVEL_PRIORITY = {
+    "high": 1,
+    "medium": 2,
+    "warning": 2,
+    "low": 3,
+    "info": 4,
+}
+
+
 def _to_float(value) -> float:
     try:
         return float(value or 0)
@@ -34,8 +61,57 @@ def _to_float(value) -> float:
         return 0.0
 
 
+def _alert_category(alert_type: str | None) -> str:
+    raw = (alert_type or "").upper()
+
+    if raw.startswith("PRODUCTION"):
+        return "production"
+    if "STOCK" in raw or "FABRIC" in raw or "ROLL" in raw or "MATERIAL" in raw:
+        return "stock"
+    if "LOAN" in raw or "RETURN" in raw:
+        return "loans"
+    if "DRESS" in raw or "IDLE" in raw:
+        return "inventory"
+    if "COST" in raw or "PROFIT" in raw or "MARGIN" in raw:
+        return "financial"
+
+    return "general"
+
+
+def _alert_priority(alert: dict) -> tuple[int, int, str]:
+    level = str(alert.get("level") or "info").lower()
+    category = str(alert.get("category") or _alert_category(alert.get("type")))
+    title = str(alert.get("title") or "")
+
+    return (
+        ALERT_LEVEL_PRIORITY.get(level, 4),
+        ALERT_CATEGORY_ORDER.get(category, 9),
+        title,
+    )
+
+
+def _prepare_alerts(alerts: list[dict]) -> list[dict]:
+    prepared: list[dict] = []
+
+    for alert in alerts:
+        category = alert.get("category") or _alert_category(alert.get("type"))
+        level = str(alert.get("level") or "info").lower()
+
+        prepared.append(
+            {
+                **alert,
+                "level": level,
+                "category": category,
+                "category_label": ALERT_CATEGORY_LABELS.get(category, "General"),
+                "priority": ALERT_LEVEL_PRIORITY.get(level, 4),
+            }
+        )
+
+    return sorted(prepared, key=_alert_priority)
+
+
 def get_stock_predictions(db: Session, tenant_id):
-    """Predict fabric stock depletion from the last 30 days of OUT movements."""
+    """Predice agotamiento de telas según consumo de los últimos 30 días."""
     start_date = datetime.utcnow() - timedelta(days=30)
 
     rows = db.execute(
@@ -76,8 +152,8 @@ def get_stock_predictions(db: Session, tenant_id):
         {"tenant_id": tenant_id, "start_date": start_date},
     ).mappings().all()
 
-    alerts = []
-    insights = []
+    alerts: list[dict] = []
+    insights: list[dict] = []
 
     for row in rows:
         current_stock = _to_float(row["current_stock_meters"])
@@ -99,16 +175,14 @@ def get_stock_predictions(db: Session, tenant_id):
             alerts.append(
                 {
                     "type": "STOCK_PREDICTION",
+                    "category": "stock",
                     "level": "high" if days_left <= 7 else "medium",
                     "title": f"Stock proyectado bajo: {fabric_label}",
                     "message": (
                         f"Stock actual {current_stock:.2f} m. "
                         f"Al ritmo actual se agotaría en {max(0, int(round(days_left)))} día(s)."
                     ),
-                    "action": {
-                        "label": "Ver rollos",
-                        "url": "/fabric-rolls",
-                    },
+                    "action": {"label": "Ver rollos", "url": "/fabric-rolls"},
                     "meta": {
                         "fabric_id": str(row["fabric_id"]),
                         "current_stock_meters": current_stock,
@@ -170,8 +244,8 @@ def get_production_smart_alerts(db: Session, tenant_id):
         {"tenant_id": tenant_id},
     ).mappings().all()
 
-    alerts = []
-    insights = []
+    alerts: list[dict] = []
+    insights: list[dict] = []
     delayed_count = 0
     stale_count = 0
     material_pending_count = 0
@@ -190,6 +264,7 @@ def get_production_smart_alerts(db: Session, tenant_id):
             alerts.append(
                 {
                     "type": "PRODUCTION_OVERDUE",
+                    "category": "production",
                     "level": "high",
                     "title": f"Orden atrasada {order_code}",
                     "message": f"La orden está vencida hace {days_late} día(s).",
@@ -202,6 +277,7 @@ def get_production_smart_alerts(db: Session, tenant_id):
             alerts.append(
                 {
                     "type": "PRODUCTION_DUE_SOON",
+                    "category": "production",
                     "level": "medium",
                     "title": f"Orden por vencer {order_code}",
                     "message": f"Tiene fecha de entrega en {days_to_due} día(s).",
@@ -215,6 +291,7 @@ def get_production_smart_alerts(db: Session, tenant_id):
             alerts.append(
                 {
                     "type": "PRODUCTION_STALE",
+                    "category": "production",
                     "level": "medium",
                     "title": f"Orden sin avance {order_code}",
                     "message": "No registra actualización en los últimos 7 días.",
@@ -229,6 +306,7 @@ def get_production_smart_alerts(db: Session, tenant_id):
             alerts.append(
                 {
                     "type": "PRODUCTION_PENDING_MATERIALS",
+                    "category": "production",
                     "level": "medium",
                     "title": f"Material pendiente {order_code}",
                     "message": f"Tiene {pending_materials} material(es) con entrega incompleta.",
@@ -245,6 +323,7 @@ def get_production_smart_alerts(db: Session, tenant_id):
             alerts.append(
                 {
                     "type": "PRODUCTION_COST_OVERRUN",
+                    "category": "financial",
                     "level": "high" if overrun_pct >= 40 else "medium",
                     "title": f"Costo desviado {order_code}",
                     "message": f"El costo real supera al estimado en {overrun_pct:.1f}%.",
@@ -305,18 +384,18 @@ def get_production_smart_alerts(db: Session, tenant_id):
 
 
 def get_profitability_insights(db: Session, tenant_id):
-    """Estimated profitability by currency using sales revenue vs production costs."""
+    """Lectura estimada de rentabilidad por moneda: ventas vs costos de producción."""
     sales_rows = db.execute(
         text("""
             SELECT
-                UPPER(COALESCE(si.currency, s.currency, 'ARS')) AS currency,
+                UPPER(COALESCE(si.currency, 'ARS')) AS currency,
                 COALESCE(SUM(COALESCE(si.line_total, 0)), 0) AS revenue
             FROM sales s
             LEFT JOIN sale_items si
                 ON si.sale_id = s.id
             WHERE s.tenant_id = :tenant_id
               AND COALESCE(s.status, 'COMPLETED') != 'CANCELLED'
-            GROUP BY UPPER(COALESCE(si.currency, s.currency, 'ARS'))
+            GROUP BY UPPER(COALESCE(si.currency, 'ARS'))
         """),
         {"tenant_id": tenant_id},
     ).mappings().all()
@@ -338,9 +417,9 @@ def get_profitability_insights(db: Session, tenant_id):
     revenue_by_currency = {row["currency"]: _to_float(row["revenue"]) for row in sales_rows}
     cost_by_currency = {row["currency"]: _to_float(row["cost"]) for row in cost_rows}
 
-    insights = []
+    insights: list[dict] = []
 
-    for currency in ["USD", "ARS"]:
+    for currency in sorted(set(revenue_by_currency) | set(cost_by_currency)):
         revenue = revenue_by_currency.get(currency, 0.0)
         cost = cost_by_currency.get(currency, 0.0)
 
@@ -348,50 +427,19 @@ def get_profitability_insights(db: Session, tenant_id):
             continue
 
         profit = revenue - cost
-        margin = (profit / revenue) * 100 if revenue else 0
-
-        if margin >= 25:
-            tone = "success"
-        elif margin >= 10:
-            tone = "neutral"
-        elif margin >= 0:
-            tone = "warning"
-        else:
-            tone = "danger"
+        margin = (profit / revenue) * 100 if revenue > 0 else 0
 
         insights.append(
             {
                 "type": f"PROFITABILITY_{currency}",
-                "title": f"Rentabilidad estimada {currency}",
+                "title": f"Rentabilidad {currency}",
                 "value": f"{margin:.1f}%",
-                "description": (
-                    f"Ingresos {revenue:,.0f} {currency} vs costos "
-                    f"{cost:,.0f} {currency}."
-                ),
-                "tone": tone,
-                "meta": {
-                    "currency": currency,
-                    "revenue": revenue,
-                    "cost": cost,
-                    "profit": profit,
-                    "margin_pct": margin,
-                },
-            }
-        )
-
-    if not insights:
-        insights.append(
-            {
-                "type": "PROFITABILITY_PENDING",
-                "title": "Rentabilidad",
-                "value": "Sin datos",
-                "description": "Cuando haya ventas y costos de producción, DressFlow calculará el margen estimado.",
-                "tone": "neutral",
+                "description": f"Ingresos {revenue:,.2f} {currency} vs costos {cost:,.2f} {currency}.",
+                "tone": "success" if margin >= 25 else "warning" if margin > 0 else "danger",
             }
         )
 
     return insights
-
 
 
 @router.get("/summary")
@@ -680,6 +728,7 @@ def dashboard_summary(
         alerts.append(
             {
                 "type": "OVERDUE_LOANS",
+                "category": "loans",
                 "level": "high",
                 "title": "Préstamos vencidos",
                 "message": f"{loans_overdue} préstamo(s) requieren acción inmediata.",
@@ -691,6 +740,7 @@ def dashboard_summary(
         alerts.append(
             {
                 "type": "LOANS_DUE_SOON",
+                "category": "loans",
                 "level": "medium",
                 "title": "Devoluciones próximas",
                 "message": f"{loans_due_soon} devolución(es) en los próximos días.",
@@ -702,6 +752,7 @@ def dashboard_summary(
         alerts.append(
             {
                 "type": "FABRIC_ROLLS_DEPLETED",
+                "category": "stock",
                 "level": "low",
                 "title": "Rollos agotados",
                 "message": f"{rolls_depleted} rollo(s) sin stock.",
@@ -713,6 +764,7 @@ def dashboard_summary(
         alerts.append(
             {
                 "type": "IDLE_DRESSES",
+                "category": "inventory",
                 "level": "low",
                 "title": "Vestidos sin movimiento",
                 "message": f"{len(idle_dresses)} vestido(s) sin uso en 60+ días.",
@@ -724,6 +776,7 @@ def dashboard_summary(
         alerts.append(
             {
                 "type": "DRESSES_CLEANING_DELAYED",
+                "category": "inventory",
                 "level": "medium",
                 "title": "Vestidos en limpieza",
                 "message": f"{cleaning_delayed} vestido(s) llevan más de 48 hs en limpieza.",
@@ -735,6 +788,7 @@ def dashboard_summary(
         alerts.append(
             {
                 "type": "DRESSES_MAINTENANCE_DELAYED",
+                "category": "inventory",
                 "level": "high",
                 "title": "Vestidos en mantenimiento",
                 "message": f"{maintenance_delayed} vestido(s) llevan varios días en reparación.",
@@ -748,6 +802,7 @@ def dashboard_summary(
 
     alerts.extend(stock_prediction_alerts)
     alerts.extend(production_smart_alerts)
+    alerts = _prepare_alerts(alerts)
 
     insights = []
 

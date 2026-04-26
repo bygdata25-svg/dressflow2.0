@@ -225,6 +225,42 @@ function translateEventType(value?: string | null) {
   return map[key] || value || "Movimiento";
 }
 
+function eventIcon(eventType?: string | null) {
+  const key = String(eventType || "").trim().toUpperCase();
+
+  const map: Record<string, string> = {
+    CREATED: "✦",
+    FABRIC_ASSIGNED: "🧵",
+    TRIM_ASSIGNED: "✂️",
+    MATERIAL_ASSIGNED: "🧩",
+    MATERIAL_RESERVED: "📦",
+    MATERIAL_ISSUED: "🏭",
+    MATERIAL_RETURNED: "↩",
+    ORDER_RECEIVED: "✓",
+    OUTPUT_CREATED: "👗",
+    COSTS_UPDATED: "💰",
+    DESIGN_IMAGE_UPDATED: "🖼️",
+  };
+
+  return map[key] || "•";
+}
+
+function eventVisualTone(eventType?: string | null) {
+  const key = String(eventType || "").trim().toUpperCase();
+
+  if (key === "COSTS_UPDATED") return "finance";
+  if (key === "DESIGN_IMAGE_UPDATED") return "image";
+  if (key === "MATERIAL_RESERVED" || key === "MATERIAL_ASSIGNED" || key === "FABRIC_ASSIGNED" || key === "TRIM_ASSIGNED") {
+    return "materials";
+  }
+  if (key === "MATERIAL_ISSUED" || key === "ORDER_RECEIVED" || key === "OUTPUT_CREATED") {
+    return "production";
+  }
+  if (key === "MATERIAL_RETURNED") return "return";
+
+  return "default";
+}
+
 function summarizeEvent(event: EventItem) {
   return translateEventType(event.event_type);
 }
@@ -1255,57 +1291,296 @@ function ProductionOrderEventsTab({
   setExpandedEvents: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }) {
   return (
-    <section className="po-section-card">
+    <section className="po-section-card po-events-card">
+      <style>{`
+        .po-events-card {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .po-events-card::before {
+          content: "";
+          position: absolute;
+          inset: 0 auto 0 34px;
+          width: 1px;
+          background: linear-gradient(
+            180deg,
+            rgba(216, 207, 195, 0) 0%,
+            rgba(216, 207, 195, 0.95) 12%,
+            rgba(216, 207, 195, 0.95) 88%,
+            rgba(216, 207, 195, 0) 100%
+          );
+          pointer-events: none;
+        }
+
+        .po-events-timeline {
+          display: grid;
+          gap: 14px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .po-event-card {
+          display: grid;
+          grid-template-columns: 48px minmax(0, 1fr);
+          gap: 12px;
+          border: 1px solid rgba(222, 211, 203, 0.9);
+          background:
+            radial-gradient(circle at top right, rgba(195, 140, 122, 0.08), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%);
+          border-radius: 22px;
+          padding: 14px;
+          box-shadow: 0 16px 34px rgba(52, 41, 58, 0.06);
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .po-event-card:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 20px 42px rgba(52, 41, 58, 0.09);
+          border-color: rgba(195, 140, 122, 0.42);
+        }
+
+        .po-event-marker {
+          width: 42px;
+          height: 42px;
+          border-radius: 16px;
+          display: grid;
+          place-items: center;
+          background: #f7efe8;
+          border: 1px solid rgba(216, 207, 195, 0.95);
+          color: #6f4f70;
+          font-size: 18px;
+          box-shadow: 0 10px 22px rgba(72, 55, 83, 0.08);
+          position: relative;
+          z-index: 2;
+        }
+
+        .po-event-body {
+          min-width: 0;
+        }
+
+        .po-event-card__top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .po-event-card__main {
+          display: grid;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .po-event-type-pill {
+          width: fit-content;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 28px;
+          padding: 0 11px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          border: 1px solid rgba(216, 207, 195, 0.9);
+          background: rgba(255,255,255,0.78);
+          color: #5f5667;
+        }
+
+        .po-event-card__summary {
+          display: block;
+          color: #30283c;
+          font-size: 15px;
+          letter-spacing: -0.01em;
+        }
+
+        .po-event-date {
+          color: #8a7f73;
+          font-size: 13px;
+        }
+
+        .po-event-card__payload {
+          margin-top: 14px;
+          display: grid;
+          gap: 8px;
+          border-top: 1px solid rgba(226, 218, 209, 0.9);
+          padding-top: 12px;
+        }
+
+        .po-event-card__payload-row {
+          display: grid;
+          grid-template-columns: minmax(120px, 0.4fr) minmax(0, 1fr);
+          gap: 10px;
+          align-items: baseline;
+          padding: 9px 10px;
+          border-radius: 14px;
+          background: rgba(255,255,255,0.68);
+          border: 1px solid rgba(235, 229, 223, 0.8);
+        }
+
+        .po-event-card__payload-row span {
+          color: #8a7f73;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .po-event-card__payload-row strong {
+          color: #3c3345;
+          font-size: 13px;
+          word-break: break-word;
+        }
+
+        .po-event-card--finance .po-event-marker,
+        .po-event-card--finance .po-event-type-pill {
+          background: #f4efff;
+          color: #6b4aa0;
+          border-color: rgba(132, 96, 180, 0.24);
+        }
+
+        .po-event-card--materials .po-event-marker,
+        .po-event-card--materials .po-event-type-pill {
+          background: #fff7e8;
+          color: #8a5e12;
+          border-color: rgba(211, 177, 115, 0.34);
+        }
+
+        .po-event-card--production .po-event-marker,
+        .po-event-card--production .po-event-type-pill {
+          background: #edf7fb;
+          color: #2f6d82;
+          border-color: rgba(86, 145, 162, 0.26);
+        }
+
+        .po-event-card--image .po-event-marker,
+        .po-event-card--image .po-event-type-pill {
+          background: #fff0f3;
+          color: #9a4659;
+          border-color: rgba(217, 154, 162, 0.34);
+        }
+
+        .po-event-card--return .po-event-marker,
+        .po-event-card--return .po-event-type-pill {
+          background: #eefaf2;
+          color: #2d754d;
+          border-color: rgba(99, 155, 119, 0.3);
+        }
+
+        .po-ghost-btn {
+          border: 1px solid rgba(216, 207, 195, 0.95);
+          background: rgba(255,255,255,0.86);
+          color: #3d3448;
+          border-radius: 12px;
+          min-height: 34px;
+          padding: 0 12px;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: transform 0.16s ease, background 0.16s ease;
+        }
+
+        .po-ghost-btn:hover {
+          transform: translateY(-1px);
+          background: #fff;
+        }
+
+        @media (max-width: 720px) {
+          .po-events-card::before {
+            left: 27px;
+          }
+
+          .po-event-card {
+            grid-template-columns: 38px minmax(0, 1fr);
+            padding: 12px;
+          }
+
+          .po-event-marker {
+            width: 34px;
+            height: 34px;
+            border-radius: 13px;
+            font-size: 15px;
+          }
+
+          .po-event-card__top {
+            flex-direction: column;
+          }
+
+          .po-event-card__payload-row {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
       <div className="po-section-head">
         <h3>Movimientos</h3>
-        <p>Historial de todo lo ocurrido en esta orden.</p>
+        <p>Timeline operativo de la orden, con eventos agrupados visualmente por tipo.</p>
       </div>
 
-      <div className="po-events-list">
+      <div className="po-events-timeline">
         {latestEvents.length === 0 ? (
           <div className="po-empty-state">Todavía no hay movimientos registrados.</div>
         ) : (
           latestEvents.map((event) => {
             const entries = payloadEntries(event.payload);
             const expanded = !!expandedEvents[event.id];
+            const tone = eventVisualTone(event.event_type);
 
             return (
-              <article key={event.id} className="po-event-card">
-                <div className="po-event-card__top">
-                  <div className="po-event-card__main">
-                    <span className={`df-status-badge df-status-badge--${eventTone(event.event_type)}`}>
-                      {translateEventType(event.event_type)}
-                    </span>
-                    <strong className="po-event-card__summary">{summarizeEvent(event)}</strong>
-                    <span className="po-soft-text">{formatDateTime(event.created_at)}</span>
-                  </div>
-
-                  {entries.length > 0 ? (
-                    <button
-                      type="button"
-                      className="po-ghost-btn"
-                      onClick={() =>
-                        setExpandedEvents((prev) => ({
-                          ...prev,
-                          [event.id]: !prev[event.id],
-                        }))
-                      }
-                    >
-                      {expanded ? "Ocultar detalle" : "Ver detalle"}
-                    </button>
-                  ) : null}
+              <article
+                key={event.id}
+                className={`po-event-card po-event-card--${tone}`}
+              >
+                <div className="po-event-marker" aria-hidden="true">
+                  {eventIcon(event.event_type)}
                 </div>
 
-                {expanded && entries.length > 0 ? (
-                  <div className="po-event-card__payload">
-                    {entries.map((entry) => (
-                      <div key={`${event.id}-${entry.key}`} className="po-event-card__payload-row">
-                        <span>{entry.label}</span>
-                        <strong>{entry.value}</strong>
-                      </div>
-                    ))}
+                <div className="po-event-body">
+                  <div className="po-event-card__top">
+                    <div className="po-event-card__main">
+                      <span className="po-event-type-pill">
+                        {translateEventType(event.event_type)}
+                      </span>
+
+                      <strong className="po-event-card__summary">
+                        {summarizeEvent(event)}
+                      </strong>
+
+                      <span className="po-event-date">
+                        {formatDateTime(event.created_at)}
+                      </span>
+                    </div>
+
+                    {entries.length > 0 ? (
+                      <button
+                        type="button"
+                        className="po-ghost-btn"
+                        onClick={() =>
+                          setExpandedEvents((prev) => ({
+                            ...prev,
+                            [event.id]: !prev[event.id],
+                          }))
+                        }
+                      >
+                        {expanded ? "Ocultar detalle" : "Ver detalle"}
+                      </button>
+                    ) : null}
                   </div>
-                ) : null}
+
+                  {expanded && entries.length > 0 ? (
+                    <div className="po-event-card__payload">
+                      {entries.map((entry) => (
+                        <div key={`${event.id}-${entry.key}`} className="po-event-card__payload-row">
+                          <span>{entry.label}</span>
+                          <strong>{entry.value}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </article>
             );
           })

@@ -159,5 +159,33 @@
   "messages": {
     "loadError": "No se pudieron cargar las órdenes.",
     "detailLoadError": "No se pudo cargar el detalle de la orden."
+  },
+{
+  "events": {
+    "types": {
+      "COSTS_UPDATED": "Costos actualizados",
+      "DESIGN_IMAGE_UPDATED": "Imagen de diseño actualizada",
+      "CREATED": "Orden creada",
+      "MATERIAL_ASSIGNED": "Material asignado",
+      "MATERIAL_RESERVED": "Material reservado",
+      "MATERIAL_ISSUED": "Material entregado",
+      "MATERIAL_RETURNED": "Material devuelto",
+      "ORDER_RECEIVED": "Orden recibida",
+      "OUTPUT_CREATED": "Producción registrada"
+    }
+  },
+  "status": {
+    "DRAFT": "Borrador",
+    "APPROVED": "Aprobada",
+    "IN_PROGRESS": "En producción",
+    "COMPLETED": "Completada",
+    "CANCELLED": "Cancelada"
+  },
+  "priority": {
+    "LOW": "Baja",
+    "NORMAL": "Normal",
+    "HIGH": "Alta",
+    "URGENT": "Urgente"
   }
+}
 }

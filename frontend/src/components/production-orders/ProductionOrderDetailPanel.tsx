@@ -205,8 +205,119 @@ function eventTone(eventType: string) {
   }
 }
 
+function translateEventType(value?: string | null) {
+  const key = String(value || "").trim().toUpperCase();
+
+  const map: Record<string, string> = {
+    CREATED: "Orden creada",
+    FABRIC_ASSIGNED: "Tela asignada",
+    TRIM_ASSIGNED: "Avío asignado",
+    MATERIAL_ASSIGNED: "Material asignado",
+    MATERIAL_RESERVED: "Material reservado",
+    MATERIAL_ISSUED: "Material entregado",
+    MATERIAL_RETURNED: "Material devuelto",
+    ORDER_RECEIVED: "Recepción registrada",
+    OUTPUT_CREATED: "Producción registrada",
+    COSTS_UPDATED: "Costos actualizados",
+    DESIGN_IMAGE_UPDATED: "Imagen de diseño actualizada",
+  };
+
+  return map[key] || value || "Movimiento";
+}
+
 function summarizeEvent(event: EventItem) {
-  return event.event_type.replaceAll("_", " ");
+  return translateEventType(event.event_type);
+}
+
+function translateOrderStatus(value?: string | null) {
+  const key = String(value || "").trim().toUpperCase();
+
+  const map: Record<string, string> = {
+    DRAFT: "Borrador",
+    APPROVED: "Aprobada",
+    MATERIALS_RESERVED: "Materiales reservados",
+    IN_PROGRESS: "En producción",
+    IN_PRODUCTION: "En producción",
+    PARTIALLY_RECEIVED: "Recepción parcial",
+    COMPLETED: "Completada",
+    CANCELLED: "Cancelada",
+  };
+
+  return map[key] || value || "-";
+}
+
+function translatePriority(value?: string | null) {
+  const key = String(value || "").trim().toUpperCase();
+
+  const map: Record<string, string> = {
+    LOW: "Baja",
+    NORMAL: "Normal",
+    HIGH: "Alta",
+    URGENT: "Urgente",
+  };
+
+  return map[key] || value || "-";
+}
+
+function translatePayloadKey(value?: string | null) {
+  const key = String(value || "").trim();
+
+  const map: Record<string, string> = {
+    order_number: "Orden",
+    orderNumber: "Orden",
+    roll_code: "Rollo",
+    rollCode: "Rollo",
+    trim_code: "Avío",
+    trimCode: "Avío",
+    material_id: "Material",
+    materialId: "Material",
+    material_type: "Tipo de material",
+    materialType: "Tipo de material",
+    reserved_quantity: "Cantidad reservada",
+    reservedQuantity: "Cantidad reservada",
+    issued_quantity: "Cantidad entregada",
+    issuedQuantity: "Cantidad entregada",
+    returned_quantity: "Cantidad devuelta",
+    returnedQuantity: "Cantidad devuelta",
+    waste_quantity: "Merma",
+    wasteQuantity: "Merma",
+    consumed_quantity: "Consumido",
+    consumedQuantity: "Consumido",
+    produced_quantity: "Cantidad producida",
+    producedQuantity: "Cantidad producida",
+    status: "Estado",
+    name: "Nombre",
+    quantity: "Cantidad",
+    labor_cost: "Mano de obra",
+    laborCost: "Mano de obra",
+    additional_cost: "Costo adicional",
+    additionalCost: "Costo adicional",
+    currency: "Moneda",
+    unit_cost_snapshot: "Costo unitario",
+    unitCostSnapshot: "Costo unitario",
+    design_photo_url: "Imagen de diseño",
+    designPhotoUrl: "Imagen de diseño",
+  };
+
+  return map[key] || key;
+}
+
+function translatePayloadValue(key: string, value: unknown) {
+  if (value === null || value === undefined) return "-";
+
+  const normalizedKey = String(key || "").trim();
+
+  if (normalizedKey === "status") {
+    return translateOrderStatus(String(value));
+  }
+
+  if (normalizedKey === "material_type" || normalizedKey === "materialType") {
+    const raw = String(value || "").trim().toUpperCase();
+    if (raw === "FABRIC_ROLL") return "Tela";
+    if (raw === "TRIM") return "Avío";
+  }
+
+  return String(value);
 }
 
 function resolvePhoto(photoUrl?: string | null) {
@@ -219,8 +330,8 @@ function payloadEntries(payload?: Record<string, unknown> | null) {
   if (!payload) return [];
   return Object.entries(payload).map(([key, value]) => ({
     key,
-    label: key,
-    value: String(value),
+    label: translatePayloadKey(key),
+    value: translatePayloadValue(key, value),
   }));
 }
 
@@ -1163,7 +1274,7 @@ function ProductionOrderEventsTab({
                 <div className="po-event-card__top">
                   <div className="po-event-card__main">
                     <span className={`df-status-badge df-status-badge--${eventTone(event.event_type)}`}>
-                      {event.event_type}
+                      {translateEventType(event.event_type)}
                     </span>
                     <strong className="po-event-card__summary">{summarizeEvent(event)}</strong>
                     <span className="po-soft-text">{formatDateTime(event.created_at)}</span>
@@ -1849,12 +1960,12 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       <div className="po-meta-compact-grid">
         <div className="po-meta-compact-card">
           <span>Estado</span>
-          <strong>{order.status}</strong>
+          <strong>{translateOrderStatus(order.status)}</strong>
         </div>
 
         <div className="po-meta-compact-card">
           <span>Prioridad</span>
-          <strong>{order.priority}</strong>
+          <strong>{translatePriority(order.priority)}</strong>
         </div>
 
         <div className="po-meta-compact-card">

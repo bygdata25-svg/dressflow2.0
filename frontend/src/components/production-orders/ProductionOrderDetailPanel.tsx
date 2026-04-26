@@ -180,30 +180,6 @@ function formatDateTime(value?: string | null, locale = "es-AR") {
   }).format(date);
 }
 
-function eventTone(eventType: string) {
-  switch (eventType) {
-    case "CREATED":
-      return "draft";
-    case "FABRIC_ASSIGNED":
-    case "TRIM_ASSIGNED":
-    case "MATERIAL_ASSIGNED":
-    case "MATERIAL_RESERVED":
-      return "materials_reserved";
-    case "MATERIAL_ISSUED":
-      return "in_production";
-    case "MATERIAL_RETURNED":
-      return "available";
-    case "ORDER_RECEIVED":
-      return "completed";
-    case "OUTPUT_CREATED":
-      return "sold";
-    case "COSTS_UPDATED":
-    case "DESIGN_IMAGE_UPDATED":
-      return "maintenance";
-    default:
-      return "draft";
-  }
-}
 
 function translateEventType(value?: string | null) {
   const key = String(value || "").trim().toUpperCase();

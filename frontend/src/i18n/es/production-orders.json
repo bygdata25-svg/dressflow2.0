@@ -159,7 +159,7 @@
   "messages": {
     "loadError": "No se pudieron cargar las órdenes.",
     "detailLoadError": "No se pudo cargar el detalle de la orden."
-  },
+  }
 {
   "events": {
     "types": {

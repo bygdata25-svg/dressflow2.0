@@ -59,10 +59,37 @@ function isValidTaxId(value?: string | null): boolean {
   const digits = normalizeTaxId(value);
 
   if (!digits) return true;
-  if (digits.length === 7 || digits.length === 8) return true; // DNI
-  if (digits.length === 11) return true; // CUIT / CUIL
+
+  // DNI
+  if (digits.length === 7 || digits.length === 8) return true;
+
+  // CUIT / CUIL con dígito verificador
+  if (digits.length === 11) {
+    const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+
+    let sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += Number(digits[i]) * weights[i];
+    }
+
+    let checkDigit = 11 - (sum % 11);
+
+    if (checkDigit === 11) checkDigit = 0;
+    if (checkDigit === 10) checkDigit = 9;
+
+    return checkDigit === Number(digits[10]);
+  }
 
   return false;
+}
+
+function getTaxIdType(value?: string | null): "DNI" | "CUIT / CUIL" | "Documento" {
+  const digits = normalizeTaxId(value);
+
+  if (digits.length === 11) return "CUIT / CUIL";
+  if (digits.length === 7 || digits.length === 8) return "DNI";
+
+  return "Documento";
 }
 
 function formatTaxId(value?: string | null): string {
@@ -219,7 +246,7 @@ export default function CustomersPage() {
     }
 
     if (!isValidTaxId(form.tax_id)) {
-      setError("El documento debe ser un DNI de 7 u 8 números, o un CUIT/CUIL de 11 números.");
+      setError("El documento debe ser un DNI de 7 u 8 números, o un CUIT/CUIL válido.");
       return;
     }
 
@@ -459,16 +486,22 @@ export default function CustomersPage() {
                 marginTop: 10,
                 padding: "10px 12px",
                 borderRadius: 12,
-                background: "#f8f4ef",
-                color: "#6b5e55",
+                background: isValidTaxId(form.tax_id) ? "#f2f8f3" : "#fdecec",
+                color: isValidTaxId(form.tax_id) ? "#2f6b3f" : "#9a2f2f",
                 fontSize: 13,
+                border: isValidTaxId(form.tax_id)
+                  ? "1px solid #cfe7d4"
+                  : "1px solid #f3b8b8",
               }}
             >
               Documento detectado:{" "}
+              <strong>{getTaxIdType(form.tax_id)}</strong>
+              {" · "}
+              {formatTaxId(form.tax_id)}
+              {" · "}
               <strong>
-                {normalizeTaxId(form.tax_id).length === 11 ? "CUIT / CUIL" : "DNI"}
-              </strong>{" "}
-              · {formatTaxId(form.tax_id)}
+                {isValidTaxId(form.tax_id) ? "✔ válido" : "✖ inválido"}
+              </strong>
             </div>
           ) : null}
 

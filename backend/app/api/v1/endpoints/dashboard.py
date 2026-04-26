@@ -23,6 +23,377 @@ from app.models.dress_status_history import DressStatusHistory
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
+# =========================
+# SMART ALERTS / INSIGHTS
+# =========================
+
+def _to_float(value) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def get_stock_predictions(db: Session, tenant_id):
+    """Predict fabric stock depletion from the last 30 days of OUT movements."""
+    start_date = datetime.utcnow() - timedelta(days=30)
+
+    rows = db.execute(
+        text("""
+            SELECT
+                f.id AS fabric_id,
+                f.name AS fabric_name,
+                f.color AS fabric_color,
+                COALESCE(SUM(fr.current_length), 0) AS current_stock_meters,
+                COALESCE(consumed.consumed_30d, 0) AS consumed_30d
+            FROM fabrics f
+            LEFT JOIN fabric_rolls fr
+                ON fr.fabric_id = f.id
+               AND fr.tenant_id = :tenant_id
+               AND fr.deleted_at IS NULL
+               AND COALESCE(fr.is_active, TRUE) = TRUE
+            LEFT JOIN (
+                SELECT
+                    fr2.fabric_id,
+                    SUM(ABS(COALESCE(fm.quantity, 0))) AS consumed_30d
+                FROM fabric_movements fm
+                JOIN fabric_rolls fr2
+                    ON fr2.id = fm.fabric_roll_id
+                WHERE fm.tenant_id = :tenant_id
+                  AND fm.created_at >= :start_date
+                  AND (
+                    UPPER(COALESCE(fm.type, '')) IN ('OUT', 'ISSUE', 'CONSUMPTION')
+                    OR UPPER(COALESCE(fm.movement_reason, '')) IN ('PRODUCTION_ISSUE', 'PRODUCTION_CONSUMPTION')
+                  )
+                GROUP BY fr2.fabric_id
+            ) consumed
+                ON consumed.fabric_id = f.id
+            WHERE f.tenant_id = :tenant_id
+              AND f.deleted_at IS NULL
+            GROUP BY f.id, f.name, f.color, consumed.consumed_30d
+            ORDER BY current_stock_meters ASC, f.name ASC
+        """),
+        {"tenant_id": tenant_id, "start_date": start_date},
+    ).mappings().all()
+
+    alerts = []
+    insights = []
+
+    for row in rows:
+        current_stock = _to_float(row["current_stock_meters"])
+        consumed_30d = _to_float(row["consumed_30d"])
+
+        if consumed_30d <= 0:
+            continue
+
+        daily_usage = consumed_30d / 30
+        if daily_usage <= 0:
+            continue
+
+        days_left = current_stock / daily_usage if current_stock > 0 else 0
+        fabric_label = row["fabric_name"] or "Tela sin nombre"
+        if row["fabric_color"]:
+            fabric_label = f"{fabric_label} {row['fabric_color']}"
+
+        if days_left <= 15:
+            alerts.append(
+                {
+                    "type": "STOCK_PREDICTION",
+                    "level": "high" if days_left <= 7 else "medium",
+                    "title": f"Stock proyectado bajo: {fabric_label}",
+                    "message": (
+                        f"Stock actual {current_stock:.2f} m. "
+                        f"Al ritmo actual se agotaría en {max(0, int(round(days_left)))} día(s)."
+                    ),
+                    "action": {
+                        "label": "Ver rollos",
+                        "url": "/fabric-rolls",
+                    },
+                    "meta": {
+                        "fabric_id": str(row["fabric_id"]),
+                        "current_stock_meters": current_stock,
+                        "consumed_30d": consumed_30d,
+                        "daily_usage": daily_usage,
+                        "days_left": days_left,
+                    },
+                }
+            )
+
+    if alerts:
+        most_urgent = sorted(alerts, key=lambda item: item.get("meta", {}).get("days_left", 999))[0]
+        insights.append(
+            {
+                "type": "STOCK_FORECAST",
+                "title": "Riesgo de stock",
+                "value": most_urgent["title"].replace("Stock proyectado bajo: ", ""),
+                "description": most_urgent["message"],
+                "tone": "danger" if most_urgent["level"] == "high" else "warning",
+            }
+        )
+
+    return alerts, insights
+
+
+def get_production_smart_alerts(db: Session, tenant_id):
+    today = date.today()
+    stale_limit = datetime.utcnow() - timedelta(days=7)
+
+    rows = db.execute(
+        text("""
+            SELECT
+                po.id,
+                po.order_number,
+                po.status,
+                po.priority,
+                po.due_date,
+                po.updated_at,
+                po.estimated_total_cost,
+                po.actual_total_cost,
+                po.target_dress_name,
+                COALESCE(materials.pending_materials, 0) AS pending_materials
+            FROM production_orders po
+            LEFT JOIN (
+                SELECT
+                    production_order_id,
+                    COUNT(*) AS pending_materials
+                FROM production_order_materials
+                WHERE tenant_id = :tenant_id
+                  AND COALESCE(planned_quantity, 0) > COALESCE(delivered_quantity, 0)
+                GROUP BY production_order_id
+            ) materials
+                ON materials.production_order_id = po.id
+            WHERE po.tenant_id = :tenant_id
+              AND po.deleted_at IS NULL
+              AND UPPER(COALESCE(po.status, '')) NOT IN ('COMPLETED', 'CANCELLED')
+            ORDER BY po.due_date ASC NULLS LAST, po.updated_at ASC
+        """),
+        {"tenant_id": tenant_id},
+    ).mappings().all()
+
+    alerts = []
+    insights = []
+    delayed_count = 0
+    stale_count = 0
+    material_pending_count = 0
+    cost_overrun_count = 0
+
+    for row in rows:
+        order_code = row["order_number"] or "Orden sin número"
+        order_url = f"/production-orders/{row['id']}"
+        due_date = row["due_date"]
+        updated_at = row["updated_at"]
+        status = (row["status"] or "").upper()
+
+        if due_date and due_date < today:
+            delayed_count += 1
+            days_late = (today - due_date).days
+            alerts.append(
+                {
+                    "type": "PRODUCTION_OVERDUE",
+                    "level": "high",
+                    "title": f"Orden atrasada {order_code}",
+                    "message": f"La orden está vencida hace {days_late} día(s).",
+                    "action": {"label": "Ver orden", "url": order_url},
+                    "meta": {"order_id": str(row["id"]), "days_late": days_late},
+                }
+            )
+        elif due_date and due_date <= today + timedelta(days=3):
+            days_to_due = (due_date - today).days
+            alerts.append(
+                {
+                    "type": "PRODUCTION_DUE_SOON",
+                    "level": "medium",
+                    "title": f"Orden por vencer {order_code}",
+                    "message": f"Tiene fecha de entrega en {days_to_due} día(s).",
+                    "action": {"label": "Ver orden", "url": order_url},
+                    "meta": {"order_id": str(row["id"]), "days_to_due": days_to_due},
+                }
+            )
+
+        if updated_at and updated_at <= stale_limit and status in {"DRAFT", "APPROVED", "MATERIALS_RESERVED", "IN_PRODUCTION"}:
+            stale_count += 1
+            alerts.append(
+                {
+                    "type": "PRODUCTION_STALE",
+                    "level": "medium",
+                    "title": f"Orden sin avance {order_code}",
+                    "message": "No registra actualización en los últimos 7 días.",
+                    "action": {"label": "Revisar orden", "url": order_url},
+                    "meta": {"order_id": str(row["id"]), "status": row["status"]},
+                }
+            )
+
+        pending_materials = int(row["pending_materials"] or 0)
+        if pending_materials > 0 and status in {"APPROVED", "MATERIALS_RESERVED", "IN_PRODUCTION"}:
+            material_pending_count += 1
+            alerts.append(
+                {
+                    "type": "PRODUCTION_PENDING_MATERIALS",
+                    "level": "medium",
+                    "title": f"Material pendiente {order_code}",
+                    "message": f"Tiene {pending_materials} material(es) con entrega incompleta.",
+                    "action": {"label": "Ver materiales", "url": order_url},
+                    "meta": {"order_id": str(row["id"]), "pending_materials": pending_materials},
+                }
+            )
+
+        estimated_cost = _to_float(row["estimated_total_cost"])
+        actual_cost = _to_float(row["actual_total_cost"])
+        if estimated_cost > 0 and actual_cost > estimated_cost * 1.2:
+            cost_overrun_count += 1
+            overrun_pct = ((actual_cost - estimated_cost) / estimated_cost) * 100
+            alerts.append(
+                {
+                    "type": "PRODUCTION_COST_OVERRUN",
+                    "level": "high" if overrun_pct >= 40 else "medium",
+                    "title": f"Costo desviado {order_code}",
+                    "message": f"El costo real supera al estimado en {overrun_pct:.1f}%.",
+                    "action": {"label": "Ver costos", "url": order_url},
+                    "meta": {
+                        "order_id": str(row["id"]),
+                        "estimated_total_cost": estimated_cost,
+                        "actual_total_cost": actual_cost,
+                        "overrun_pct": overrun_pct,
+                    },
+                }
+            )
+
+    if delayed_count > 0:
+        insights.append(
+            {
+                "type": "PRODUCTION_DELAYS",
+                "title": "Producción en riesgo",
+                "value": delayed_count,
+                "description": "Orden(es) atrasadas que pueden afectar entregas o disponibilidad.",
+                "tone": "danger",
+            }
+        )
+    elif stale_count > 0:
+        insights.append(
+            {
+                "type": "PRODUCTION_STALE",
+                "title": "Órdenes sin avance",
+                "value": stale_count,
+                "description": "Orden(es) abiertas sin actualización reciente.",
+                "tone": "warning",
+            }
+        )
+
+    if material_pending_count > 0:
+        insights.append(
+            {
+                "type": "MATERIALS_PENDING",
+                "title": "Materiales pendientes",
+                "value": material_pending_count,
+                "description": "Orden(es) con materiales aún no entregados completamente.",
+                "tone": "warning",
+            }
+        )
+
+    if cost_overrun_count > 0:
+        insights.append(
+            {
+                "type": "COST_OVERRUNS",
+                "title": "Desvíos de costo",
+                "value": cost_overrun_count,
+                "description": "Orden(es) con costo real por encima del estimado.",
+                "tone": "danger",
+            }
+        )
+
+    return alerts, insights
+
+
+def get_profitability_insights(db: Session, tenant_id):
+    """Estimated profitability by currency using sales revenue vs production costs."""
+    sales_rows = db.execute(
+        text("""
+            SELECT
+                UPPER(COALESCE(si.currency, s.currency, 'ARS')) AS currency,
+                COALESCE(SUM(COALESCE(si.line_total, 0)), 0) AS revenue
+            FROM sales s
+            LEFT JOIN sale_items si
+                ON si.sale_id = s.id
+            WHERE s.tenant_id = :tenant_id
+              AND COALESCE(s.status, 'COMPLETED') != 'CANCELLED'
+            GROUP BY UPPER(COALESCE(si.currency, s.currency, 'ARS'))
+        """),
+        {"tenant_id": tenant_id},
+    ).mappings().all()
+
+    cost_rows = db.execute(
+        text("""
+            SELECT
+                UPPER(COALESCE(currency, 'ARS')) AS currency,
+                COALESCE(SUM(COALESCE(actual_total_cost, estimated_total_cost, 0)), 0) AS cost
+            FROM production_orders
+            WHERE tenant_id = :tenant_id
+              AND deleted_at IS NULL
+              AND UPPER(COALESCE(status, '')) NOT IN ('CANCELLED')
+            GROUP BY UPPER(COALESCE(currency, 'ARS'))
+        """),
+        {"tenant_id": tenant_id},
+    ).mappings().all()
+
+    revenue_by_currency = {row["currency"]: _to_float(row["revenue"]) for row in sales_rows}
+    cost_by_currency = {row["currency"]: _to_float(row["cost"]) for row in cost_rows}
+
+    insights = []
+
+    for currency in ["USD", "ARS"]:
+        revenue = revenue_by_currency.get(currency, 0.0)
+        cost = cost_by_currency.get(currency, 0.0)
+
+        if revenue <= 0:
+            continue
+
+        profit = revenue - cost
+        margin = (profit / revenue) * 100 if revenue else 0
+
+        if margin >= 25:
+            tone = "success"
+        elif margin >= 10:
+            tone = "neutral"
+        elif margin >= 0:
+            tone = "warning"
+        else:
+            tone = "danger"
+
+        insights.append(
+            {
+                "type": f"PROFITABILITY_{currency}",
+                "title": f"Rentabilidad estimada {currency}",
+                "value": f"{margin:.1f}%",
+                "description": (
+                    f"Ingresos {revenue:,.0f} {currency} vs costos "
+                    f"{cost:,.0f} {currency}."
+                ),
+                "tone": tone,
+                "meta": {
+                    "currency": currency,
+                    "revenue": revenue,
+                    "cost": cost,
+                    "profit": profit,
+                    "margin_pct": margin,
+                },
+            }
+        )
+
+    if not insights:
+        insights.append(
+            {
+                "type": "PROFITABILITY_PENDING",
+                "title": "Rentabilidad",
+                "value": "Sin datos",
+                "description": "Cuando haya ventas y costos de producción, DressFlow calculará el margen estimado.",
+                "tone": "neutral",
+            }
+        )
+
+    return insights
+
+
+
 @router.get("/summary")
 def dashboard_summary(
     db: Session = Depends(get_db),
@@ -306,63 +677,116 @@ def dashboard_summary(
     alerts = []
 
     if loans_overdue > 0:
-        alerts.append({
-            "type": "OVERDUE_LOANS",
-            "level": "high",
-            "title": "Préstamos vencidos",
-            "message": f"{loans_overdue} préstamo(s) requieren acción inmediata.",
-            "action": {
-                "label": "Ver préstamos",
-                "url": "/loans?filter=overdue"
+        alerts.append(
+            {
+                "type": "OVERDUE_LOANS",
+                "level": "high",
+                "title": "Préstamos vencidos",
+                "message": f"{loans_overdue} préstamo(s) requieren acción inmediata.",
+                "action": {"label": "Ver préstamos", "url": "/loans"},
             }
-        })
+        )
 
     if loans_due_soon > 0:
         alerts.append(
             {
+                "type": "LOANS_DUE_SOON",
                 "level": "medium",
                 "title": "Devoluciones próximas",
                 "message": f"{loans_due_soon} devolución(es) en los próximos días.",
+                "action": {"label": "Ver agenda", "url": "/loans"},
             }
         )
 
     if rolls_depleted > 0:
-           alerts.append({
-               "type": "FABRIC_DEPLETED",
-               "level": "medium",
-               "title": "Rollos sin stock",
-               "message": f"{rolls_depleted} rollo(s) agotados.",
-               "action": {
-                   "label": "Ver telas",
-                   "url": "/fabric-rolls"
-               }
-           })
-            
+        alerts.append(
+            {
+                "type": "FABRIC_ROLLS_DEPLETED",
+                "level": "low",
+                "title": "Rollos agotados",
+                "message": f"{rolls_depleted} rollo(s) sin stock.",
+                "action": {"label": "Ver rollos", "url": "/fabric-rolls"},
+            }
+        )
+
     if idle_dresses:
-          alerts.append({
-              "type": "IDLE_DRESSES",
-              "level": "low",
-              "title": "Vestidos sin movimiento",
-              "message": f"{len(idle_dresses)} vestidos sin uso en 60+ días.",
-              "action": {
-                  "label": "Ver vestidos",
-                  "url": "/dresses?filter=idle"
-              }
-          }) 
+        alerts.append(
+            {
+                "type": "IDLE_DRESSES",
+                "level": "low",
+                "title": "Vestidos sin movimiento",
+                "message": f"{len(idle_dresses)} vestido(s) sin uso en 60+ días.",
+                "action": {"label": "Ver vestidos", "url": "/dresses"},
+            }
+        )
 
     if cleaning_delayed > 0:
-        alerts.append({
-            "level": "medium",
-            "title": "Vestidos en limpieza",
-            "message": f"{cleaning_delayed} vestido(s) llevan más de 48 hs en limpieza.",
-        })
+        alerts.append(
+            {
+                "type": "DRESSES_CLEANING_DELAYED",
+                "level": "medium",
+                "title": "Vestidos en limpieza",
+                "message": f"{cleaning_delayed} vestido(s) llevan más de 48 hs en limpieza.",
+                "action": {"label": "Ver vestidos", "url": "/dresses"},
+            }
+        )
 
     if maintenance_delayed > 0:
-        alerts.append({
-            "level": "high",
-            "title": "Vestidos en mantenimiento",
-            "message": f"{maintenance_delayed} vestido(s) llevan varios días en reparación.",
-        })
+        alerts.append(
+            {
+                "type": "DRESSES_MAINTENANCE_DELAYED",
+                "level": "high",
+                "title": "Vestidos en mantenimiento",
+                "message": f"{maintenance_delayed} vestido(s) llevan varios días en reparación.",
+                "action": {"label": "Ver vestidos", "url": "/dresses"},
+            }
+        )
+
+    stock_prediction_alerts, stock_prediction_insights = get_stock_predictions(db, tenant_id)
+    production_smart_alerts, production_smart_insights = get_production_smart_alerts(db, tenant_id)
+    profitability_insights = get_profitability_insights(db, tenant_id)
+
+    alerts.extend(stock_prediction_alerts)
+    alerts.extend(production_smart_alerts)
+
+    insights = []
+
+    if avg_ticket > 0:
+        insights.append(
+            {
+                "type": "AVG_TICKET",
+                "title": "Ticket promedio",
+                "value": round(avg_ticket, 2),
+                "description": "Valor promedio histórico por vestido vendido.",
+                "tone": "neutral",
+            }
+        )
+
+    if top_dresses:
+        insights.append(
+            {
+                "type": "TOP_DRESS",
+                "title": "Vestido más demandado",
+                "value": top_dresses[0]["name"],
+                "description": f"{top_dresses[0]['loan_count']} préstamo(s). Evaluá cápsulas similares o reposición.",
+                "tone": "success",
+            }
+        )
+
+    if idle_dresses:
+        insights.append(
+            {
+                "type": "IDLE_INVENTORY",
+                "title": "Inventario inmovilizado",
+                "value": len(idle_dresses),
+                "description": "Vestidos sin rotación. Revisá fotos, precio o estrategia comercial.",
+                "tone": "warning",
+            }
+        )
+
+    insights.extend(stock_prediction_insights)
+    insights.extend(production_smart_insights)
+    insights.extend(profitability_insights)
 
     return {
      "dresses": {
@@ -397,6 +821,7 @@ def dashboard_summary(
      "idle_dresses": idle_dresses,
  
      "alerts": alerts,
+     "insights": insights,
     }
 
 @router.get("/financial-summary")

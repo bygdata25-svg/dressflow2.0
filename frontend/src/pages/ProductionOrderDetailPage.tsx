@@ -204,6 +204,20 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   DESIGN_IMAGE_UPDATED: "Imagen de diseño actualizada",
 };
 
+const EVENT_SUMMARY_LABELS: Record<string, string> = {
+  CREATED: "Orden creada",
+  FABRIC_ASSIGNED: "Tela asignada a la orden",
+  TRIM_ASSIGNED: "Avío asignado a la orden",
+  MATERIAL_ASSIGNED: "Material asignado a la orden",
+  MATERIAL_RESERVED: "Material reservado para producción",
+  MATERIAL_ISSUED: "Material entregado al taller",
+  MATERIAL_RETURNED: "Material devuelto",
+  ORDER_RECEIVED: "Recepción de producción registrada",
+  OUTPUT_CREATED: "Producción registrada",
+  COSTS_UPDATED: "Costos actualizados",
+  DESIGN_IMAGE_UPDATED: "Imagen de diseño actualizada",
+};
+
 function eventTone(eventType: string) {
   switch (eventType) {
     case "CREATED":
@@ -229,16 +243,8 @@ function eventTone(eventType: string) {
   }
 }
 
-function summarizeEvent(t: any, event: EventItem) {
-  const summaryKey = `production-orders:events.summaries.${event.event_type}`;
-  const fallback = t(`production-orders:events.types.${event.event_type}`, {
-    defaultValue: EVENT_TYPE_LABELS[event.event_type] || event.event_type,
-  });
-
-  return t(summaryKey, {
-    ...(event.payload || {}),
-    defaultValue: fallback,
-  });
+function summarizeEvent(_t: any, event: EventItem) {
+  return EVENT_SUMMARY_LABELS[event.event_type] || EVENT_TYPE_LABELS[event.event_type] || event.event_type;
 }
 
 function resolvePhoto(photoUrl?: string | null) {
@@ -320,9 +326,7 @@ function ProductionOrderEventsTab({
                 <div className="po-event-card__top">
                   <div className="po-event-card__main">
                     <span className={`df-status-badge df-status-badge--${eventTone(event.event_type)}`}>
-                      {t(`production-orders:events.types.${event.event_type}`, {
-                        defaultValue: EVENT_TYPE_LABELS[event.event_type] || event.event_type,
-                      })}
+                      {EVENT_TYPE_LABELS[event.event_type] || event.event_type}
                     </span>
 
                     <strong className="po-event-card__summary">
@@ -908,18 +912,14 @@ export default function ProductionOrderDetailPage() {
             <div className="po-meta-card">
               <span className="po-meta-card__label">Estado</span>
               <span className={`df-status-badge df-status-badge--${eventTone(order.status)}`}>
-                {t(`production-orders:status.${order.status}`, {
-                  defaultValue: STATUS_LABELS[order.status] || order.status,
-                })}
+                {STATUS_LABELS[order.status] || order.status}
               </span>
             </div>
 
             <div className="po-meta-card">
               <span className="po-meta-card__label">Prioridad</span>
               <span className="po-meta-card__value">
-                {t(`production-orders:priority.${order.priority}`, {
-                  defaultValue: PRIORITY_LABELS[order.priority] || order.priority,
-                })}
+                {PRIORITY_LABELS[order.priority] || order.priority}
               </span>
             </div>
 

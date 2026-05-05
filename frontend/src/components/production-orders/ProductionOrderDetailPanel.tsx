@@ -2341,6 +2341,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
             costForm={costForm}
             setCostForm={setCostForm}
             saveCosts={saveCosts}
+            formatMoney={formatMoney}
             calculateSuggestedPrice={calculateSuggestedPrice}
           />
         ) : (

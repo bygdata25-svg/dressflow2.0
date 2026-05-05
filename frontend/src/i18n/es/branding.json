@@ -38,6 +38,6 @@
     "defaultTenantLanguage": "Idioma por defecto de la empresa",
     "spanish": "Español",
     "english": "Inglés",
-    "help": "Este idioma se usará como base para la interfaz del tenant."
+    "help": "Este idioma se usará como base para la interfaz del cliente"
   }
 }

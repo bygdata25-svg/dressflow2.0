@@ -2026,7 +2026,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     [events]
   );
 
-  const designPhoto = resolvePhoto(order?.design_photo_url);
+  const designPhoto = toAbsoluteAssetUrl(order?.design_photo_url);
   const tenantLogoUrl = toAbsoluteAssetUrl(order?.tenant_logo_url);
 
   const downloadPdf = (mode: PdfMode) => {

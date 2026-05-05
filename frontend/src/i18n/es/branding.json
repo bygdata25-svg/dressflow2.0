@@ -31,5 +31,13 @@
 
   "loadError": "No se pudo cargar el branding.",
   
-  "alt": "Logo de la empresa"
+  "alt": "Logo de la empresa",
+
+  "language": {
+    "title": "Idioma",
+    "defaultTenantLanguage": "Idioma por defecto de la empresa",
+    "spanish": "Español",
+    "english": "Inglés",
+    "help": "Este idioma se usará como base para la interfaz del tenant."
+  }
 }

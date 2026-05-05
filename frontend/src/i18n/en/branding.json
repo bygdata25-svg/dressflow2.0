@@ -31,5 +31,13 @@
 
   "loadError": "Failed to load branding.",
   
-  "alt": "Company logo"
+  "alt": "Company logo",
+
+  "language": {
+    "title": "Language",
+    "defaultTenantLanguage": "Default tenant language",
+    "spanish": "Spanish",
+    "english": "English",
+    "help": "This language will be used as the default interface language."
+  }
 }

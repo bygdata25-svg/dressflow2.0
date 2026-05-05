@@ -1684,12 +1684,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     notes: "",
   });
 
-  const [receiveForm, setReceiveForm] = useState({
-    produced_quantity: "",
-    status: "PARTIALLY_RECEIVED",
-    received_notes: "",
-  });
-
   const [costForm, setCostForm] = useState({
     labor_cost: "0",
     additional_cost: "0",
@@ -1923,19 +1917,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     }
   };
 
-  const receiveOrder = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
-      await api.post(`/production-orders/${orderId}/receive`, {
-        produced_quantity: Number(receiveForm.produced_quantity || 0),
-        status: receiveForm.status,
-        received_notes: receiveForm.received_notes || null,
-      });
-      await loadAll();
-    } catch (err: any) {
-      setError(String(err?.response?.data?.detail || t("production-orders:receive.error", "No se pudo registrar la recepción.")));
-    }
-  };
 
   const uploadDesignImage = async (file: File) => {
     if (!order) return;
@@ -2374,8 +2355,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
             setTrimForm={setTrimForm}
             outputForm={outputForm}
             setOutputForm={setOutputForm}
-            receiveForm={receiveForm}
-            setReceiveForm={setReceiveForm}
             fabricAvailability={fabricAvailability}
             checkingAvailability={checkingAvailability}
             availableRollOptions={availableRollOptions}
@@ -2391,7 +2370,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
             issueAllMaterials={issueAllMaterials}
             issuingAll={issuingAll}
             createOutput={createOutput}
-            receiveOrder={receiveOrder}
             formatMoney={formatMoney}
             materialStatusClass={materialStatusClass}
           />

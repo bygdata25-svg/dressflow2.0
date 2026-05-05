@@ -191,6 +191,10 @@ def build_order_response(db: Session, order: ProductionOrder) -> ProductionOrder
             )
         ).scalar_one_or_none()
 
+     tenant = db.execute(
+        select(Tenant).where(Tenant.id == order.tenant_id)
+     ).scalar_one_or_none()
+
     return ProductionOrderResponse(
         id=order.id,
         tenant_id=order.tenant_id,
@@ -216,6 +220,9 @@ def build_order_response(db: Session, order: ProductionOrder) -> ProductionOrder
         actual_total_cost=order.actual_total_cost,
         currency=order.currency,
         design_photo_url=order.design_photo_url,
+        tenant_name=tenant.name if tenant else None,
+        tenant_logo_url=tenant.logo_url if tenant else None,
+        tenant_primary_color=tenant.primary_color if tenant else None,
     )
 
 

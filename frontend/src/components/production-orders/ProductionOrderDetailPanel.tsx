@@ -1911,33 +1911,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
   };
 
 
-  const uploadDesignImage = async (file: File) => {
-    if (!order) return;
-
-    try {
-      setUploadingDesignImage(true);
-      setDesignImageError("");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      await api.post(`/production-orders/${order.id}/design-image`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      await loadAll();
-    } catch (err: any) {
-      setDesignImageError(
-        err?.response?.data?.detail?.message ||
-          err?.response?.data?.detail ||
-          t("production-orders:operation.design.uploadError", "No se pudo subir la imagen.")
-      );
-    } finally {
-      setUploadingDesignImage(false);
-    }
-  };
   const createOutput = async (event: React.FormEvent) => {
     event.preventDefault();
 

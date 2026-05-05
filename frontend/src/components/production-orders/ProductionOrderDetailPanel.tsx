@@ -2331,7 +2331,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
             issueAllMaterials={issueAllMaterials}
             issuingAll={issuingAll}
             createOutput={createOutput}
-            formatMoney={formatMoney}
             materialStatusClass={materialStatusClass}
           />
         ) : activeTab === "finance" ? (
@@ -2342,7 +2341,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
             costForm={costForm}
             setCostForm={setCostForm}
             saveCosts={saveCosts}
-            formatMoney={formatMoney}
             calculateSuggestedPrice={calculateSuggestedPrice}
           />
         ) : (

@@ -584,8 +584,6 @@ export default function ProductionOrderDetailPage() {
   const [fabricAvailability, setFabricAvailability] = useState<FabricAvailability | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
-  const [uploadingDesignImage, setUploadingDesignImage] = useState(false);
-  const [designImageError, setDesignImageError] = useState("");
 
   const activeTab = useMemo<"operation" | "finance" | "events">(() => {
     const tab = searchParams.get("tab");
@@ -845,34 +843,6 @@ export default function ProductionOrderDetailPage() {
   };
 
 
-  const uploadDesignImage = async (file: File) => {
-    if (!order) return;
-
-    try {
-      setUploadingDesignImage(true);
-      setDesignImageError("");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      await api.post(`/production-orders/${order.id}/design-image`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      await loadAll();
-    } catch (err: any) {
-      setDesignImageError(
-        err?.response?.data?.detail?.message ||
-          err?.response?.data?.detail ||
-          tr(t, "production-orders:operation.design.uploadError", "No se pudo subir la imagen.")
-      );
-    } finally {
-      setUploadingDesignImage(false);
-    }
-  };
-  
   const createOutput = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -1116,12 +1086,7 @@ export default function ProductionOrderDetailPage() {
           {activeTab === "operation" ? (
             <ProductionOrderOperationTab
               t={t}
-              i18n={i18n}
               order={order}
-              designPhoto={designPhoto}
-              uploadingDesignImage={uploadingDesignImage}
-              designImageError={designImageError}
-              uploadDesignImage={uploadDesignImage}
               fabrics={fabrics}
               fabricForm={fabricForm}
               setFabricForm={setFabricForm}
@@ -1144,7 +1109,6 @@ export default function ProductionOrderDetailPage() {
               issueAllMaterials={issueAllMaterials}
               issuingAll={issuingAll}
               createOutput={createOutput}
-              formatMoney={formatMoney}
               materialStatusClass={materialStatusClass}
             />
           ) : activeTab === "finance" ? (

@@ -1707,8 +1707,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
   const [fabricAvailability, setFabricAvailability] = useState<FabricAvailability | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
-  const [uploadingDesignImage, setUploadingDesignImage] = useState(false);
-  const [designImageError, setDesignImageError] = useState("");
 
   useEffect(() => {
     void loadAll();

@@ -191,9 +191,9 @@ def build_order_response(db: Session, order: ProductionOrder) -> ProductionOrder
             )
         ).scalar_one_or_none()
 
-     tenant = db.execute(
+    tenant = db.execute(
         select(Tenant).where(Tenant.id == order.tenant_id)
-     ).scalar_one_or_none()
+    ).scalar_one_or_none()
 
     return ProductionOrderResponse(
         id=order.id,

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { api } from "../../lib/api";
 
 type ProductionOrder = {
   id: string;
@@ -344,6 +345,17 @@ function getProgressPercent(planned: number, produced: number) {
   return Math.max(0, Math.min(100, Math.round((produced / planned) * 100)));
 }
 
+function resolveDesignPhotoUrl(photoUrl?: string | null) {
+  if (!photoUrl) return null;
+  if (photoUrl.startsWith("blob:") || photoUrl.startsWith("data:")) return photoUrl;
+  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) return photoUrl;
+
+  const apiBaseUrl =
+    import.meta.env.VITE_API_URL?.replace(/\/api\/v1\/?$/, "")?.replace(/\/$/, "") || "";
+
+  return `${apiBaseUrl}/${photoUrl.replace(/^\/+/, "")}`;
+}
+
 export default function ProductionOrderOperationTab({
   t,
   order,
@@ -382,6 +394,57 @@ export default function ProductionOrderOperationTab({
     fabricMaterials.filter((m) => m.canIssue).length +
     trimMaterials.filter((m) => m.canIssue).length;
 
+  const [designPreview, setDesignPreview] = useState<string | null>(() =>
+    resolveDesignPhotoUrl(order.design_photo_url)
+  );
+  const [uploadingDesignImage, setUploadingDesignImage] = useState(false);
+  const [designImageError, setDesignImageError] = useState("");
+
+  const handleUploadDesignImage = async (file: File) => {
+    const localPreviewUrl = URL.createObjectURL(file);
+    setDesignPreview(localPreviewUrl);
+    setDesignImageError("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setUploadingDesignImage(true);
+
+      const response = await api.post(
+        `/production-orders/${order.id}/design-image`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const uploadedUrl =
+        response.data?.design_photo_url ||
+        response.data?.photo_url ||
+        response.data?.url ||
+        response.data?.file_url ||
+        null;
+
+      if (uploadedUrl) {
+        setDesignPreview(resolveDesignPhotoUrl(uploadedUrl));
+      }
+    } catch (err) {
+      console.error("Error uploading production order design image:", err);
+      setDesignImageError(
+        tr(
+          t,
+          "production-orders:design.uploadError",
+          "No se pudo subir la imagen de diseño."
+        )
+      );
+    } finally {
+      setUploadingDesignImage(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -406,10 +469,186 @@ export default function ProductionOrderOperationTab({
           transform: translateY(-1px);
           box-shadow: 0 12px 24px rgba(20, 20, 20, 0.08);
         }
+
+        .po-design-card {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .po-design-card::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(circle at top right, rgba(195, 140, 122, 0.12), transparent 34%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(251, 250, 248, 0.92) 100%);
+          pointer-events: none;
+        }
+
+        .po-design-card > * {
+          position: relative;
+          z-index: 1;
+        }
+
+        .po-design-body {
+          display: grid;
+          grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+          gap: 18px;
+          align-items: stretch;
+        }
+
+        .po-design-preview {
+          min-height: 170px;
+          border: 1px solid rgba(216, 207, 195, 0.95);
+          border-radius: 22px;
+          overflow: hidden;
+          background: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 16px 34px rgba(52, 41, 58, 0.06);
+        }
+
+        .po-design-preview img {
+          width: 100%;
+          height: 100%;
+          min-height: 170px;
+          object-fit: cover;
+          display: block;
+        }
+
+        .po-design-empty {
+          display: grid;
+          place-items: center;
+          gap: 8px;
+          min-height: 170px;
+          width: 100%;
+          color: #8a7f73;
+          font-size: 13px;
+          text-align: center;
+          padding: 18px;
+          background:
+            linear-gradient(135deg, rgba(250, 247, 243, 0.92), rgba(255, 255, 255, 0.92));
+        }
+
+        .po-design-empty strong {
+          color: #30283c;
+          font-size: 14px;
+        }
+
+        .po-design-actions {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 14px;
+          border: 1px solid rgba(216, 207, 195, 0.95);
+          border-radius: 22px;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.72);
+        }
+
+        .po-design-actions__text {
+          display: grid;
+          gap: 6px;
+        }
+
+        .po-design-actions__text strong {
+          color: #30283c;
+          font-size: 15px;
+        }
+
+        .po-design-actions__text span {
+          color: #8a7f73;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+
+        .po-design-upload-error {
+          color: #a33a3a;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        @media (max-width: 780px) {
+          .po-design-body {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
 
       <div className="po-op-rail-layout">
         <div className="po-op-work">
+          <section className="po-section-card po-design-card">
+            <div className="po-section-head">
+              <h3>{tr(t, "production-orders:design.title", "Imagen de diseño")}</h3>
+              <p>
+                {tr(
+                  t,
+                  "production-orders:design.subtitle",
+                  "Referencia visual de la prenda para taller, control interno y PDF."
+                )}
+              </p>
+            </div>
+
+            <div className="po-design-body">
+              <div className="po-design-actions">
+                <div className="po-design-actions__text">
+                  <strong>{tr(t, "production-orders:design.reference", "Referencia de diseño")}</strong>
+                  <span>
+                    {tr(
+                      t,
+                      "production-orders:design.help",
+                      "Subí una imagen para que la orden tenga una referencia visual clara."
+                    )}
+                  </span>
+                </div>
+
+                <label className="po-file-upload-btn">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    disabled={uploadingDesignImage}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void handleUploadDesignImage(file);
+                      event.target.value = "";
+                    }}
+                  />
+                  {uploadingDesignImage
+                    ? tr(t, "production-orders:design.uploading", "Subiendo...")
+                    : designPreview
+                      ? tr(t, "production-orders:design.replace", "Reemplazar imagen")
+                      : tr(t, "production-orders:design.upload", "Subir imagen")}
+                </label>
+
+                {designImageError ? (
+                  <div className="po-design-upload-error">{designImageError}</div>
+                ) : null}
+              </div>
+
+              <div className="po-design-preview">
+                {designPreview ? (
+                  <img
+                    src={designPreview}
+                    alt={tr(t, "production-orders:design.alt", "Imagen de diseño")}
+                  />
+                ) : (
+                  <div className="po-design-empty">
+                    <strong>{tr(t, "production-orders:design.empty", "Sin imagen")}</strong>
+                    <span>
+                      {tr(
+                        t,
+                        "production-orders:design.emptyHint",
+                        "La imagen aparecerá en la orden y en la ficha PDF."
+                      )}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
           <section className="po-section-card">
             <div className="po-section-head">
               <h3>{tr(t, "production-orders:output.title", "Producción registrada")}</h3>

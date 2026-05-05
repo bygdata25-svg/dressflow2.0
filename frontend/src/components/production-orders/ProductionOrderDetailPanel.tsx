@@ -286,11 +286,6 @@ function translatePayloadValue(t: any, key: string, value: unknown) {
   return String(value);
 }
 
-function resolvePhoto(photoUrl?: string | null) {
-  if (!photoUrl) return null;
-  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) return photoUrl;
-  return `/${photoUrl.replace(/^\/+/, "")}`;
-}
 
 function payloadEntries(t: any, payload?: Record<string, unknown> | null) {
   if (!payload) return [];

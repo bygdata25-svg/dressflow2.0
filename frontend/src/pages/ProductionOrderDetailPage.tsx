@@ -963,7 +963,6 @@ export default function ProductionOrderDetailPage() {
     [events]
   );
 
-  const designPhoto = resolvePhoto(order?.design_photo_url);
 
   if (loading) {
     return (

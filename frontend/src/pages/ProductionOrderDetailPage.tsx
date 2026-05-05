@@ -1125,7 +1125,6 @@ export default function ProductionOrderDetailPage() {
           ) : (
             <ProductionOrderEventsTab
               t={t}
-              i18n={i18n}
               latestEvents={latestEvents}
               expandedEvents={expandedEvents}
               setExpandedEvents={setExpandedEvents}

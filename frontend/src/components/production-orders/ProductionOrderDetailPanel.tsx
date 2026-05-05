@@ -2308,7 +2308,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         {activeTab === "operation" ? (
           <ProductionOrderOperationTab
             t={t}
-            i18n={i18n}
             order={order}
             fabrics={fabrics}
             fabricForm={fabricForm}

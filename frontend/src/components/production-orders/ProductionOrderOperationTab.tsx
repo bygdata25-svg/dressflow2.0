@@ -142,7 +142,6 @@ type AvailableRollOption = {
 
 type Props = {
   t: any;
-  i18n: any;
   order: ProductionOrder;
   fabrics: Fabric[];
   fabricForm: FabricForm;
@@ -166,7 +165,6 @@ type Props = {
   issueAllMaterials: () => Promise<void>;
   issuingAll: boolean;
   createOutput: (event: FormEvent) => Promise<void>;
-  formatMoney: (value?: string | number | null, currency?: string) => string;
   materialStatusClass: (status: string) => string;
 };
 

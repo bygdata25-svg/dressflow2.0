@@ -120,10 +120,6 @@ export default function SalesReportPage() {
     return t(`status.${raw}`, { defaultValue: value || "—" });
   }
 
-  function currencyLabel(value?: string | null) {
-    const raw = String(value || "").toUpperCase().trim();
-    return t(`currency.${raw}`, { defaultValue: value || "—" });
-  }
 
   function itemTypeLabel(value?: string | null) {
     const raw = String(value || "").toUpperCase().trim();

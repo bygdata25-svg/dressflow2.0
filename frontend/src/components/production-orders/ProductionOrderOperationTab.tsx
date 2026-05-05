@@ -810,7 +810,8 @@ export default function ProductionOrderOperationTab({
                   <label className="df-pro-label">{tr(t, "production-orders:fields.unit", "Unidad")}</label>
                   <input
                     className="df-pro-input"
-                    value={fabricForm.unit || "metros"}
+                    value={translateUnit(t, fabricForm.unit || "meters")}
+                    readOnly
                     onChange={(e) =>
                       setFabricForm((prev) => ({ ...prev, unit: e.target.value }))
                     }

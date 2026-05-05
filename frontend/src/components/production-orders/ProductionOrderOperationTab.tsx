@@ -144,10 +144,6 @@ type Props = {
   t: any;
   i18n: any;
   order: ProductionOrder;
-  designPhoto: string | null;
-  uploadingDesignImage: boolean;
-  designImageError: string;
-  uploadDesignImage: (file: File) => Promise<void>;
   fabrics: Fabric[];
   fabricForm: FabricForm;
   setFabricForm: Dispatch<SetStateAction<FabricForm>>;
@@ -353,10 +349,6 @@ function getProgressPercent(planned: number, produced: number) {
 export default function ProductionOrderOperationTab({
   t,
   order,
-  designPhoto,
-  uploadingDesignImage,
-  designImageError,
-  uploadDesignImage,
   fabrics,
   fabricForm,
   setFabricForm,

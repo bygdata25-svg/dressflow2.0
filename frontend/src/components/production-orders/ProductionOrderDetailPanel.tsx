@@ -1752,11 +1752,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       setTrims(Array.isArray(trimsRes.data?.items) ? trimsRes.data.items : []);
       setOutputs(Array.isArray(outputsRes.data) ? outputsRes.data : []);
 
-      setReceiveForm({
-        produced_quantity: String(orderRes.data.produced_quantity ?? ""),
-        status: orderRes.data.status === "COMPLETED" ? "COMPLETED" : "PARTIALLY_RECEIVED",
-        received_notes: orderRes.data.received_notes || "",
-      });
 
       setCostForm((prev) => ({
         labor_cost: String(orderRes.data.labor_cost ?? "0"),
@@ -2344,10 +2339,6 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
             t={t}
             i18n={i18n}
             order={order}
-            designPhoto={designPhoto}
-            uploadingDesignImage={uploadingDesignImage}
-            designImageError={designImageError}
-            uploadDesignImage={uploadDesignImage}
             fabrics={fabrics}
             fabricForm={fabricForm}
             setFabricForm={setFabricForm}

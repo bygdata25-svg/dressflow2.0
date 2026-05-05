@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import "../styles/pro-pages.css";
@@ -28,30 +29,16 @@ type DressStockResponse = {
   kpis: DressStockKpis;
 };
 
-function money(value?: number | string | null) {
+function money(value: number | string | null | undefined, locale: string) {
   const parsed = Number(value ?? 0);
   const safe = Number.isFinite(parsed) ? parsed : 0;
 
-  return new Intl.NumberFormat("es-AR", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(safe);
-}
-
-function statusLabel(value?: string | null) {
-  const raw = String(value || "").toUpperCase();
-
-  if (raw === "AVAILABLE") return "Disponible";
-  if (raw === "LOANED") return "Prestado";
-  if (raw === "RENTED") return "Alquilado";
-  if (raw === "CLEANING") return "Limpieza";
-  if (raw === "MAINTENANCE") return "Reparación";
-  if (raw === "SOLD") return "Vendido";
-  if (raw === "RETIRED") return "Retirado";
-
-  return value || "—";
 }
 
 function statusClass(value?: string | null) {
@@ -60,6 +47,11 @@ function statusClass(value?: string | null) {
 }
 
 export default function DressStockValuationReportPage() {
+  const { t, i18n } = useTranslation("dress-stock-report");
+  const { t: tc } = useTranslation("common");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [rows, setRows] = useState<DressStockRow[]>([]);
   const [kpis, setKpis] = useState<DressStockKpis>({
     total_items: 0,
@@ -98,7 +90,7 @@ export default function DressStockValuationReportPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo cargar el reporte de stock valorizado de vestidos.");
+      else setError(t("errors.load"));
     } finally {
       setLoading(false);
     }
@@ -123,9 +115,12 @@ export default function DressStockValuationReportPage() {
       setExporting(true);
       setError("");
 
+      const lang = i18n.language?.startsWith("en") ? "en" : "es";
+
       const response = await api.get("/reports/dress-stock-valuation/export", {
         params: {
           search: search || undefined,
+          lang,
         },
         responseType: "blob",
       });
@@ -137,7 +132,7 @@ export default function DressStockValuationReportPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "stock_valorizado_vestidos.xlsx";
+      link.download = lang === "en" ? "dress_stock_valuation.xlsx" : "stock_valorizado_vestidos.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -146,7 +141,7 @@ export default function DressStockValuationReportPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo exportar el reporte.");
+      else setError(t("errors.export"));
     } finally {
       setExporting(false);
     }
@@ -156,48 +151,48 @@ export default function DressStockValuationReportPage() {
     return [
       {
         key: "code",
-        label: "Código",
+        label: t("fields.code"),
         render: (row: DressStockRow) => <strong>{row.code}</strong>,
       },
       {
         key: "name",
-        label: "Vestido",
+        label: t("fields.name"),
         render: (row: DressStockRow) => row.name,
       },
       {
         key: "capsule",
-        label: "Cápsula",
+        label: t("fields.capsule"),
         render: (row: DressStockRow) => row.capsule || "—",
       },
       {
         key: "size",
-        label: "Talle",
+        label: t("fields.size"),
         render: (row: DressStockRow) => row.size || "—",
       },
       {
         key: "color",
-        label: "Color",
+        label: t("fields.color"),
         render: (row: DressStockRow) => row.color || "—",
       },
       {
         key: "status",
-        label: "Estado",
+        label: t("fields.status"),
         render: (row: DressStockRow) => (
-          <span className={statusClass(row.status)}>{statusLabel(row.status)}</span>
+          <span className={statusClass(row.status)}>{t(`status.${String(row.status || "").toUpperCase()}`, { defaultValue: row.status || "—" })}</span>
         ),
       },
       {
         key: "sale_price",
-        label: "Precio venta",
-        render: (row: DressStockRow) => <strong>{money(row.sale_price)}</strong>,
+        label: t("fields.salePrice"),
+        render: (row: DressStockRow) => <strong>{money(row.sale_price, locale)}</strong>,
       },
       {
         key: "rental_price",
-        label: "Precio alquiler",
-        render: (row: DressStockRow) => <strong>{money(row.rental_price)}</strong>,
+        label: t("fields.rentalPrice"),
+        render: (row: DressStockRow) => <strong>{money(row.rental_price, locale)}</strong>,
       },
     ];
-  }, []);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page df-dress-stock-page">
@@ -547,11 +542,9 @@ export default function DressStockValuationReportPage() {
 
       <header className="df-dress-stock-header">
         <div>
-          <p className="df-pro-page__eyebrow">Reportes</p>
-          <h1 className="df-pro-page__title">Stock valorizado de vestidos</h1>
-          <p className="df-pro-page__subtitle">
-            Valor del inventario de vestidos disponible para venta y alquiler.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
 
         <div className="df-dress-stock-header__actions">
@@ -561,7 +554,7 @@ export default function DressStockValuationReportPage() {
             onClick={handleExport}
             disabled={exporting}
           >
-            {exporting ? "Exportando..." : "Exportar Excel"}
+            {exporting ? tc("status.exporting") : tc("actions.exportExcel")}
           </button>
         </div>
       </header>
@@ -569,21 +562,19 @@ export default function DressStockValuationReportPage() {
       <section className="df-dress-stock-hero">
         <div className="df-dress-stock-hero__inner">
           <div>
-            <span className="df-dress-stock-hero__label">Valorización de venta</span>
-            <h2 className="df-dress-stock-hero__value">{money(kpis.total_sale_value)}</h2>
-            <p className="df-dress-stock-hero__subtitle">
-              Valor potencial del inventario disponible para venta.
-            </p>
+            <span className="df-dress-stock-hero__label">{t("hero.saleValuation")}</span>
+            <h2 className="df-dress-stock-hero__value">{money(kpis.total_sale_value, locale)}</h2>
+            <p className="df-dress-stock-hero__subtitle">{t("hero.saleValuationSubtitle")}</p>
           </div>
 
           <div className="df-dress-stock-hero__side">
             <div className="df-dress-stock-hero-mini">
-              <span>Valor venta</span>
-              <strong>{money(kpis.total_sale_value)}</strong>
+              <span>{t("kpis.saleValue")}</span>
+              <strong>{money(kpis.total_sale_value, locale)}</strong>
             </div>
             <div className="df-dress-stock-hero-mini">
-              <span>Valor alquiler</span>
-              <strong>{money(kpis.total_rental_value)}</strong>
+              <span>{t("kpis.rentalValue")}</span>
+              <strong>{money(kpis.total_rental_value, locale)}</strong>
             </div>
           </div>
         </div>
@@ -592,21 +583,21 @@ export default function DressStockValuationReportPage() {
       <section className="df-dress-stock-filter-card">
         <form onSubmit={handleSearchSubmit} className="df-dress-stock-filter-grid">
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Código, vestido, cápsula, talle o color"
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
           <div className="df-dress-stock-filter-actions">
             <button type="submit" className="df-dress-stock-btn-primary">
-              Buscar
+              {tc("actions.search")}
             </button>
             <button type="button" className="df-dress-stock-btn-secondary" onClick={handleClear}>
-              Limpiar
+              {tc("actions.clear")}
             </button>
           </div>
         </form>
@@ -616,40 +607,40 @@ export default function DressStockValuationReportPage() {
 
       <section className="df-dress-stock-kpis">
         <article className="df-dress-stock-kpi">
-          <span>Total vestidos</span>
+          <span>{t("kpis.total")}</span>
           <strong>{kpis.total_items}</strong>
         </article>
 
         <article className="df-dress-stock-kpi">
-          <span>Disponibles</span>
+          <span>{t("kpis.available")}</span>
           <strong>{kpis.available_items}</strong>
         </article>
 
         <article className="df-dress-stock-kpi">
-          <span>Valor venta</span>
-          <strong>{money(kpis.total_sale_value)}</strong>
+          <span>{t("kpis.saleValue")}</span>
+          <strong>{money(kpis.total_sale_value, locale)}</strong>
         </article>
 
         <article className="df-dress-stock-kpi">
-          <span>Valor alquiler</span>
-          <strong>{money(kpis.total_rental_value)}</strong>
+          <span>{t("kpis.rentalValue")}</span>
+          <strong>{money(kpis.total_rental_value, locale)}</strong>
         </article>
       </section>
 
       <section className="df-dress-stock-table-card">
         <div className="df-dress-stock-table-head">
           <div>
-            Registros: <strong>{rows.length}</strong>
+            {t("summary.records")}: <strong>{rows.length}</strong>
           </div>
           <div className="df-dress-stock-chip">
-            Moneda: <strong>USD</strong>
+            {t("summary.currency")}: <strong>USD</strong>
           </div>
         </div>
 
         {loading ? (
-          <div className="df-dress-stock-loading">Cargando reporte...</div>
+          <div className="df-dress-stock-loading">{t("messages.loading")}</div>
         ) : rows.length === 0 ? (
-          <div className="df-dress-stock-empty">No hay datos para mostrar.</div>
+          <div className="df-dress-stock-empty">{t("empty")}</div>
         ) : (
           <DataGrid rows={rows} columns={columns} getRowKey={(row) => row.id} />
         )}

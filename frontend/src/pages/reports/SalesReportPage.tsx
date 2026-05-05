@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import { PrimaryButton } from "../../components/common/buttons";
 import "../../styles/pro-pages.css";
@@ -67,37 +68,6 @@ const initialFilters: FiltersState = {
   date_to: "",
 };
 
-
-function formatMoney(value: number, currency: CurrencyCode) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value || 0));
-}
-
-function paymentMethodLabel(value?: string | null) {
-  const raw = String(value || "").toLowerCase().trim();
-  if (raw === "cash") return "Efectivo";
-  if (raw === "transfer") return "Transferencia";
-  if (raw === "debit") return "Débito";
-  if (raw === "credit") return "Crédito";
-  if (raw === "mercadopago") return "Mercado Pago";
-  if (raw === "other") return "Otro";
-  return value || "Sin definir";
-}
-
-function statusLabel(value?: string | null) {
-  const raw = String(value || "").toUpperCase().trim();
-  if (raw === "PAID") return "Pagada";
-  if (raw === "PARTIAL") return "Pago parcial";
-  if (raw === "PENDING") return "Pendiente";
-  if (raw === "COMPLETED") return "Completada";
-  if (raw === "CANCELLED") return "Cancelada";
-  return value || "Sin estado";
-}
-
 function statusClass(value?: string | null) {
   const raw = String(value || "").toUpperCase().trim();
   if (raw === "COMPLETED" || raw === "PAID") return "df-sales-report-status--completed";
@@ -106,19 +76,12 @@ function statusClass(value?: string | null) {
   return "df-sales-report-status--cancelled";
 }
 
-function saleTotalLabel(row: SaleReportRow) {
-  const hasUSD = Number(row.items_total_usd || 0) > 0;
-  const hasARS = Number(row.items_total_ars || 0) > 0;
-
-  if (hasUSD && hasARS) {
-    return `${formatMoney(row.items_total_usd, "USD")} + ${formatMoney(row.items_total_ars, "ARS")}`;
-  }
-  if (hasUSD) return formatMoney(row.items_total_usd, "USD");
-  if (hasARS) return formatMoney(row.items_total_ars, "ARS");
-  return "-";
-}
-
 export default function SalesReportPage() {
+  const { t, i18n } = useTranslation("sales-report");
+  const { t: tc } = useTranslation("common");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [items, setItems] = useState<SaleReportRow[]>([]);
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
   const [searchDraft, setSearchDraft] = useState("");
@@ -126,6 +89,60 @@ export default function SalesReportPage() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [selectedSale, setSelectedSale] = useState<SaleReportRow | null>(null);
+
+  function formatMoney(value: number, currency: CurrencyCode) {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  }
+
+  function formatDateTime(value?: string | null) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date);
+  }
+
+  function paymentMethodLabel(value?: string | null) {
+    const raw = String(value || "").toUpperCase().trim();
+    return t(`payments.${raw}`, { defaultValue: value || "—" });
+  }
+
+  function statusLabel(value?: string | null) {
+    const raw = String(value || "").toUpperCase().trim();
+    return t(`status.${raw}`, { defaultValue: value || "—" });
+  }
+
+  function currencyLabel(value?: string | null) {
+    const raw = String(value || "").toUpperCase().trim();
+    return t(`currency.${raw}`, { defaultValue: value || "—" });
+  }
+
+  function itemTypeLabel(value?: string | null) {
+    const raw = String(value || "").toUpperCase().trim();
+    return t(`itemTypes.${raw}`, { defaultValue: value || t("itemTypes.ITEM") });
+  }
+
+  function saleTotalLabel(row: SaleReportRow) {
+    const hasUSD = Number(row.items_total_usd || 0) > 0;
+    const hasARS = Number(row.items_total_ars || 0) > 0;
+
+    if (hasUSD && hasARS) {
+      return `${formatMoney(row.items_total_usd, "USD")} + ${formatMoney(row.items_total_ars, "ARS")}`;
+    }
+
+    if (hasUSD) return formatMoney(row.items_total_usd, "USD");
+    if (hasARS) return formatMoney(row.items_total_ars, "ARS");
+
+    return "—";
+  }
 
   async function loadData() {
     try {
@@ -139,14 +156,19 @@ export default function SalesReportPage() {
       if (filters.date_from) params.date_from = filters.date_from;
       if (filters.date_to) params.date_to = filters.date_to;
 
-      const { data } = await api.get<SalesUnifiedReportResponse>("/reports/sales-unified", { params });
+      const { data } = await api.get<SalesUnifiedReportResponse>("/reports/sales-unified", {
+        params,
+      });
+
       setItems(Array.isArray(data?.items) ? data.items : []);
     } catch (err: any) {
       console.error("Error loading unified sales report:", err);
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo cargar el reporte.");
+      else setError(t("errors.load"));
+
       setItems([]);
     } finally {
       setLoading(false);
@@ -170,8 +192,11 @@ export default function SalesReportPage() {
   async function exportExcel() {
     try {
       setExporting(true);
+      setError("");
 
-      const params: Record<string, string> = {};
+      const lang = i18n.language?.startsWith("en") ? "en" : "es";
+
+      const params: Record<string, string> = { lang };
       if (filters.q) params.q = filters.q;
       if (filters.status) params.status = filters.status;
       if (filters.currency) params.currency = filters.currency;
@@ -190,24 +215,39 @@ export default function SalesReportPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "ventas_unificadas.xlsx";
+      link.download = lang === "en" ? "unified_sales.xlsx" : "ventas_unificadas.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error exporting unified sales report:", err);
-      setError("No se pudo exportar el Excel.");
+      const detail = err?.response?.data?.detail;
+
+      if (typeof detail === "string") setError(detail);
+      else if (detail?.message) setError(detail.message);
+      else setError(t("errors.export"));
     } finally {
       setExporting(false);
     }
   }
 
   const metrics = useMemo(() => {
-    const validRows = items.filter((item) => String(item.status || "").toUpperCase() !== "CANCELLED");
-    const totalARS = validRows.reduce((acc, item) => acc + Number(item.items_total_ars || 0), 0);
-    const totalUSD = validRows.reduce((acc, item) => acc + Number(item.items_total_usd || 0), 0);
-    const mixedCount = validRows.filter((item) => item.items_total_ars > 0 && item.items_total_usd > 0).length;
+    const validRows = items.filter(
+      (item) => String(item.status || "").toUpperCase() !== "CANCELLED"
+    );
+
+    const totalARS = validRows.reduce(
+      (acc, item) => acc + Number(item.items_total_ars || 0),
+      0
+    );
+    const totalUSD = validRows.reduce(
+      (acc, item) => acc + Number(item.items_total_usd || 0),
+      0
+    );
+    const mixedCount = validRows.filter(
+      (item) => item.items_total_ars > 0 && item.items_total_usd > 0
+    ).length;
     const averageTicketARS = validRows.length > 0 ? totalARS / validRows.length : 0;
     const averageTicketUSD = validRows.length > 0 ? totalUSD / validRows.length : 0;
 
@@ -227,26 +267,32 @@ export default function SalesReportPage() {
 
     if (hasUSD && hasARS) {
       return {
-        label: "TOTAL MIXTO",
+        label: t("headline.mixedTotal"),
         value: `${formatMoney(metrics.totalUSD, "USD")} + ${formatMoney(metrics.totalARS, "ARS")}`,
-        subtitle: `${metrics.mixedCount} operación${metrics.mixedCount === 1 ? "" : "es"} mixta${metrics.mixedCount === 1 ? "" : "s"}`,
+        subtitle: t("headline.mixedSubtitle", {
+          count: metrics.mixedCount,
+          operationLabel:
+            metrics.mixedCount === 1
+              ? t("headline.operationSingular")
+              : t("headline.operationPlural"),
+        }),
       };
     }
 
     if (hasUSD) {
       return {
-        label: "TOTAL",
+        label: t("headline.total"),
         value: formatMoney(metrics.totalUSD, "USD"),
-        subtitle: "Reporte expresado en USD",
+        subtitle: t("headline.usdSubtitle"),
       };
     }
 
     return {
-      label: "TOTAL",
+      label: t("headline.total"),
       value: formatMoney(metrics.totalARS, "ARS"),
-      subtitle: "Reporte expresado en ARS",
+      subtitle: t("headline.arsSubtitle"),
     };
-  }, [metrics]);
+  }, [metrics, t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -428,67 +474,6 @@ export default function SalesReportPage() {
           box-shadow: 0 10px 22px rgba(101, 57, 160, 0.12);
         }
 
-        .df-sales-report-expander {
-          display: grid;
-          gap: 16px;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          padding: 18px;
-          border-radius: 18px;
-          background: #faf8fb;
-          border: 1px solid #ece6f1;
-        }
-
-        .df-sales-report-expander-card {
-          background: #fff;
-          border: 1px solid #ece6f1;
-          border-radius: 16px;
-          padding: 16px;
-          display: grid;
-          gap: 10px;
-          align-content: start;
-        }
-
-        .df-sales-report-expander-card h4 {
-          margin: 0;
-          font-size: 15px;
-          color: #33293d;
-        }
-
-        .df-sales-report-line {
-          display: flex;
-          align-items: baseline;
-          justify-content: space-between;
-          gap: 12px;
-          font-size: 14px;
-          color: #463b52;
-        }
-
-        .df-sales-report-line small {
-          color: #857a8f;
-          display: block;
-          margin-top: 4px;
-        }
-
-        .df-sales-report-financial-grid {
-          display: grid;
-          gap: 10px;
-        }
-
-        .df-sales-report-financial-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 10px 12px;
-          border-radius: 12px;
-          background: #f8f4fb;
-          color: #473954;
-        }
-
-        .df-sales-report-financial-row strong {
-          font-weight: 800;
-        }
-
         .df-drawer-overlay {
           position: fixed;
           inset: 0;
@@ -575,6 +560,12 @@ export default function SalesReportPage() {
           color: #463b52;
         }
 
+        .df-line small {
+          color: #857a8f;
+          display: block;
+          margin-top: 4px;
+        }
+
         .df-summary {
           display: grid;
           gap: 10px;
@@ -594,10 +585,6 @@ export default function SalesReportPage() {
         @media (max-width: 1100px) {
           .df-sales-report-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .df-sales-report-expander {
-            grid-template-columns: 1fr;
           }
         }
 
@@ -620,16 +607,14 @@ export default function SalesReportPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Reportes</p>
-          <h1 className="df-pro-page__title">Ventas unificadas</h1>
-          <p className="df-pro-page__subtitle">
-            Vestidos, accesorios, multipagos y multimoneda en un solo tablero comercial.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
 
         <div className="df-pro-actions-row">
           <PrimaryButton type="button" onClick={exportExcel} disabled={exporting}>
-            {exporting ? "Exportando..." : "Exportar Excel"}
+            {exporting ? tc("status.exporting") : tc("actions.exportExcel")}
           </PrimaryButton>
         </div>
       </header>
@@ -645,43 +630,43 @@ export default function SalesReportPage() {
       <section className="df-pro-card">
         <form onSubmit={handleSearchSubmit} className="df-sales-report-grid">
           <div className="df-sales-report-cell">
-            <label>Buscar</label>
+            <label>{t("filters.search")}</label>
             <input
               className="df-pro-input"
-              placeholder="N° venta, cliente, notas"
+              placeholder={t("filters.searchPlaceholder")}
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
             />
           </div>
 
           <div className="df-sales-report-cell">
-            <label>Estado</label>
+            <label>{t("filters.status")}</label>
             <select
               className="df-pro-select"
               value={filters.status}
               onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
             >
-              <option value="">Todos los estados</option>
-              <option value="COMPLETED">Completadas</option>
-              <option value="CANCELLED">Canceladas</option>
+              <option value="">{t("filters.allStatuses")}</option>
+              <option value="COMPLETED">{t("status.COMPLETED")}</option>
+              <option value="CANCELLED">{t("status.CANCELLED")}</option>
             </select>
           </div>
 
           <div className="df-sales-report-cell">
-            <label>Moneda cabecera</label>
+            <label>{t("filters.currency")}</label>
             <select
               className="df-pro-select"
               value={filters.currency}
               onChange={(e) => setFilters((prev) => ({ ...prev, currency: e.target.value }))}
             >
-              <option value="">Todas</option>
+              <option value="">{t("filters.allCurrencies")}</option>
               <option value="ARS">ARS</option>
               <option value="USD">USD</option>
             </select>
           </div>
 
           <div className="df-sales-report-cell">
-            <label>Desde</label>
+            <label>{t("filters.from")}</label>
             <input
               className="df-pro-input"
               type="date"
@@ -691,7 +676,7 @@ export default function SalesReportPage() {
           </div>
 
           <div className="df-sales-report-cell">
-            <label>Hasta</label>
+            <label>{t("filters.to")}</label>
             <input
               className="df-pro-input"
               type="date"
@@ -701,9 +686,9 @@ export default function SalesReportPage() {
           </div>
 
           <div className="df-pro-actions-row" style={{ gridColumn: "1 / -1" }}>
-            <button type="submit">Buscar</button>
+            <button type="submit">{tc("actions.search")}</button>
             <button type="button" onClick={handleClearFilters}>
-              Limpiar
+              {tc("actions.clear")}
             </button>
           </div>
         </form>
@@ -726,83 +711,94 @@ export default function SalesReportPage() {
 
       <section className="df-sales-report-kpis">
         <div className="df-sales-report-kpi-card">
-          <span>Ventas</span>
+          <span>{t("kpis.sales")}</span>
           <strong>{metrics.count}</strong>
-          <small>Operaciones activas en el período</small>
+          <small>{t("kpis.salesSubtitle")}</small>
         </div>
 
         <div className="df-sales-report-kpi-card">
-          <span>Total ARS</span>
+          <span>{t("kpis.totalARS")}</span>
           <strong>{formatMoney(metrics.totalARS, "ARS")}</strong>
-          <small>Ventas expresadas en ARS</small>
+          <small>{t("kpis.totalARSSubtitle")}</small>
         </div>
 
         <div className="df-sales-report-kpi-card">
-          <span>Total USD</span>
+          <span>{t("kpis.totalUSD")}</span>
           <strong>{formatMoney(metrics.totalUSD, "USD")}</strong>
-          <small>Ventas expresadas en USD</small>
+          <small>{t("kpis.totalUSDSubtitle")}</small>
         </div>
 
         <div className="df-sales-report-kpi-card">
-          <span>Operaciones mixtas</span>
+          <span>{t("kpis.mixed")}</span>
           <strong>{metrics.mixedCount}</strong>
-          <small>Ventas con ARS y USD combinados</small>
+          <small>{t("kpis.mixedSubtitle")}</small>
         </div>
       </section>
 
       <section className="df-pro-card">
         <div className="df-sales-report-summary">
           <div>
-            <strong>Registros:</strong> {items.length}
+            <strong>{t("summary.records")}:</strong> {items.length}
           </div>
+
           <div className="df-sales-report-total-chip">
-            Totales: {formatMoney(metrics.totalUSD, "USD")} + {formatMoney(metrics.totalARS, "ARS")}
+            {t("summary.totals")}: {formatMoney(metrics.totalUSD, "USD")} +{" "}
+            {formatMoney(metrics.totalARS, "ARS")}
           </div>
         </div>
       </section>
 
       <section className="df-pro-card">
         {loading ? (
-          <p>Cargando reporte...</p>
+          <p>{t("messages.loading")}</p>
         ) : items.length === 0 ? (
-          <p>No hay ventas para mostrar.</p>
+          <p>{t("empty")}</p>
         ) : (
           <div style={{ width: "100%", overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1080 }}>
               <thead>
                 <tr>
-                  <th className="df-pro-table__th">N° Venta</th>
-                  <th className="df-pro-table__th">Fecha</th>
-                  <th className="df-pro-table__th">Cliente</th>
-                  <th className="df-pro-table__th">Moneda</th>
-                  <th className="df-pro-table__th">Total</th>
-                  <th className="df-pro-table__th">Pagos</th>
-                  <th className="df-pro-table__th">Estado</th>
-                  <th className="df-pro-table__th">Detalle</th>
+                  <th className="df-pro-table__th">{t("fields.sale")}</th>
+                  <th className="df-pro-table__th">{t("fields.date")}</th>
+                  <th className="df-pro-table__th">{t("fields.customer")}</th>
+                  <th className="df-pro-table__th">{t("fields.currency")}</th>
+                  <th className="df-pro-table__th">{t("fields.total")}</th>
+                  <th className="df-pro-table__th">{t("fields.payments")}</th>
+                  <th className="df-pro-table__th">{t("fields.status")}</th>
+                  <th className="df-pro-table__th">{t("fields.detail")}</th>
                 </tr>
               </thead>
+
               <tbody>
                 {items.map((row) => {
+                  const isMixed = row.items_total_ars > 0 && row.items_total_usd > 0;
+
                   return (
                     <Fragment key={row.id}>
                       <tr>
-                        <td className="df-pro-table__td">{row.sale_number || "-"}</td>
-                        <td className="df-pro-table__td">
-                          {row.sale_date ? new Date(row.sale_date).toLocaleString("es-AR") : "—"}
-                        </td>
-                        <td className="df-pro-table__td">{row.customer_full_name || "-"}</td>
-                        <td className="df-pro-table__td">{row.currency || "-"}</td>
+                        <td className="df-pro-table__td">{row.sale_number || "—"}</td>
+                        <td className="df-pro-table__td">{formatDateTime(row.sale_date)}</td>
+                        <td className="df-pro-table__td">{row.customer_full_name || "—"}</td>
+                        <td className="df-pro-table__td">{row.currency || "—"}</td>
                         <td className="df-pro-table__td">
                           <strong>{saleTotalLabel(row)}</strong>
-                          {row.items_total_ars > 0 && row.items_total_usd > 0 ? (
-                            <div style={{ marginTop: 4, fontSize: 12, color: "#8b8193" }}>Venta mixta</div>
+                          {isMixed ? (
+                            <div style={{ marginTop: 4, fontSize: 12, color: "#8b8193" }}>
+                              {t("labels.mixedSale")}
+                            </div>
                           ) : null}
                         </td>
                         <td className="df-pro-table__td">
                           <div className="df-sales-report-meta">
-                            {row.paid_total_usd > 0 && <span>{formatMoney(row.paid_total_usd, "USD")}</span>}
-                            {row.paid_total_ars > 0 && <span>{formatMoney(row.paid_total_ars, "ARS")}</span>}
-                            {row.paid_total_usd === 0 && row.paid_total_ars === 0 && <span>—</span>}
+                            {row.paid_total_usd > 0 && (
+                              <span>{formatMoney(row.paid_total_usd, "USD")}</span>
+                            )}
+                            {row.paid_total_ars > 0 && (
+                              <span>{formatMoney(row.paid_total_ars, "ARS")}</span>
+                            )}
+                            {row.paid_total_usd === 0 && row.paid_total_ars === 0 && (
+                              <span>—</span>
+                            )}
                           </div>
                         </td>
                         <td className="df-pro-table__td">
@@ -816,7 +812,7 @@ export default function SalesReportPage() {
                             className="df-sales-report-row-button"
                             onClick={() => setSelectedSale(row)}
                           >
-                            Ver detalle
+                            {t("actions.viewDetail")}
                           </button>
                         </td>
                       </tr>
@@ -827,59 +823,71 @@ export default function SalesReportPage() {
             </table>
           </div>
         )}
+
         {selectedSale && (
-  <div className="df-drawer-overlay" onClick={() => setSelectedSale(null)}>
-    <div className="df-drawer" onClick={(e) => e.stopPropagation()}>
+          <div className="df-drawer-overlay" onClick={() => setSelectedSale(null)}>
+            <div className="df-drawer" onClick={(e) => e.stopPropagation()}>
+              <header className="df-drawer-header">
+                <div>
+                  <h3>{selectedSale.sale_number || "—"}</h3>
+                  <small>{selectedSale.customer_full_name || "—"}</small>
+                </div>
+                <button onClick={() => setSelectedSale(null)}>✕</button>
+              </header>
 
-      <header className="df-drawer-header">
-        <div>
-          <h3>{selectedSale.sale_number}</h3>
-          <small>{selectedSale.customer_full_name}</small>
-        </div>
-        <button onClick={() => setSelectedSale(null)}>✕</button>
-      </header>
+              <div className="df-drawer-body">
+                <section>
+                  <h4>{t("sections.items")}</h4>
+                  {selectedSale.items.map((item) => (
+                    <div key={item.id} className="df-line">
+                      <span>
+                        {itemTypeLabel(item.item_type)} · {item.description_snapshot || "—"} · x
+                        {item.quantity}
+                        <small>
+                          {formatMoney(item.unit_price, item.currency)} / {item.currency}
+                        </small>
+                      </span>
+                      <strong>{formatMoney(item.line_total, item.currency)}</strong>
+                    </div>
+                  ))}
+                </section>
 
-      <div className="df-drawer-body">
+                <section>
+                  <h4>{t("sections.payments")}</h4>
+                  {selectedSale.payments.length === 0 ? (
+                    <div className="df-line">
+                      <span>—</span>
+                    </div>
+                  ) : (
+                    selectedSale.payments.map((payment) => (
+                      <div key={payment.id} className="df-line">
+                        <span>
+                          {paymentMethodLabel(payment.payment_method)}
+                          {payment.reference ? <small>{payment.reference}</small> : null}
+                        </span>
+                        <strong>{formatMoney(payment.amount, payment.currency)}</strong>
+                      </div>
+                    ))
+                  )}
+                </section>
 
-        {/* Ítems */}
-        <section>
-          <h4>Ítems</h4>
-          {selectedSale.items.map((i: any) => (
-            <div key={i.id} className="df-line">
-              <span>
-                {i.description_snapshot} · x{i.quantity}
-              </span>
-              <strong>{formatMoney(i.line_total, i.currency)}</strong>
+                <section>
+                  <h4>{t("sections.summary")}</h4>
+                  <div className="df-summary">
+                    <div>
+                      <span>ARS</span>
+                      <strong>{formatMoney(selectedSale.items_total_ars, "ARS")}</strong>
+                    </div>
+                    <div>
+                      <span>USD</span>
+                      <strong>{formatMoney(selectedSale.items_total_usd, "USD")}</strong>
+                    </div>
+                  </div>
+                </section>
+              </div>
             </div>
-          ))}
-        </section>
-
-        {/* Pagos */}
-        <section>
-          <h4>Pagos</h4>
-          {selectedSale.payments.map((p: any) => (
-            <div key={p.id} className="df-line">
-              <span>
-                {paymentMethodLabel(p.payment_method)}
-              </span>
-              <strong>{formatMoney(p.amount, p.currency)}</strong>
-            </div>
-          ))}
-        </section>
-
-        {/* Resumen */}
-        <section>
-          <h4>Resumen</h4>
-          <div className="df-summary">
-            <div>ARS: {formatMoney(selectedSale.items_total_ars, "ARS")}</div>
-            <div>USD: {formatMoney(selectedSale.items_total_usd, "USD")}</div>
           </div>
-        </section>
-
-      </div>
-    </div>
-  </div>
-)}
+        )}
       </section>
     </section>
   );

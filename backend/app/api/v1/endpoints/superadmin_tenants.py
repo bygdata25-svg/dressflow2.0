@@ -202,3 +202,24 @@ def update_tenant_feature(
         "feature_key": feature.feature_key,
         "enabled": feature.enabled,
     }
+
+@router.get("/{tenant_id}/features")
+def get_tenant_features(
+    tenant_id: UUID,
+    db: Session = Depends(get_db),
+    user=Depends(require_superuser),
+):
+    features = db.execute(
+        select(TenantFeature).where(
+            TenantFeature.tenant_id == tenant_id
+        )
+    ).scalars().all()
+
+    return [
+        {
+            "tenant_id": str(feature.tenant_id),
+            "feature_key": feature.feature_key,
+            "enabled": feature.enabled,
+        }
+        for feature in features
+    ]

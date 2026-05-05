@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Toaster } from "react-hot-toast";
+import i18n from "./i18n";
 
 import HomePage from "./pages/HomePage";
 import DressesPage from "./pages/DressesPage";
@@ -43,6 +44,7 @@ import AppLoader from "./components/AppLoader";
 import { setBrowserFavicon, setBrowserTitle } from "./lib/browserBranding";
 import { getTenantSlugFromHostname } from "./lib/tenantHost";
 import DressStockValuationReportPage from "./pages/DressStockValuationReportPage";
+import ImportSettingsPage from "./pages/ImportSettingsPage";
 
 import { applyTenantBranding } from "./lib/tenantBranding";
 import { api } from "./lib/api";
@@ -481,16 +483,26 @@ function LoansLateBadge({ count }: { count: number }) {
 function AlertBell({
   count,
   onClick,
+  t,
 }: {
   count: number;
   onClick: () => void;
+  t: (key: string, options?: any) => string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      title={count > 0 ? `${count} préstamos vencidos` : "Sin vencidos"}
-      aria-label={count > 0 ? `${count} préstamos vencidos` : "Sin vencidos"}
+      title={
+        count > 0
+          ? t("alerts.overdueLoansCount", { count })
+          : t("alerts.noOverdueLoans")
+      }
+      aria-label={
+        count > 0
+          ? t("alerts.overdueLoansCount", { count })
+          : t("alerts.noOverdueLoans")
+      }
       style={{
         position: "relative",
         width: 40,
@@ -553,7 +565,7 @@ function AppShell({
   me: Me;
   onLogout: () => void;
 }) {
-  const { t, i18n } = useTranslation("common");
+  const { t } = useTranslation("common");
   const location = useLocation();
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -661,7 +673,7 @@ function AppShell({
         label: (
           <>
             <SidebarIcon><TrimIcon /></SidebarIcon>
-            <span>Accesorios</span>
+            <span>{t("navigation.accessories")}</span>
           </>
         ),
       });
@@ -673,7 +685,7 @@ function AppShell({
         label: (
           <>
             <SidebarIcon><MovementIcon /></SidebarIcon>
-            <span>Movimientos accesorios</span>
+            <span>{t("navigation.accessoryMovements")}</span>
           </>
         ),
       });
@@ -685,7 +697,7 @@ function AppShell({
         label: (
           <>
             <SidebarIcon><CapsuleIcon /></SidebarIcon>
-            <span>Capsulas</span>
+            <span>{t("navigation.capsules")}</span>
           </>
         ),
       });
@@ -720,7 +732,7 @@ function AppShell({
         label: (
           <>
             <SidebarIcon><ReportsIcon /></SidebarIcon>
-            <span>Ventas</span>
+            <span>{t("navigation.sales")}</span>
           </>
         ),
       });
@@ -744,7 +756,7 @@ function AppShell({
         label: (
           <>
             <SidebarIcon><CompanyIcon /></SidebarIcon>
-            <span>Empresas</span>
+            <span>{t("navigation.companies")}</span>
           </>
         ),
       });
@@ -823,7 +835,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><StockIcon /></SidebarIcon>
-                <span>Stock valorizado</span>
+                <span>{t("navigation.stockValuation")}</span>
               </>
             ),
           }
@@ -834,7 +846,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><StockIcon /></SidebarIcon>
-                <span>Stock vestidos</span>
+                <span>{t("navigation.dressStock")}</span>
               </>
             ),
           }
@@ -845,7 +857,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><MovementsReportIcon /></SidebarIcon>
-                <span>Movimientos de tela</span>
+                <span>{t("navigation.fabricMovementsReport")}</span>
               </>
             ),
           }
@@ -856,7 +868,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><LoansReportIcon /></SidebarIcon>
-                <span>Préstamos</span>
+                <span>{t("navigation.loansReport")}</span>
               </>
             ),
           }
@@ -867,7 +879,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><StockIcon /></SidebarIcon>
-                <span>Costos de producción</span>
+                <span>{t("navigation.productionCosts")}</span>
               </>
             ),
           }
@@ -878,7 +890,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><SalesReportIcon /></SidebarIcon>
-                <span>Ventas</span>
+                <span>{t("navigation.sales")}</span>
               </>
             ),
           }
@@ -889,7 +901,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><ReportsIcon /></SidebarIcon>
-                <span>Dashboard financiero</span>
+                <span>{t("navigation.financialDashboard")}</span>
               </>
             ),
           }
@@ -902,7 +914,7 @@ function AppShell({
         label: (
           <>
             <SidebarIcon><ReportsIcon /></SidebarIcon>
-            <span>Reportes</span>
+            <span>{t("navigation.reports")}</span>
           </>
         ),
         items: reportItems,
@@ -916,7 +928,7 @@ function AppShell({
             label: (
               <>
                 <SidebarIcon><BrandingIcon /></SidebarIcon>
-                <span>Branding</span>
+                <span>{t("navigation.branding")}</span>
               </>
             ),
           }
@@ -954,10 +966,19 @@ function AppShell({
             ),
           }
         : null,
+          {
+            to: "/settings/imports",
+            label: (
+              <>
+                <SidebarIcon><ReportsIcon /></SidebarIcon>
+                <span>Importaciones</span>
+              </>
+            ),
+          },
       me.is_superuser
         ? {
             to: "/settings/field-config",
-            label: "Configuración de campos",
+            label: t("navigation.fieldSettings"),
           }
         : null,
     ].filter(Boolean) as NavItem[];
@@ -1017,7 +1038,7 @@ function AppShell({
           <button
             className="df-mobile-nav-toggle"
             onClick={() => setMobileNavOpen((prev) => !prev)}
-            aria-label="Toggle navigation"
+            aria-label={t("topbar.toggleNavigation")}
           >
             ☰
           </button>
@@ -1117,7 +1138,7 @@ function AppShell({
                 }}
               >
                 <span style={{ fontSize: 13, fontWeight: 700 }}>
-                  {me.tenant_name || "Empresa"}
+                  {me.tenant_name || t("topbar.companyFallback")}
                 </span>
 
                 {me.impersonated && (
@@ -1149,21 +1170,10 @@ function AppShell({
         </div>
 
         <div className="df-topbar__right">
-          <button
-            className="df-lang-btn"
-            onClick={() => i18n.changeLanguage("es")}
-          >
-            ES
-          </button>
-          <button
-            className="df-lang-btn"
-            onClick={() => i18n.changeLanguage("en")}
-          >
-            EN
-          </button>
 
           <AlertBell
             count={lateLoansCount}
+            t={t}
             onClick={() => {
               window.location.href = "/loans";
             }}
@@ -1230,7 +1240,7 @@ function AppShell({
           <button
             className="df-sidebar-backdrop"
             onClick={() => setMobileNavOpen(false)}
-            aria-label="Close navigation"
+            aria-label={t("topbar.closeNavigation")}
           />
         )}
 
@@ -1301,6 +1311,7 @@ function AppShell({
                 )
               }
             />
+            <Route path="/settings/imports" element={<ImportSettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -1331,6 +1342,14 @@ export default function App() {
       const data = await fetchMe();
       setMe(data);
 
+      const effectiveLanguage =
+        data.effective_language ||
+        data.preferred_language ||
+        data.tenant_default_language ||
+        "es";
+
+      void i18n.changeLanguage(effectiveLanguage);
+
       if (
         data.must_change_password &&
         window.location.pathname !== "/change-password"
@@ -1339,7 +1358,7 @@ export default function App() {
         return;
       }
     } catch (error) {
-      console.error("Error cargando sesión:", error);
+      console.error("Error loading session:", error);
       setMe(null);
     } finally {
       setLoadingMe(false);

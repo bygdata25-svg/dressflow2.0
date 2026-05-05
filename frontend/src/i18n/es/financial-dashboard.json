@@ -1,0 +1,60 @@
+{
+  "title": "Dashboard financiero",
+
+  "hero": {
+    "eyebrow": "Análisis",
+    "subtitle": "Ingresos, ticket promedio y evolución de ventas con lectura separada por moneda."
+  },
+
+  "headline": {
+    "mixedTotal": "Total mixto",
+    "usdTotal": "Total USD",
+    "arsTotal": "Total ARS",
+    "mixedSubtitle": "Ingresos consolidados por moneda",
+    "usdSubtitle": "Ingresos en dólares",
+    "arsSubtitle": "Ingresos en moneda local"
+  },
+
+  "kpis": {
+    "salesARS": "Ventas ARS",
+    "salesUSD": "Ventas USD",
+    "sales": "Ventas",
+    "avgTicketARS": "Ticket promedio ARS",
+    "avgTicketUSD": "Ticket promedio USD",
+
+    "salesARSSubtitle": "{{count}} operaciones en ARS",
+    "salesUSDSubtitle": "{{count}} operaciones en USD",
+    "salesSubtitle": "Operaciones totales",
+    "avgTicketARSSubtitle": "Promedio en moneda local",
+    "avgTicketUSDSubtitle": "Promedio en dólares"
+  },
+
+  "sections": {
+    "evolution": "Evolución de ventas",
+    "evolutionSubtitle": "Tendencia mensual en ARS y USD",
+    "paymentMethods": "Métodos de pago",
+    "paymentMethodsSubtitle": "Participación por cantidad de operaciones"
+  },
+
+  "labels": {
+    "operations": "{{count}} operación",
+    "operations_plural": "{{count}} operaciones"
+  },
+
+  "messages": {
+    "loading": "Cargando dashboard financiero..."
+  },
+
+  "errors": {
+    "load": "No se pudo cargar el dashboard financiero"
+  },
+
+  "payments": {
+    "CASH": "Efectivo",
+    "TRANSFER": "Transferencia",
+    "DEBIT": "Débito",
+    "CREDIT": "Crédito",
+    "MERCADOPAGO": "Mercado Pago",
+    "OTHER": "Otro"
+  }
+}

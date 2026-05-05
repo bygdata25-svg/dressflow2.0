@@ -1,0 +1,53 @@
+{
+  "title": "Production costs",
+  "hero": {
+    "eyebrow": "Reports",
+    "subtitle": "Economic summary of production orders."
+  },
+  "fields": {
+    "order": "Order",
+    "dress": "Dress",
+    "workshop": "Workshop",
+    "status": "Status",
+    "dueDate": "Due date",
+    "planned": "Planned",
+    "produced": "Produced",
+    "material": "Material",
+    "laborOther": "Labor / other",
+    "totalEstimated": "Estimated total"
+  },
+  "summary": {
+    "records": "Records",
+    "simplifiedView": "Simplified view",
+    "simplifiedViewDetail": "Material + Labor / other + Estimated total"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Order, dress or workshop",
+    "status": "Status",
+    "from": "From",
+    "to": "To",
+    "all": "All"
+  },
+  "kpis": {
+    "orders": "Orders",
+    "material": "Material cost",
+    "labor": "Labor / other",
+    "total": "Estimated total"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "MATERIALS_RESERVED": "Materials reserved",
+    "IN_PRODUCTION": "In production",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "messages": {
+    "loading": "Loading report..."
+  },
+  "errors": {
+    "load": "Could not load report.",
+    "export": "Could not export."
+  },
+  "empty": "No data."
+}

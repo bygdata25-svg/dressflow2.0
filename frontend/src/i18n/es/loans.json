@@ -1,45 +1,74 @@
 {
-  "title": "Préstamos",
+  "title": "Préstamos / Alquileres",
   "hero": {
     "eyebrow": "Operaciones",
-    "subtitle": "Gestioná préstamos activos, devoluciones y operaciones con clientes con un flujo editorial y limpio."
+    "subtitle": "Gestioná préstamos, alquileres y devoluciones desde un flujo unificado."
   },
-  "empty": "No hay préstamos cargados todavía.",
+  "types": {
+    "loan": "Préstamo",
+    "rental": "Alquiler",
+    "loanPlural": "Préstamos",
+    "rentalPlural": "Alquileres",
+    "all": "Todos"
+  },
   "fields": {
     "dress": "Vestido",
     "customer": "Cliente",
     "startDate": "Inicio",
     "expectedReturnDate": "Devolución esperada",
     "actualReturnDate": "Devolución real",
-    "status": "Estado"
+    "status": "Estado",
+    "type": "Tipo",
+    "amount": "Valor"
   },
   "status": {
     "ACTIVE": "Activo",
     "RETURNED": "Devuelto",
-    "LATE": "Atrasado"
+    "LATE": "Vencido"
   },
   "filters": {
     "search": "Buscar",
-    "searchPlaceholder": "Buscar por vestido o cliente",
+    "searchPlaceholder": "Vestido o cliente",
     "status": "Estado",
-    "allStatuses": "Todos los estados"
+    "allStatuses": "Todos los estados",
+    "type": "Tipo",
+    "allTypes": "Todos los tipos"
   },
-  "form": {
-    "title": "Crear préstamo",
+  "modal": {
+    "createLoan": "Nuevo préstamo",
+    "createRental": "Nuevo alquiler",
+    "note": "Registrá una salida de vestido como préstamo o alquiler desde el mismo flujo.",
+    "type": "Tipo",
     "dress": "Vestido",
     "customer": "Cliente",
     "startDate": "Fecha de inicio",
     "expectedReturnDate": "Fecha esperada de devolución",
-    "create": "Crear préstamo",
+    "amount": "Valor del alquiler",
+    "notes": "Notas",
+    "notesPlaceholder": "Observaciones internas de la operación",
+    "amountPlaceholder": "Ej: 150.00",
     "dressPlaceholder": "Seleccionar vestido",
     "customerPlaceholder": "Seleccionar cliente"
   },
   "actions": {
-    "return": "Devolver"
+    "new": "Nuevo préstamo / alquiler",
+    "return": "Devolver",
+    "createLoan": "Crear préstamo",
+    "createRental": "Crear alquiler"
   },
   "messages": {
-    "loadError": "No se pudieron cargar los préstamos.",
-    "createError": "No se pudo crear el préstamo.",
-    "returnError": "No se pudo devolver el préstamo."
+    "loading": "Cargando registros...",
+    "empty": "No hay registros para mostrar.",
+    "loadError": "No se pudieron cargar los registros.",
+    "createError": "No se pudo crear la operación.",
+    "returnError": "No se pudo registrar la devolución.",
+    "selectDress": "Seleccioná un vestido.",
+    "selectCustomer": "Seleccioná un cliente.",
+    "selectStartDate": "Ingresá la fecha de inicio.",
+    "invalidAmount": "Ingresá un valor de alquiler mayor a cero."
+  },
+  "pagination": {
+    "showing": "Mostrando {{count}} / {{total}}",
+    "page": "Página {{page}} de {{totalPages}}"
   }
 }

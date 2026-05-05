@@ -1,0 +1,52 @@
+{
+  "title": "Préstamos / Alquileres",
+  "hero": {
+    "eyebrow": "Reportes",
+    "subtitle": "Consultá préstamos activos, vencidos y devueltos, incluyendo alquileres y valor acumulado."
+  },
+  "fields": {
+    "type": "Tipo",
+    "dress": "Vestido",
+    "customer": "Cliente",
+    "startDate": "Inicio",
+    "expectedReturnDate": "Vencimiento",
+    "actualReturnDate": "Devolución",
+    "amount": "Valor",
+    "status": "Estado",
+    "notes": "Notas"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Vestido, cliente o nota",
+    "status": "Estado",
+    "type": "Tipo",
+    "from": "Desde",
+    "to": "Hasta",
+    "all": "Todos"
+  },
+  "status": {
+    "ACTIVE": "Activo",
+    "LATE": "Vencido",
+    "RETURNED": "Devuelto"
+  },
+  "types": {
+    "LOAN": "Préstamo",
+    "RENTAL": "Alquiler"
+  },
+  "kpis": {
+    "records": "Registros",
+    "loans": "Préstamos",
+    "rentals": "Alquileres",
+    "active": "Activos",
+    "late": "Vencidos",
+    "rentalRevenue": "Ingresos por alquiler"
+  },
+  "messages": {
+    "loading": "Cargando reporte..."
+  },
+  "errors": {
+    "load": "No se pudo cargar el reporte.",
+    "export": "No se pudo exportar el reporte."
+  },
+  "empty": "No hay datos para mostrar."
+}

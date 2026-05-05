@@ -1,0 +1,45 @@
+{
+  "eyebrow": "Organización comercial",
+  "title": "Cápsulas",
+  "subtitle": "Agrupá vestidos por colección, temporada o línea.",
+  "new": "Nueva cápsula",
+
+  "table": {
+    "name": "Nombre",
+    "description": "Descripción",
+    "status": "Estado",
+    "dresses": "Vestidos",
+    "actions": ""
+  },
+
+  "status": {
+    "active": "Activa",
+    "inactive": "Inactiva"
+  },
+
+  "messages": {
+    "loading": "Cargando cápsulas...",
+    "empty": "No hay cápsulas cargadas.",
+    "errorLoad": "No se pudieron cargar las cápsulas.",
+    "errorSave": "No se pudo guardar la cápsula.",
+    "errorDelete": "No se pudo eliminar la cápsula.",
+    "nameRequired": "El nombre es obligatorio.",
+    "deleteConfirm": "¿Querés eliminar esta cápsula?"
+  },
+
+  "modal": {
+    "createTitle": "Nueva cápsula",
+    "editTitle": "Editar cápsula",
+    "name": "Nombre",
+    "description": "Descripción",
+    "status": "Estado",
+    "namePlaceholder": "Invierno 2026",
+    "descriptionPlaceholder": "Vestidos de temporada"
+  },
+
+  "actions": {
+    "create": "Crear",
+    "update": "Actualizar",
+    "delete": "Eliminar"
+  }
+}

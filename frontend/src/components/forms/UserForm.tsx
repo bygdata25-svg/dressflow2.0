@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import { FormActions } from "../common/FormActions";
 
@@ -36,6 +37,8 @@ const initialForm: UserFormState = {
 };
 
 export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
+  const { t } = useTranslation("users");
+
   const [form, setForm] = useState<UserFormState>(initialForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -89,13 +92,13 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
   };
 
   const validate = () => {
-    if (!form.email.trim()) return "El email es obligatorio.";
-    if (!form.first_name.trim()) return "El nombre es obligatorio.";
-    if (!form.last_name.trim()) return "El apellido es obligatorio.";
-    if (!isEditing && !form.password.trim()) return "La contraseña es obligatoria.";
+    if (!form.email.trim()) return t("form.validation.emailRequired");
+    if (!form.first_name.trim()) return t("form.validation.firstNameRequired");
+    if (!form.last_name.trim()) return t("form.validation.lastNameRequired");
+    if (!isEditing && !form.password.trim()) return t("form.validation.passwordRequired");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email.trim())) return "Ingresá un email válido.";
+    if (!emailRegex.test(form.email.trim())) return t("form.validation.invalidEmail");
 
     return "";
   };
@@ -138,8 +141,8 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
       else {
         setError(
           isEditing
-            ? "No se pudo actualizar el usuario."
-            : "No se pudo crear el usuario."
+            ? t("form.messages.updateError")
+            : t("form.messages.createError")
         );
       }
     } finally {
@@ -157,18 +160,17 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
       setResetSaving(true);
 
       const response = await api.post(`/users/${user.id}/reset-password`);
-
       const temporaryPassword = response?.data?.temporary_password || "123456";
 
       setResetSuccess(
-        `Contraseña temporal generada: ${temporaryPassword}. El usuario deberá cambiarla al ingresar.`
+        t("form.security.resetSuccess", { password: temporaryPassword })
       );
       setShowPasswordReset(false);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setResetError(detail);
       else if (detail?.message) setResetError(detail.message);
-      else setResetError("No se pudo resetear la contraseña.");
+      else setResetError(t("form.security.resetError"));
     } finally {
       setResetSaving(false);
     }
@@ -184,74 +186,74 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
       }}
     >
       <div style={{ gridColumn: "span 6" }}>
-        <label className="df-pro-label">Nombre</label>
+        <label className="df-pro-label">{t("form.fields.firstName")}</label>
         <input
           className="df-pro-input"
           value={form.first_name}
           onChange={(e) => setField("first_name", e.target.value)}
-          placeholder="Juan"
+          placeholder={t("form.placeholders.firstName")}
           autoFocus
         />
       </div>
 
       <div style={{ gridColumn: "span 6" }}>
-        <label className="df-pro-label">Apellido</label>
+        <label className="df-pro-label">{t("form.fields.lastName")}</label>
         <input
           className="df-pro-input"
           value={form.last_name}
           onChange={(e) => setField("last_name", e.target.value)}
-          placeholder="Pérez"
+          placeholder={t("form.placeholders.lastName")}
         />
       </div>
 
       <div style={{ gridColumn: "span 6" }}>
-        <label className="df-pro-label">Email</label>
+        <label className="df-pro-label">{t("form.fields.email")}</label>
         <input
           className={`df-pro-input ${isEditing ? "df-pro-input--readonly" : ""}`}
           type="email"
           value={form.email}
           onChange={(e) => setField("email", e.target.value)}
-          placeholder="usuario@empresa.com"
+          placeholder={t("form.placeholders.email")}
           readOnly={isEditing}
         />
       </div>
 
       {!isEditing && (
         <div style={{ gridColumn: "span 6" }}>
-          <label className="df-pro-label">Contraseña</label>
+          <label className="df-pro-label">{t("form.fields.password")}</label>
           <input
             className="df-pro-input"
             type="password"
             value={form.password}
             onChange={(e) => setField("password", e.target.value)}
-            placeholder="••••••••"
+            placeholder={t("form.placeholders.password")}
           />
         </div>
       )}
 
       <div style={{ gridColumn: isEditing ? "span 6" : "span 4" }}>
-        <label className="df-pro-label">Rol</label>
+        <label className="df-pro-label">{t("form.fields.role")}</label>
         <select
           className="df-pro-select"
           value={form.role}
           onChange={(e) => setField("role", e.target.value)}
         >
-          <option value="admin">Admin</option>
-          <option value="manager">Manager</option>
-          <option value="staff">Staff</option>
+          <option value="admin">{t("roles.admin")}</option>
+          <option value="manager">{t("roles.manager")}</option>
+          <option value="staff">{t("roles.staff")}</option>
         </select>
       </div>
 
       {isEditing && (
         <div style={{ gridColumn: "span 6" }}>
-          <label className="df-pro-label">Estado</label>
+          <label className="df-pro-label">{t("form.fields.status")}</label>
           <select
             className="df-pro-select"
             value={form.is_active ? "true" : "false"}
             onChange={(e) => setField("is_active", e.target.value === "true")}
           >
-            <option value="true">Activo</option>
-            <option value="false">Inactivo</option>
+            <option value="true">{t("status.active")}</option>
+            <option value="false">{t("status.inactive")}</option>
           </select>
         </div>
       )}
@@ -277,9 +279,11 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
               }}
             >
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Seguridad</div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>
+                  {t("form.security.title")}
+                </div>
                 <div style={{ fontSize: 13, color: "#8a7f78" }}>
-                  Generá una contraseña temporal para este usuario.
+                  {t("form.security.description")}
                 </div>
               </div>
 
@@ -292,7 +296,9 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
                   setResetSuccess("");
                 }}
               >
-                {showPasswordReset ? "Cancelar reset" : "Reset password"}
+                {showPasswordReset
+                  ? t("form.security.cancelReset")
+                  : t("form.security.resetPassword")}
               </button>
             </div>
 
@@ -314,8 +320,9 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
                       border: "1px solid #fed7aa",
                     }}
                   >
-                    Se generará una contraseña temporal <strong>123456</strong>. El
-                    usuario deberá cambiarla al ingresar.
+                    {t("form.security.warningPrefix")}{" "}
+                    <strong>123456</strong>.{" "}
+                    {t("form.security.warningSuffix")}
                   </div>
                 </div>
 
@@ -347,7 +354,9 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
                     onClick={handleResetPassword}
                     disabled={resetSaving}
                   >
-                    {resetSaving ? "Reseteando..." : "Confirmar reset password"}
+                    {resetSaving
+                      ? t("form.security.resetting")
+                      : t("form.security.confirmReset")}
                   </button>
                 </div>
               </div>
@@ -403,7 +412,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
 
       <FormActions
         saving={saving}
-        submitLabel={isEditing ? "Actualizar" : "Crear"}
+        submitLabel={isEditing ? t("form.actions.update") : t("form.actions.create")}
         onClear={handleClear}
         onCancel={onCancel}
       />

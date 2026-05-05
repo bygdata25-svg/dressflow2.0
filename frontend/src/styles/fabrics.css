@@ -301,6 +301,31 @@
   margin-top:4px;
 }
 
+.df-file-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.df-file-upload-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #111827;
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.df-file-upload-btn:hover {
+  background: #1f2937;
+}
+
+.df-file-upload-name {
+  font-size: 13px;
+  color: #6b7280;
+}
+
 @media (max-width: 720px){
   .gf-form-grid{
     grid-template-columns:1fr;

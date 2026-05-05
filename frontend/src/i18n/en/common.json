@@ -13,7 +13,21 @@
     "trims": "Trims",
     "settings": "Settings",
     "users": "Users",
-    "textileInventory": "Textile Inventory"
+    "textileInventory": "Textile Inventory",
+    "accessories": "Accessories",
+    "accessoryMovements": "Accessory movements",
+    "capsules": "Capsules",
+    "sales": "Sales",
+    "companies": "Companies",
+    "reports": "Reports",
+    "stockValuation": "Stock valuation",
+    "dressStock": "Dress stock",
+    "fabricMovementsReport": "Fabric movements",
+    "loansReport": "Loans",
+    "productionCosts": "Production costs",
+    "financialDashboard": "Financial dashboard",
+    "branding": "Branding",
+    "fieldSettings": "Field configuration"
   },
   "home": {
     "title": "DressFlow v2",
@@ -21,7 +35,8 @@
   },
   "status": {
     "loading": "Loading...",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "exporting": "Exporting..."
   },
   "errors": {
     "loadingData": "Could not load data."
@@ -42,7 +57,12 @@
     "setAsMain": "Set as main",
     "viewDetail": "View detail",
     "reserve": "Reserve",
-    "issue": "Issue to workshop"
+    "issue": "Issue to workshop",
+    "cancel": "Cancel",
+    "print": "Print",
+    "selectFile": "Select file",
+    "exportExcel": "Export to Excel",
+    "select": "Select"
   },
   "viewMode": {
     "table": "Table",
@@ -56,7 +76,11 @@
     "of": "of"
   },
   "topbar": {
-    "searchPlaceholder": "Search..."
+    "searchPlaceholder": "Search...",
+    "supportMode": "Support mode",
+    "companyFallback": "Company",
+    "toggleNavigation": "Toggle navigation",
+    "closeNavigation": "Close navigation"
   },
   "login": {
     "title": "Sign in",
@@ -65,5 +89,9 @@
     "password": "Password",
     "submit": "Sign in",
     "error": "Could not sign in."
+  },
+  "alerts": {
+    "overdueLoansCount": "{{count}} overdue loans",
+    "noOverdueLoans": "No overdue loans"
   }
 }

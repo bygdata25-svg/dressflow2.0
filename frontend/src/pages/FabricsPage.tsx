@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
-import FabricImportModal from "../components/fabrics/FabricImportModal";
 import { useFieldConfig } from "../hooks/useFieldConfig";
 import "../styles/fabrics.css";
 
@@ -50,21 +50,8 @@ function statusClass(status: string) {
   }
 }
 
-function translateRollStatus(status: string) {
-  switch (status) {
-    case "AVAILABLE":
-      return "Disponible";
-    case "RESERVED":
-      return "Reservado";
-    case "USED":
-      return "Usado";
-    case "EMPTY":
-      return "Vacío";
-    case "DEPLETED":
-      return "Agotado";
-    default:
-      return status;
-  }
+function translateRollStatus(status: string, t: any) {
+  return t(`rollStatus.${status}`, { defaultValue: status });
 }
 
 function resolvePhoto(photoUrl?: string | null) {
@@ -81,6 +68,7 @@ const initialForm: FabricFormState = {
 };
 
 export default function FabricsPage() {
+  const { t } = useTranslation("fabrics");
   const fc = useFieldConfig("fabric");
 
   const [fabrics, setFabrics] = useState<FabricListItem[]>([]);
@@ -92,7 +80,6 @@ export default function FabricsPage() {
   const [search, setSearch] = useState("");
 
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
@@ -109,7 +96,7 @@ export default function FabricsPage() {
 
   const readOnlyHint = (
     <small style={{ display: "block", marginTop: 6, color: "#667085" }}>
-      Solo editable al crear.
+      {t("form.readOnlyOnCreate")}
     </small>
   );
 
@@ -120,7 +107,7 @@ export default function FabricsPage() {
       const res = await api.get<FabricListItem[]>("/fabrics");
       setFabrics(Array.isArray(res.data) ? res.data : []);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "No se pudieron cargar las telas.");
+      setError(err?.response?.data?.detail || t("messages.error"));
     } finally {
       setLoading(false);
     }
@@ -208,7 +195,7 @@ export default function FabricsPage() {
     e.preventDefault();
 
     if (fc.isRequired("name") && !form.name.trim()) {
-      setFormError("El nombre es obligatorio.");
+      setFormError(t("form.requiredName"));
       return;
     }
 
@@ -239,7 +226,7 @@ export default function FabricsPage() {
       closeModal();
       await loadFabrics();
     } catch (err: any) {
-      setFormError(err?.response?.data?.detail || "No se pudo guardar la tela.");
+      setFormError(err?.response?.data?.detail || t("form.error"));
     } finally {
       setSaving(false);
     }
@@ -296,27 +283,18 @@ export default function FabricsPage() {
     <div className="page-shell">
       <div className="page-header">
         <div>
-          <p className="page-kicker">Inventario textil</p>
-          <h1 className="page-title">Telas</h1>
-          <p className="page-subtitle">
-            Vista consolidada por tela con detalle expandible de rollos.
-          </p>
+          <p className="page-kicker">{t("hero.eyebrow")}</p>
+          <h1 className="page-title">{t("title")}</h1>
+          <p className="page-subtitle">{t("hero.subtitle")}</p>
         </div>
 
         <div className="page-header-actions">
           <button className="gf-btn gf-btn-primary" onClick={openCreateModal}>
-            Nueva tela
-          </button>
-
-          <button
-            className="gf-btn gf-btn-secondary"
-            onClick={() => setShowImportModal(true)}
-          >
-            Importar planilla
+            {t("actions.new")}
           </button>
 
           <button className="gf-btn gf-btn-secondary" onClick={loadFabrics}>
-            Actualizar
+            {t("actions.refresh")}
           </button>
         </div>
       </div>
@@ -327,7 +305,7 @@ export default function FabricsPage() {
             <input
               className="gf-input"
               type="text"
-              placeholder="Buscar por nombre, tipo o color..."
+              placeholder={t("search.placeholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -335,44 +313,57 @@ export default function FabricsPage() {
 
           <div className="fabric-toolbar-right">
             <div className="fabric-stat-pill">
-              <span className="fabric-stat-pill-label">Telas</span>
-              <strong>{filteredFabrics.length}</strong>
+              <span className="fabric-stat-pill-label">
+                {t("stats.count", { count: filteredFabrics.length })}
+              </span>
             </div>
           </div>
         </div>
 
         {loading || fc.loading ? (
-          <div className="gf-empty-state">Cargando telas...</div>
+          <div className="gf-empty-state">{t("messages.loading")}</div>
         ) : error ? (
           <div className="gf-alert gf-alert-error">{error}</div>
         ) : filteredFabrics.length === 0 ? (
-          <div className="gf-empty-state">No hay telas para mostrar.</div>
+          <div className="gf-empty-state">{t("messages.empty")}</div>
         ) : (
           <div className="table-wrap">
             <table className="fabrics-table">
               <thead>
                 <tr>
-                  {showName && <th>{fc.getLabel("name", "Tela")}</th>}
+                  {showName && <th>{t("fields.name")}</th>} 
+
                   {showFabricType && (
-                    <th style={{ width: 160 }}>{fc.getLabel("fabric_type", "Tipo de tela")}</th>
+                    <th style={{ width: 160 }}>
+                      {t("fields.fabricType")} 
+                    </th>
                   )}
+
                   {showColor && (
-                    <th style={{ width: 160 }}>{fc.getLabel("color", "Color")}</th>
+                    <th style={{ width: 160 }}>
+                      {t("fields.color")}
+                    </th>
                   )}
+
                   {showTotalStock && (
                     <th style={{ width: 150 }}>
-                      {fc.getLabel("total_stock_meters", "Stock total")}
+                      {t("fields.totalStock")}
                     </th>
                   )}
+
                   {showTotalRolls && (
-                    <th style={{ width: 120 }}>{fc.getLabel("total_rolls", "Rollos")}</th>
+                    <th style={{ width: 120 }}>
+                      {t("fields.rolls")}
+                    </th>
                   )}
+
                   {showLargestRoll && (
                     <th style={{ width: 170 }}>
-                      {fc.getLabel("largest_roll_length", "Mayor rollo")}
+                      {t("fields.largestRoll")}
                     </th>
                   )}
-                  <th style={{ width: 110 }}></th>
+
+                  <th style={{ width: 110 }} />
                 </tr>
               </thead>
 
@@ -393,7 +384,11 @@ export default function FabricsPage() {
                           <td>
                             <div
                               className="fabric-name-cell"
-                              style={{ display: "flex", alignItems: "center", gap: 10 }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                              }}
                             >
                               {photo ? (
                                 <div
@@ -458,7 +453,13 @@ export default function FabricsPage() {
                         )}
 
                         <td>
-                          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 8,
+                              justifyContent: "flex-end",
+                            }}
+                          >
                             <button
                               type="button"
                               className="expand-btn"
@@ -466,8 +467,8 @@ export default function FabricsPage() {
                                 e.stopPropagation();
                                 openEditModal(fabric);
                               }}
-                              aria-label="Editar"
-                              title="Editar"
+                              aria-label={t("actions.edit")}
+                              title={t("actions.edit")}
                             >
                               ✏️
                             </button>
@@ -479,8 +480,14 @@ export default function FabricsPage() {
                                 e.stopPropagation();
                                 void toggleFabricRows(fabric.id);
                               }}
-                              aria-label={expanded ? "Contraer" : "Expandir"}
-                              title={expanded ? "Contraer rollos" : "Expandir rollos"}
+                              aria-label={
+                                expanded ? t("actions.collapse") : t("actions.expand")
+                              }
+                              title={
+                                expanded
+                                  ? t("actions.collapseRolls")
+                                  : t("actions.expandRolls")
+                              }
                             >
                               {expanded ? "−" : "+"}
                             </button>
@@ -494,31 +501,44 @@ export default function FabricsPage() {
                             <div className="fabric-rolls-panel">
                               <div className="fabric-rolls-panel-header">
                                 <div>
-                                  <h3>Rollos de {fabric.name}</h3>
+                                  <h3>{t("rolls.title", { name: fabric.name })}</h3>
                                   <p>
-                                    Total disponible:{" "}
-                                    <strong>{formatMeters(fabric.total_stock_meters)}</strong>
+                                    {t("rolls.totalAvailable")}{" "}
+                                    <strong>
+                                      {formatMeters(fabric.total_stock_meters)}
+                                    </strong>
                                   </p>
                                 </div>
                               </div>
 
                               {isLoadingRolls ? (
-                                <div className="gf-empty-state">Cargando rollos...</div>
+                                <div className="gf-empty-state">
+                                  {t("messages.loadingRolls")}
+                                </div>
                               ) : fabricRolls.length === 0 ? (
                                 <div className="gf-empty-state">
-                                  Esta tela no tiene rollos cargados.
+                                  {t("messages.noRolls")}
                                 </div>
                               ) : (
                                 <div className="subtable-wrap">
                                   <table className="gf-subtable">
                                     <thead>
                                       <tr>
-                                        <th style={{ width: 200 }}>Rollo</th>
-                                        <th style={{ width: 180 }}>Metros actuales</th>
-                                        <th style={{ width: 180 }}>Metros iniciales</th>
-                                        <th style={{ width: 180 }}>Estado</th>
+                                        <th style={{ width: 200 }}>
+                                          {t("rolls.columns.code")}
+                                        </th>
+                                        <th style={{ width: 180 }}>
+                                          {t("rolls.columns.current")}
+                                        </th>
+                                        <th style={{ width: 180 }}>
+                                          {t("rolls.columns.initial")}
+                                        </th>
+                                        <th style={{ width: 180 }}>
+                                          {t("rolls.columns.status")}
+                                        </th>
                                       </tr>
                                     </thead>
+
                                     <tbody>
                                       {fabricRolls.map((roll) => (
                                         <tr key={roll.id}>
@@ -529,7 +549,7 @@ export default function FabricsPage() {
                                           <td>{formatMeters(roll.initial_length)}</td>
                                           <td>
                                             <span className={statusClass(roll.status)}>
-                                              {translateRollStatus(roll.status)}
+                                              {translateRollStatus(roll.status, t)}
                                             </span>
                                           </td>
                                         </tr>
@@ -559,7 +579,8 @@ export default function FabricsPage() {
             style={{ maxWidth: 860 }}
           >
             <div className="gf-modal-header">
-              <h2>{editingId ? "Editar tela" : "Nueva tela"}</h2>
+              <h2>{editingId ? t("form.edit") : t("form.create")}</h2>
+
               <button type="button" className="gf-modal-close" onClick={closeModal}>
                 ×
               </button>
@@ -570,9 +591,10 @@ export default function FabricsPage() {
                 {fc.isFormVisible("name") && (
                   <div>
                     <label>
-                      {fc.getLabel("name", "Nombre")}
+                      {t("fields.name")}
                       {fc.isRequired("name") ? " *" : ""}
                     </label>
+
                     <input
                       type="text"
                       value={form.name}
@@ -586,13 +608,17 @@ export default function FabricsPage() {
                       required={fc.isRequired("name")}
                       disabled={isFieldDisabled("name")}
                     />
-                    {Boolean(editingId) && isFieldReadOnlyOnEdit("name") ? readOnlyHint : null}
+
+                    {Boolean(editingId) && isFieldReadOnlyOnEdit("name")
+                      ? readOnlyHint
+                      : null}
                   </div>
                 )}
 
                 {fc.isFormVisible("fabric_type") && (
                   <div>
-                    <label>{fc.getLabel("fabric_type", "Tipo de tela")}</label>
+                    <label>{t("fields.fabricType")}</label>
+
                     <input
                       type="text"
                       value={form.fabric_type}
@@ -608,13 +634,17 @@ export default function FabricsPage() {
                       }
                       disabled={isFieldDisabled("fabric_type")}
                     />
-                    {Boolean(editingId) && isFieldReadOnlyOnEdit("fabric_type") ? readOnlyHint : null}
+
+                    {Boolean(editingId) && isFieldReadOnlyOnEdit("fabric_type")
+                      ? readOnlyHint
+                      : null}
                   </div>
                 )}
 
                 {fc.isFormVisible("color") && (
                   <div>
-                    <label>{fc.getLabel("color", "Color")}</label>
+                    <label>{t("fields.color")}</label>
+
                     <input
                       type="text"
                       value={form.color}
@@ -627,25 +657,43 @@ export default function FabricsPage() {
                       }
                       disabled={isFieldDisabled("color")}
                     />
-                    {Boolean(editingId) && isFieldReadOnlyOnEdit("color") ? readOnlyHint : null}
+
+                    {Boolean(editingId) && isFieldReadOnlyOnEdit("color")
+                      ? readOnlyHint
+                      : null}
                   </div>
                 )}
 
                 <div className="gf-form-grid-full">
-                  <label>Imagen</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                  />
+                  <label>{t("form.image")}</label>
+                    <div className="df-file-upload">
+                      <input
+                        id="fabric-file"
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                      />
+
+                      <label htmlFor="fabric-file" className="df-file-upload-btn">
+                        {t("form.selectFile")}
+                      </label>
+
+                      <span className="df-file-upload-name">
+                        {selectedFile
+                          ? selectedFile.name
+                          : t("form.noFileSelected")}
+                      </span>
+                    </div>
                 </div>
 
                 {imagePreview ? (
                   <div className="gf-form-grid-full">
-                    <label>Vista previa</label>
+                    <label>{t("form.preview")}</label>
+
                     <img
                       src={imagePreview}
-                      alt="Vista previa tela"
+                      alt={t("form.previewAlt")}
                       style={{
                         width: 140,
                         height: 140,
@@ -659,7 +707,8 @@ export default function FabricsPage() {
 
                 {fc.isFormVisible("notes") && (
                   <div className="gf-form-grid-full">
-                    <label>{fc.getLabel("notes", "Notas")}</label>
+                    <label>{t("fields.notes")}</label>
+
                     <textarea
                       rows={4}
                       value={form.notes}
@@ -671,12 +720,17 @@ export default function FabricsPage() {
                       }
                       disabled={isFieldDisabled("notes")}
                     />
-                    {Boolean(editingId) && isFieldReadOnlyOnEdit("notes") ? readOnlyHint : null}
+
+                    {Boolean(editingId) && isFieldReadOnlyOnEdit("notes")
+                      ? readOnlyHint
+                      : null}
                   </div>
                 )}
               </div>
 
-              {formError ? <div className="gf-alert gf-alert-error">{formError}</div> : null}
+              {formError ? (
+                <div className="gf-alert gf-alert-error">{formError}</div>
+              ) : null}
 
               <div className="gf-modal-actions">
                 <button
@@ -684,11 +738,15 @@ export default function FabricsPage() {
                   className="gf-btn gf-btn-secondary"
                   onClick={closeModal}
                 >
-                  Cancelar
+                  {t("form.cancel")}
                 </button>
 
                 <button type="submit" className="gf-btn gf-btn-primary" disabled={saving}>
-                  {saving ? "Guardando..." : editingId ? "Actualizar tela" : "Crear tela"}
+                  {saving
+                    ? t("form.saving")
+                    : editingId
+                    ? t("form.update")
+                    : t("form.save")}
                 </button>
               </div>
             </form>
@@ -696,14 +754,6 @@ export default function FabricsPage() {
         </div>
       )}
 
-      <FabricImportModal
-        open={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImported={async () => {
-          setShowImportModal(false);
-          await loadFabrics();
-        }}
-      />
     </div>
   );
 }

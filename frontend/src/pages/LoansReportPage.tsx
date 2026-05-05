@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import "./DressesPage.css";
@@ -23,36 +24,12 @@ type LoansReportResponse = {
   total: number;
 };
 
-function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(date);
-}
-
-function money(value?: number | null) {
-  const n = Number(value ?? 0);
-  if (Number.isNaN(n) || value == null) return "—";
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(n);
-}
-
-function statusLabel(value?: string | null) {
-  const raw = String(value || "").toUpperCase();
-  if (raw === "ACTIVE") return "Activo";
-  if (raw === "LATE") return "Vencido";
-  if (raw === "RETURNED") return "Devuelto";
-  return value || "—";
-}
-
-function typeLabel(value?: string | null) {
-  return String(value || "").toUpperCase() === "RENTAL" ? "Alquiler" : "Préstamo";
-}
-
 export default function LoansReportPage() {
+  const { t, i18n } = useTranslation("loans-report");
+  const { t: tc } = useTranslation("common");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [rows, setRows] = useState<LoansReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -73,6 +50,37 @@ export default function LoansReportPage() {
 
   const [exporting, setExporting] = useState(false);
 
+  function formatDate(value?: string | null) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "medium",
+    }).format(date);
+  }
+
+  function money(value?: number | null) {
+    const n = Number(value ?? 0);
+    if (Number.isNaN(n) || value == null) return "—";
+
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }).format(n);
+  }
+
+  function statusLabel(value?: string | null) {
+    const raw = String(value || "").toUpperCase();
+    return t(`status.${raw}`, { defaultValue: value || "—" });
+  }
+
+  function typeLabel(value?: string | null) {
+    const raw = String(value || "").toUpperCase();
+    return t(`types.${raw}`, { defaultValue: value || "—" });
+  }
+
   const loadReport = async () => {
     try {
       setLoading(true);
@@ -88,12 +96,12 @@ export default function LoansReportPage() {
         },
       });
 
-      setRows(response.data.items || []);
+      setRows(Array.isArray(response.data.items) ? response.data.items : []);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo cargar el reporte.");
+      else setError(t("errors.load"));
     } finally {
       setLoading(false);
     }
@@ -130,6 +138,8 @@ export default function LoansReportPage() {
       setExporting(true);
       setError("");
 
+      const lang = i18n.language?.startsWith("en") ? "en" : "es";
+
       const response = await api.get("/reports/loans/export", {
         params: {
           search: search || undefined,
@@ -137,9 +147,10 @@ export default function LoansReportPage() {
           loan_type: loanType || undefined,
           date_from: dateFrom || undefined,
           date_to: dateTo || undefined,
+          lang, // 🔥 clave para traducir Excel
         },
         responseType: "blob",
-      });
+      }); 
 
       const blob = new Blob([response.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -148,7 +159,7 @@ export default function LoansReportPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "prestamos_alquileres.xlsx";
+      link.download = "loans_rentals.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -157,18 +168,33 @@ export default function LoansReportPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo exportar el reporte.");
+      else setError(t("errors.export"));
     } finally {
       setExporting(false);
     }
   };
 
   const totals = useMemo(() => {
-    const rentals = rows.filter((row) => String(row.loan_type || "").toUpperCase() === "RENTAL");
-    const loans = rows.filter((row) => String(row.loan_type || "").toUpperCase() !== "RENTAL");
-    const active = rows.filter((row) => String(row.effective_status || row.status).toUpperCase() === "ACTIVE");
-    const late = rows.filter((row) => String(row.effective_status || row.status).toUpperCase() === "LATE");
-    const rentalRevenue = rentals.reduce((acc, row) => acc + Number(row.amount || 0), 0);
+    const rentals = rows.filter(
+      (row) => String(row.loan_type || "").toUpperCase() === "RENTAL"
+    );
+
+    const loans = rows.filter(
+      (row) => String(row.loan_type || "").toUpperCase() !== "RENTAL"
+    );
+
+    const active = rows.filter(
+      (row) => String(row.effective_status || row.status).toUpperCase() === "ACTIVE"
+    );
+
+    const late = rows.filter(
+      (row) => String(row.effective_status || row.status).toUpperCase() === "LATE"
+    );
+
+    const rentalRevenue = rentals.reduce(
+      (acc, row) => acc + Number(row.amount || 0),
+      0
+    );
 
     return {
       total: rows.length,
@@ -184,12 +210,12 @@ export default function LoansReportPage() {
     return [
       {
         key: "loan_type",
-        label: "Tipo",
+        label: t("fields.type"),
         render: (row) => typeLabel(row.loan_type),
       },
       {
         key: "dress",
-        label: "Vestido",
+        label: t("fields.dress"),
         render: (row) =>
           row.dress_code ? (
             <strong>{`${row.dress_code} - ${row.dress_name || ""}`}</strong>
@@ -199,42 +225,44 @@ export default function LoansReportPage() {
       },
       {
         key: "customer_name",
-        label: "Cliente",
+        label: t("fields.customer"),
         render: (row) => row.customer_name || "—",
       },
       {
         key: "start_date",
-        label: "Inicio",
+        label: t("fields.startDate"),
         render: (row) => formatDate(row.start_date),
       },
       {
         key: "expected_return_date",
-        label: "Vencimiento",
+        label: t("fields.expectedReturnDate"),
         render: (row) => formatDate(row.expected_return_date),
       },
       {
         key: "actual_return_date",
-        label: "Devolución",
+        label: t("fields.actualReturnDate"),
         render: (row) => formatDate(row.actual_return_date),
       },
       {
         key: "amount",
-        label: "Valor",
+        label: t("fields.amount"),
         render: (row) =>
-          String(row.loan_type || "").toUpperCase() === "RENTAL" ? money(row.amount) : "—",
+          String(row.loan_type || "").toUpperCase() === "RENTAL"
+            ? money(row.amount)
+            : "—",
       },
       {
         key: "effective_status",
-        label: "Estado",
+        label: t("fields.status"),
         render: (row) => statusLabel(row.effective_status || row.status),
       },
       {
         key: "notes",
-        label: "Notas",
+        label: t("fields.notes"),
         render: (row) => row.notes || "—",
       },
     ];
-  }, []);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -250,63 +278,65 @@ export default function LoansReportPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Reportes</p>
-          <h1 className="df-pro-page__title">Préstamos / Alquileres</h1>
-          <p className="df-pro-page__subtitle">
-            Consultá préstamos activos, vencidos y devueltos, incluyendo alquileres y valor acumulado.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
-
         <button
           className="df-button-primary"
           onClick={handleExport}
           disabled={exporting}
         >
-          {exporting ? "Exportando..." : "Exportar a Excel"}
+          {exporting
+            ? tc("status.exporting")
+            : tc("actions.exportExcel")}
         </button>
       </header>
 
       <section className="df-pro-card">
-        <form onSubmit={handleSearchSubmit} className="df-pro-filter-grid df-pro-filter-grid--4">
+        <form
+          onSubmit={handleSearchSubmit}
+          className="df-pro-filter-grid df-pro-filter-grid--4"
+        >
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Vestido, cliente o nota"
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
           <div>
-            <label className="df-pro-label">Estado</label>
+            <label className="df-pro-label">{t("filters.status")}</label>
             <select
               className="df-pro-input"
               value={statusInput}
               onChange={(e) => setStatusInput(e.target.value)}
             >
-              <option value="">Todos</option>
-              <option value="ACTIVE">Activos</option>
-              <option value="LATE">Vencidos</option>
-              <option value="RETURNED">Devueltos</option>
+              <option value="">{t("filters.all")}</option>
+              <option value="ACTIVE">{t("status.ACTIVE")}</option>
+              <option value="LATE">{t("status.LATE")}</option>
+              <option value="RETURNED">{t("status.RETURNED")}</option>
             </select>
           </div>
 
           <div>
-            <label className="df-pro-label">Tipo</label>
+            <label className="df-pro-label">{t("filters.type")}</label>
             <select
               className="df-pro-input"
               value={loanTypeInput}
               onChange={(e) => setLoanTypeInput(e.target.value)}
             >
-              <option value="">Todos</option>
-              <option value="LOAN">Préstamos</option>
-              <option value="RENTAL">Alquileres</option>
+              <option value="">{t("filters.all")}</option>
+              <option value="LOAN">{t("types.LOAN")}</option>
+              <option value="RENTAL">{t("types.RENTAL")}</option>
             </select>
           </div>
 
           <div>
-            <label className="df-pro-label">Desde</label>
+            <label className="df-pro-label">{t("filters.from")}</label>
             <input
               type="date"
               className="df-pro-input"
@@ -316,7 +346,7 @@ export default function LoansReportPage() {
           </div>
 
           <div>
-            <label className="df-pro-label">Hasta</label>
+            <label className="df-pro-label">{t("filters.to")}</label>
             <input
               type="date"
               className="df-pro-input"
@@ -325,9 +355,10 @@ export default function LoansReportPage() {
             />
           </div>
 
-          <button type="submit">Buscar</button>
+          <button type="submit">{tc("actions.search")}</button>
+
           <button type="button" onClick={handleClear}>
-            Limpiar
+            {tc("actions.clear")}
           </button>
         </form>
       </section>
@@ -356,42 +387,42 @@ export default function LoansReportPage() {
         }}
       >
         <div className="df-pro-card">
-          <div className="df-pro-label">Registros</div>
+          <div className="df-pro-label">{t("kpis.records")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {totals.total}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Préstamos</div>
+          <div className="df-pro-label">{t("kpis.loans")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {totals.loans}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Alquileres</div>
+          <div className="df-pro-label">{t("kpis.rentals")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {totals.rentals}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Activos</div>
+          <div className="df-pro-label">{t("kpis.active")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {totals.active}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Vencidos</div>
+          <div className="df-pro-label">{t("kpis.late")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {totals.late}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Ingresos por alquiler</div>
+          <div className="df-pro-label">{t("kpis.rentalRevenue")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {money(totals.rentalRevenue)}
           </div>
@@ -400,9 +431,9 @@ export default function LoansReportPage() {
 
       <section className="df-pro-card">
         {loading ? (
-          <p>Cargando reporte...</p>
+          <p>{t("messages.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay datos para mostrar.</p>
+          <p>{t("empty")}</p>
         ) : (
           <DataGrid rows={rows} columns={columns} getRowKey={(row) => row.id} />
         )}

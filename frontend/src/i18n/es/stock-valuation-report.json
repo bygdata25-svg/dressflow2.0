@@ -1,0 +1,30 @@
+{
+  "title": "Stock valorizado",
+  "hero": {
+    "eyebrow": "Reportes",
+    "subtitle": "Visualizá el stock actual de telas valorizado por precio por metro."
+  },
+  "fields": {
+    "fabric": "Tela",
+    "color": "Color",
+    "stockMeters": "Stock (mts)",
+    "averagePricePerMeter": "Precio x metro",
+    "totalValue": "Valor total"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Tela o color"
+  },
+  "summary": {
+    "records": "Registros",
+    "totalValuation": "Total valorizado"
+  },
+  "messages": {
+    "loading": "Cargando reporte..."
+  },
+  "errors": {
+    "load": "No se pudo cargar el reporte.",
+    "export": "No se pudo exportar el reporte."
+  },
+  "empty": "No hay datos para mostrar."
+}

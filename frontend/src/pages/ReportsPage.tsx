@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import "./DressesPage.css";
@@ -18,22 +19,12 @@ type StockValuationResponse = {
   grand_total: number;
 };
 
-function money(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-  }).format(value || 0);
-}
-
-function number(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value || 0);
-}
-
 export default function ReportsPage() {
+  const { t, i18n } = useTranslation("stock-valuation-report");
+  const { t: tc } = useTranslation("common");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [rows, setRows] = useState<StockValuationRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,6 +32,21 @@ export default function ReportsPage() {
   const [search, setSearch] = useState("");
   const [grandTotal, setGrandTotal] = useState(0);
   const [exporting, setExporting] = useState(false);
+
+  function money(value: number) {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+    }).format(value || 0);
+  }
+
+  function formatNumber(value: number) {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value || 0);
+  }
 
   const loadReport = async () => {
     try {
@@ -53,13 +59,14 @@ export default function ReportsPage() {
         },
       });
 
-      setRows(response.data.items || []);
+      setRows(Array.isArray(response.data.items) ? response.data.items : []);
       setGrandTotal(response.data.grand_total || 0);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo cargar el reporte.");
+      else setError(t("errors.load"));
     } finally {
       setLoading(false);
     }
@@ -84,9 +91,12 @@ export default function ReportsPage() {
       setExporting(true);
       setError("");
 
+      const lang = i18n.language?.startsWith("en") ? "en" : "es";
+
       const response = await api.get("/reports/stock-valuation/export", {
         params: {
           search: search || undefined,
+          lang,
         },
         responseType: "blob",
       });
@@ -98,16 +108,17 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "stock_valorizado.xlsx";
+      link.download = lang === "en" ? "stock_valuation.xlsx" : "stock_valorizado.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo exportar el reporte.");
+      else setError(t("errors.export"));
     } finally {
       setExporting(false);
     }
@@ -117,22 +128,22 @@ export default function ReportsPage() {
     return [
       {
         key: "name",
-        label: "Tela",
+        label: t("fields.fabric"),
         render: (row) => row.name,
       },
       {
         key: "color",
-        label: "Color",
+        label: t("fields.color"),
         render: (row) => row.color || "—",
       },
       {
         key: "total_stock_meters",
-        label: "Stock (mts)",
-        render: (row) => number(row.total_stock_meters),
+        label: t("fields.stockMeters"),
+        render: (row) => formatNumber(row.total_stock_meters),
       },
       {
         key: "average_price_per_meter",
-        label: "Precio x metro",
+        label: t("fields.averagePricePerMeter"),
         render: (row) =>
           row.average_price_per_meter > 0
             ? money(row.average_price_per_meter)
@@ -140,11 +151,11 @@ export default function ReportsPage() {
       },
       {
         key: "total_value",
-        label: "Valor total",
+        label: t("fields.totalValue"),
         render: (row) => <strong>{money(row.total_value)}</strong>,
       },
     ];
-  }, []);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -160,11 +171,9 @@ export default function ReportsPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Reportes</p>
-          <h1 className="df-pro-page__title">Stock valorizado</h1>
-          <p className="df-pro-page__subtitle">
-            Visualizá el stock actual de telas valorizado por precio por metro.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
 
         <button
@@ -172,25 +181,29 @@ export default function ReportsPage() {
           onClick={handleExport}
           disabled={exporting}
         >
-          {exporting ? "Exportando..." : "Exportar a Excel"}
+          {exporting ? tc("status.exporting") : tc("actions.exportExcel")}
         </button>
       </header>
 
       <section className="df-pro-card">
-        <form onSubmit={handleSearchSubmit} className="df-pro-filter-grid df-pro-filter-grid--3">
+        <form
+          onSubmit={handleSearchSubmit}
+          className="df-pro-filter-grid df-pro-filter-grid--3"
+        >
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Tela o color"
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
-          <button type="submit">Buscar</button>
+          <button type="submit">{tc("actions.search")}</button>
+
           <button type="button" onClick={handleClear}>
-            Limpiar
+            {tc("actions.clear")}
           </button>
         </form>
       </section>
@@ -222,7 +235,7 @@ export default function ReportsPage() {
           }}
         >
           <div style={{ color: "#8a7f78", fontSize: 14 }}>
-            Registros: <strong>{rows.length}</strong>
+            {t("summary.records")}: <strong>{rows.length}</strong>
           </div>
 
           <div
@@ -234,14 +247,14 @@ export default function ReportsPage() {
               fontSize: 14,
             }}
           >
-            Total valorizado: <strong>{money(grandTotal)}</strong>
+            {t("summary.totalValuation")}: <strong>{money(grandTotal)}</strong>
           </div>
         </div>
 
         {loading ? (
-          <p>Cargando reporte...</p>
+          <p>{t("messages.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay datos para mostrar.</p>
+          <p>{t("empty")}</p>
         ) : (
           <DataGrid
             rows={rows}

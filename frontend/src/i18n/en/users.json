@@ -1,0 +1,85 @@
+{
+  "title": "Users",
+  "hero": {
+    "eyebrow": "Access management",
+    "subtitle": "Manage users, roles and access status by company."
+  },
+  "actions": {
+    "new": "New user"
+  },
+  "columns": {
+    "user": "User",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status"
+  },
+  "roles": {
+    "admin": "Admin",
+    "manager": "Manager",
+    "staff": "Staff"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "states": {
+    "loading": "Loading users...",
+    "empty": "No users have been created yet."
+  },
+  "messages": {
+    "loadError": "Could not load users."
+  },
+  "modal": {
+    "createTitle": "New user",
+    "editTitle": "Edit user"
+  },
+  "language": {
+    "preferredLanguage": "My language",
+    "useTenantDefault": "Use company language",
+    "spanish": "Spanish",
+    "english": "English"
+  },
+  "form": {
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "password": "Password",
+      "role": "Role",
+      "status": "Status"
+    },
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Smith",
+      "email": "user@company.com",
+      "password": "••••••••"
+    },
+    "validation": {
+      "emailRequired": "Email is required.",
+      "firstNameRequired": "First name is required.",
+      "lastNameRequired": "Last name is required.",
+      "passwordRequired": "Password is required.",
+      "invalidEmail": "Enter a valid email address."
+    },
+    "messages": {
+      "createError": "Could not create the user.",
+      "updateError": "Could not update the user."
+    },
+    "actions": {
+      "create": "Create",
+      "update": "Update"
+    },
+    "security": {
+      "title": "Security",
+      "description": "Generate a temporary password for this user.",
+      "resetPassword": "Reset password",
+      "cancelReset": "Cancel reset",
+      "warningPrefix": "A temporary password will be generated",
+      "warningSuffix": "The user will need to change it when signing in.",
+      "confirmReset": "Confirm password reset",
+      "resetting": "Resetting...",
+      "resetError": "Could not reset the password.",
+      "resetSuccess": "Temporary password generated: {{password}}. The user will need to change it when signing in."
+    }
+  }
+}

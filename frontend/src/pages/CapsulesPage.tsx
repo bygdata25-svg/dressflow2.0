@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import { Modal } from "../components/common/Modal";
@@ -45,6 +46,8 @@ function TrashIcon() {
 }
 
 export default function CapsulesPage() {
+  const { t } = useTranslation("capsules");
+
   const [rows, setRows] = useState<Capsule[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,12 +62,13 @@ export default function CapsulesPage() {
       setError("");
 
       const response = await api.get<Capsule[]>("/capsules");
-      setRows(response.data);
+      setRows(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudieron cargar las cápsulas.");
+      else setError(t("messages.errorLoad"));
     } finally {
       setLoading(false);
     }
@@ -95,7 +99,7 @@ export default function CapsulesPage() {
     setError("");
 
     if (!form.name.trim()) {
-      setError("El nombre es obligatorio.");
+      setError(t("messages.nameRequired"));
       return;
     }
 
@@ -118,9 +122,10 @@ export default function CapsulesPage() {
       await loadCapsules();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo guardar la cápsula.");
+      else setError(t("messages.errorSave"));
     } finally {
       setSaving(false);
     }
@@ -138,7 +143,7 @@ export default function CapsulesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("¿Querés eliminar esta cápsula?");
+    const confirmed = window.confirm(t("messages.deleteConfirm"));
     if (!confirmed) return;
 
     try {
@@ -146,9 +151,10 @@ export default function CapsulesPage() {
       await loadCapsules();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo eliminar la cápsula.");
+      else setError(t("messages.errorDelete"));
     }
   };
 
@@ -156,43 +162,43 @@ export default function CapsulesPage() {
     return [
       {
         key: "name",
-        label: "Nombre",
+        label: t("table.name"),
         render: (row) => row.name,
       },
       {
         key: "description",
-        label: "Descripción",
+        label: t("table.description"),
         render: (row) => row.description || "—",
       },
       {
         key: "is_active",
-        label: "Estado",
+        label: t("table.status"),
         render: (row) => (
           <span
             className={`df-status-badge ${
               row.is_active ? "df-status-badge--active" : "df-status-badge--draft"
             }`}
           >
-            {row.is_active ? "Activa" : "Inactiva"}
+            {row.is_active ? t("status.active") : t("status.inactive")}
           </span>
         ),
       },
       {
         key: "dresses_count",
-        label: "Vestidos",
+        label: t("table.dresses"),
         render: (row) => row.dresses_count ?? 0,
       },
       {
         key: "actions",
-        label: "",
+        label: t("table.actions"),
         render: (row) => (
           <div style={{ display: "flex", justifyContent: "center" }}>
             <button
               type="button"
-              title="Eliminar"
-              aria-label="Eliminar"
-              onClick={(e) => {
-                e.stopPropagation();
+              title={t("actions.delete")}
+              aria-label={t("actions.delete")}
+              onClick={(event) => {
+                event.stopPropagation();
                 void handleDelete(row.id);
               }}
               style={{
@@ -208,11 +214,11 @@ export default function CapsulesPage() {
                 cursor: "pointer",
                 transition: "all 160ms ease",
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#fee2e2";
+              onMouseEnter={(event) => {
+                event.currentTarget.style.background = "#fee2e2";
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#fff";
+              onMouseLeave={(event) => {
+                event.currentTarget.style.background = "#fff";
               }}
             >
               <TrashIcon />
@@ -221,7 +227,7 @@ export default function CapsulesPage() {
         ),
       },
     ];
-  }, []);
+  }, [t]);
 
   return (
     <section className="df-pro-page">
@@ -237,15 +243,13 @@ export default function CapsulesPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Organización comercial</p>
-          <h1 className="df-pro-page__title">Cápsulas</h1>
-          <p className="df-pro-page__subtitle">
-            Agrupá vestidos por colección, temporada o línea.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("subtitle")}</p>
         </div>
 
         <PrimaryButton onClick={handleOpenCreate} style={{ flexShrink: 0 }}>
-          Nueva cápsula
+          {t("new")}
         </PrimaryButton>
       </header>
 
@@ -266,9 +270,9 @@ export default function CapsulesPage() {
 
       <section className="df-pro-card">
         {loading ? (
-          <p>Cargando cápsulas...</p>
+          <p>{t("messages.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay cápsulas cargadas.</p>
+          <p>{t("messages.empty")}</p>
         ) : (
           <DataGrid
             rows={rows}
@@ -282,7 +286,7 @@ export default function CapsulesPage() {
       <Modal
         open={showModal}
         onClose={handleCloseModal}
-        title={editingId ? "Editar cápsula" : "Nueva cápsula"}
+        title={editingId ? t("modal.editTitle") : t("modal.createTitle")}
         width="min(760px, 100%)"
       >
         <form
@@ -294,44 +298,49 @@ export default function CapsulesPage() {
           }}
         >
           <div style={{ gridColumn: "span 4" }}>
-            <label className="df-pro-label">Nombre</label>
+            <label className="df-pro-label">{t("modal.name")}</label>
             <input
               className="df-pro-input"
               value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Invierno 2026"
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  name: event.target.value,
+                }))
+              }
+              placeholder={t("modal.namePlaceholder")}
             />
           </div>
 
           <div style={{ gridColumn: "span 5" }}>
-            <label className="df-pro-label">Descripción</label>
+            <label className="df-pro-label">{t("modal.description")}</label>
             <input
               className="df-pro-input"
               value={form.description}
-              onChange={(e) =>
+              onChange={(event) =>
                 setForm((prev) => ({
                   ...prev,
-                  description: e.target.value,
+                  description: event.target.value,
                 }))
               }
-              placeholder="Vestidos de temporada"
+              placeholder={t("modal.descriptionPlaceholder")}
             />
           </div>
 
           <div style={{ gridColumn: "span 3" }}>
-            <label className="df-pro-label">Estado</label>
+            <label className="df-pro-label">{t("modal.status")}</label>
             <select
               className="df-pro-select"
               value={form.is_active ? "true" : "false"}
-              onChange={(e) =>
+              onChange={(event) =>
                 setForm((prev) => ({
                   ...prev,
-                  is_active: e.target.value === "true",
+                  is_active: event.target.value === "true",
                 }))
               }
             >
-              <option value="true">Activa</option>
-              <option value="false">Inactiva</option>
+              <option value="true">{t("status.active")}</option>
+              <option value="false">{t("status.inactive")}</option>
             </select>
           </div>
 
@@ -352,7 +361,7 @@ export default function CapsulesPage() {
 
           <FormActions
             saving={saving}
-            submitLabel={editingId ? "Actualizar" : "Crear"}
+            submitLabel={editingId ? t("actions.update") : t("actions.create")}
             onClear={resetForm}
             onCancel={handleCloseModal}
           />

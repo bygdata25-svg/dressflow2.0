@@ -5,7 +5,7 @@
     "eyebrow": "Production",
     "subtitle": "Manage garment production orders, material reservations and workshop delivery with full traceability."
   },
-  "empty": "There are no production orders yet.",
+  "empty": "No production orders",
   "fields": {
     "orderNumber": "Order number",
     "workshop": "Workshop / Seamstress",
@@ -31,7 +31,16 @@
     "unit": "Unit",
     "unitCost": "Unit cost",
     "eventType": "Event",
-    "eventDate": "Date"
+    "eventDate": "Date",
+    "code": "Code",
+    "codeShort": "Code",
+    "size": "Size",
+    "color": "Color",
+    "quantity": "Quantity",
+    "name": "Name",
+    "workshopAssigned": "Workshop assigned",
+    "progress": "Progress",
+    "designImage": "Design image"
   },
   "status": {
     "DRAFT": "Draft",
@@ -52,10 +61,12 @@
     "search": "Search",
     "searchPlaceholder": "Search by order or dress",
     "status": "Status",
-    "allStatuses": "All statuses"
+    "allStatuses": "All statuses",
+    "title": "Order list",
+    "subtitle": "Filter by number, workshop, dress, size or code."
   },
   "form": {
-    "title": "Create production order",
+    "title": "New production order",
     "placeholders": {
       "orderNumber": "Ex: PO-0001",
       "workshop": "Select workshop",
@@ -69,7 +80,15 @@
     },
     "messages": {
       "error": "Could not create the order."
-    }
+    },
+    "autoPlaceholder": "Automatic",
+    "autoHint": "Leave empty to automatically generate the next OP number.",
+    "selectWorkshop": "Select workshop",
+    "targetDress": "Target dress",
+    "imageUrlPlaceholder": "Image URL",
+    "imageUrlHint": "Paste a design or reference image URL for this order.",
+    "designPreview": "Design preview",
+    "creating": "Creating..."
   },
   "materials": {
     "title": "Materials",
@@ -84,7 +103,25 @@
     "returnTitle": "Register return / waste",
     "returnError": "Could not register return.",
     "returnedPlaceholder": "Returned quantity",
-    "wastePlaceholder": "Waste"
+    "wastePlaceholder": "Waste",
+    "fabric": "Fabric",
+    "fabrics": "Fabrics",
+    "trim": "Trim",
+    "trims": "Trims",
+    "addFabric": "Add fabric",
+    "addFabricHint": "Add the main input for the order.",
+    "addTrim": "Add trim",
+    "addTrimHint": "Add complementary materials.",
+    "selectFabric": "Select fabric",
+    "selectTrim": "Select trim",
+    "roll": "Roll",
+    "free": "Free",
+    "total": "Total",
+    "requires": "Requires",
+    "available": "Available",
+    "checkingAvailability": "Checking availability...",
+    "noFabrics": "No fabrics assigned.",
+    "noTrims": "No trims assigned."
   },
   "receive": {
     "title": "Production receipt",
@@ -118,23 +155,25 @@
       "TRIM_ASSIGNED": "Trim assigned",
       "MATERIAL_ASSIGNED": "Material assigned",
       "MATERIAL_RESERVED": "Material reserved",
-      "MATERIAL_ISSUED": "Material issued to workshop",
+      "MATERIAL_ISSUED": "Material issued",
       "MATERIAL_RETURNED": "Material returned",
       "ORDER_RECEIVED": "Receipt registered",
-      "OUTPUT_CREATED": "Output created",
-      "COSTS_UPDATED": "Costs updated"
+      "OUTPUT_CREATED": "Production output registered",
+      "COSTS_UPDATED": "Costs updated",
+      "DESIGN_IMAGE_UPDATED": "Design image updated"
     },
     "summaries": {
-      "CREATED": "Order {{order_number}} was created.",
-      "FABRIC_ASSIGNED": "Fabric {{roll_code}} was assigned to the order.",
-      "TRIM_ASSIGNED": "Trim {{trim_code}} was assigned to the order.",
+      "CREATED": "The order was created.",
+      "FABRIC_ASSIGNED": "A fabric was assigned to the order.",
+      "TRIM_ASSIGNED": "A trim was assigned to the order.",
       "MATERIAL_ASSIGNED": "A material was assigned to the order.",
       "MATERIAL_RESERVED": "Material was reserved for production.",
       "MATERIAL_ISSUED": "Material was issued to the workshop.",
       "MATERIAL_RETURNED": "Material return or waste was recorded.",
-      "ORDER_RECEIVED": "Production receipt was recorded.",
-      "OUTPUT_CREATED": "A production output was created.",
-      "COSTS_UPDATED": "Order costs were updated."
+      "ORDER_RECEIVED": "Production receipt was registered.",
+      "OUTPUT_CREATED": "Production output was registered.",
+      "COSTS_UPDATED": "Order costs were updated.",
+      "DESIGN_IMAGE_UPDATED": "The design image was updated."
     },
     "payload": {
       "orderNumber": "Order",
@@ -153,11 +192,141 @@
       "laborCost": "Labor cost",
       "additionalCost": "Additional cost",
       "currency": "Currency",
-      "unitCostSnapshot": "Unit cost snapshot"
-    }
+      "unitCostSnapshot": "Unit cost",
+      "materialId": "Material",
+      "designPhotoUrl": "Design image"
+    },
+    "subtitle": "Full history of operational and financial actions."
   },
   "messages": {
     "loadError": "Could not load production orders.",
-    "detailLoadError": "Could not load order detail."
+    "detailLoadError": "Could not load order detail.",
+    "emptyFiltered": "No orders match the current filters."
+  },
+  "actions": {
+    "reserve": "Reserve",
+    "issue": "Issue",
+    "remove": "Remove",
+    "addFabric": "Add fabric",
+    "addTrim": "Add trim",
+    "issueAll": "Issue all",
+    "issuing": "Issuing...",
+    "saveReceipt": "Register receipt",
+    "saveOutput": "Save output",
+    "addOutput": "Add output",
+    "issueReserved": "Issue reserved",
+    "saveCosts": "Save costs",
+    "workshopPdf": "Workshop PDF",
+    "costsPdf": "Costs PDF",
+    "selectFile": "Select file",
+    "refresh": "Refresh",
+    "new": "New order"
+  },
+  "operation": {
+    "design": {
+      "title": "Design",
+      "noImage": "No reference image",
+      "dress": "Dress",
+      "reference": "Reference",
+      "uploading": "Uploading image...",
+      "noNotes": "No notes."
+    },
+    "summary": {
+      "title": "Summary",
+      "progress": "Progress"
+    },
+    "production": {
+      "title": "Production"
+    },
+    "assigned": {
+      "title": "Assigned",
+      "hint": "{{count}} items linked to the order."
+    },
+    "quickActions": {
+      "title": "Quick actions",
+      "readyToIssue": "{{count}} materials ready to issue",
+      "noneReady": "No reserved materials ready"
+    }
+  },
+  "materialStatus": {
+    "ISSUED": "Issued",
+    "RESERVED": "Reserved",
+    "DRAFT": "Draft",
+    "PENDING": "Pending"
+  },
+  "units": {
+    "meter": "meter",
+    "meters": "meters",
+    "unit": "unit",
+    "units": "units",
+    "piece": "piece",
+    "pieces": "pieces"
+  },
+  "output": {
+    "title": "Outputs",
+    "createDressRecords": "Create dress records in inventory",
+    "generated": "Generated outputs",
+    "empty": "No outputs created yet.",
+    "registeredUnits": "{{count}} registered units"
+  },
+  "finance": {
+    "suggestedUnitPrice": "Suggested unit price",
+    "approxEquivalent": "Approx. equivalent",
+    "basedOnUnitCost": "based on unit cost",
+    "real": "actual",
+    "estimated": "estimated",
+    "multiplierLower": "multiplier",
+    "estimatedMargin": "Estimated margin",
+    "marginOverCost": "over available estimated/actual total cost",
+    "materialCost": "Material cost",
+    "laborAndOthers": "Labor / others",
+    "estimatedTotal": "Estimated total",
+    "updateCosts": "Update costs",
+    "updateCostsHint": "Labor, additional costs, currency and commercial parameters.",
+    "costCurrency": "Cost currency",
+    "exchangeRate": "Exchange rate",
+    "exchangeRatePlaceholder": "Ex. 1000",
+    "multiplier": "Multiplier",
+    "economicSummary": "Economic summary",
+    "economicSummaryHint": "Quick reading of the order commercial cost.",
+    "suggestedPriceARS": "Suggested price ARS",
+    "suggestedPriceUSD": "Suggested price USD",
+    "margin": {
+      "good": "Profitable",
+      "warning": "Low margin",
+      "bad": "Risk"
+    }
+  },
+  "detail": {
+    "eyebrow": "Production order detail"
+  },
+  "tabs": {
+    "operation": "Operation",
+    "finance": "Costs",
+    "events": "Events"
+  },
+  "page": {
+    "eyebrow": "Production",
+    "title": "Production orders",
+    "subtitle": "Operational and financial tracking in a single workspace."
+  },
+  "kpis": {
+    "draft": "Draft",
+    "reserved": "Reserved",
+    "inProduction": "In production",
+    "completed": "Completed",
+    "overdue": "Overdue"
+  },
+  "date": {
+    "noDate": "No date",
+    "overdue": "Overdue",
+    "planned": "Planned"
+  },
+  "operationalHints": {
+    "DRAFT": "Pending preparation",
+    "MATERIALS_RESERVED": "Materials reserved",
+    "IN_PRODUCTION": "Production in progress",
+    "COMPLETED": "Order completed",
+    "CANCELLED": "Order cancelled"
   }
 }

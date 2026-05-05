@@ -1,0 +1,45 @@
+{
+  "eyebrow": "Commercial organization",
+  "title": "Capsules",
+  "subtitle": "Group dresses by collection, season or line.",
+  "new": "New capsule",
+
+  "table": {
+    "name": "Name",
+    "description": "Description",
+    "status": "Status",
+    "dresses": "Dresses",
+    "actions": ""
+  },
+
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+
+  "messages": {
+    "loading": "Loading capsules...",
+    "empty": "No capsules found.",
+    "errorLoad": "Could not load capsules.",
+    "errorSave": "Could not save capsule.",
+    "errorDelete": "Could not delete capsule.",
+    "nameRequired": "Name is required.",
+    "deleteConfirm": "Do you want to delete this capsule?"
+  },
+
+  "modal": {
+    "createTitle": "New capsule",
+    "editTitle": "Edit capsule",
+    "name": "Name",
+    "description": "Description",
+    "status": "Status",
+    "namePlaceholder": "Winter 2026",
+    "descriptionPlaceholder": "Seasonal dresses"
+  },
+
+  "actions": {
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete"
+  }
+}

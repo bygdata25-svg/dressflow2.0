@@ -4,18 +4,24 @@
     "eyebrow": "People & Relationships",
     "subtitle": "Maintain your client base with clean contact records and quick operational access."
   },
+  "actions": {
+    "create": "New customer",
+    "edit": "Edit customer"
+  },
   "empty": "There are no customers yet.",
   "fields": {
-    "firstName": "First name",
-    "lastName": "Last name",
-    "fullName": "Full name",
+    "code": "Code",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "full_name": "Full name",
     "email": "Email",
     "phone": "Phone",
-    "notes": "Notes"
+    "notes": "Notes",
+    "tax_id": "ID / Tax ID"
   },
   "filters": {
     "search": "Search",
-    "searchPlaceholder": "Search by name, email or phone"
+    "searchPlaceholder": "Search by name, email, phone or document"
   },
   "delete": {
     "confirm": "Do you want to delete this customer?",
@@ -23,19 +29,44 @@
   },
   "form": {
     "title": "Create customer",
+    "fields": {
+      "code": "Code",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "full_name": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "notes": "Notes",
+      "tax_id": "ID / Tax ID"
+    },
     "placeholders": {
-      "firstName": "Ex: Ana",
-      "lastName": "Ex: Perez",
+      "code": "Ex: CUS-0001",
+      "first_name": "Ex: Ana",
+      "last_name": "Ex: Perez",
       "email": "Ex: ana@email.com",
       "phone": "Ex: +54 11 1234 5678",
-      "notes": "Customer notes"
+      "notes": "Customer notes",
+      "tax_id": "Ex: 20-12345678-9"
+    },
+    "help": {
+      "full_name": "Virtual field: First name + Last name"
     },
     "validation": {
-      "required": "First name and last name are required."
+      "required": "First name and last name are required.",
+      "firstNameRequired": "First name is required.",
+      "lastNameRequired": "Last name is required.",
+      "invalidTaxId": "The document must be a 7 or 8 digit DNI, or a valid CUIT/CUIL."
     },
     "messages": {
       "created": "Customer created successfully.",
-      "error": "Could not create the customer."
+      "error": "Could not save the customer.",
+      "createError": "Could not create the customer.",
+      "updateError": "Could not update the customer."
+    },
+    "taxId": {
+      "detected": "Detected document",
+      "valid": "✔ valid",
+      "invalid": "✖ invalid"
     }
   }
 }

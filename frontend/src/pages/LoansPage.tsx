@@ -44,22 +44,25 @@ type PaginatedResponse<T> = {
 
 const PAGE_SIZE = 20;
 
-function money(value?: number | null) {
-  const n = Number(value ?? 0);
-  if (Number.isNaN(n) || value == null) return "—";
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(n);
-}
-
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
 export default function LoansPage() {
-  const { t } = useTranslation(["common", "loans"]);
+  const { t, i18n } = useTranslation(["common", "loans"]);
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
+  function money(value?: number | null) {
+    const n = Number(value ?? 0);
+    if (Number.isNaN(n) || value == null) return "—";
+
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }).format(n);
+  }
 
   const [dresses, setDresses] = useState<Dress[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -102,6 +105,7 @@ export default function LoansPage() {
   const closeCreateModal = () => {
     setShowCreateModal(false);
     resetCreateForm();
+    setError("");
   };
 
   const loadReferenceData = async () => {
@@ -137,9 +141,10 @@ export default function LoansPage() {
       setTotal(Number(response.data.total || 0));
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError(t("loans:messages.loadError", "No se pudieron cargar los préstamos."));
+      else setError(t("loans:messages.loadError"));
     } finally {
       setLoading(false);
     }
@@ -161,22 +166,22 @@ export default function LoansPage() {
     event.preventDefault();
 
     if (!dressId) {
-      setError("Seleccioná un vestido.");
+      setError(t("loans:messages.selectDress"));
       return;
     }
 
     if (!customerId) {
-      setError("Seleccioná un cliente.");
+      setError(t("loans:messages.selectCustomer"));
       return;
     }
 
     if (!startDate) {
-      setError("Ingresá la fecha de inicio.");
+      setError(t("loans:messages.selectStartDate"));
       return;
     }
 
     if (loanType === "RENTAL" && (!amount || Number(amount) <= 0)) {
-      setError("Ingresá un valor de alquiler mayor a cero.");
+      setError(t("loans:messages.invalidAmount"));
       return;
     }
 
@@ -198,6 +203,7 @@ export default function LoansPage() {
       await loadAll();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (Array.isArray(detail)) {
         setError(detail.map((item: any) => item.msg).join(" | "));
       } else if (typeof detail === "string") {
@@ -205,11 +211,7 @@ export default function LoansPage() {
       } else if (detail?.message) {
         setError(detail.message);
       } else {
-        setError(
-          loanType === "RENTAL"
-            ? "No se pudo crear el alquiler."
-            : t("loans:messages.createError", "No se pudo crear el préstamo.")
-        );
+        setError(t("loans:messages.createError"));
       }
     } finally {
       setCreating(false);
@@ -223,9 +225,10 @@ export default function LoansPage() {
       await loadAll();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError(t("loans:messages.returnError", "No se pudo registrar la devolución."));
+      else setError(t("loans:messages.returnError"));
     }
   };
 
@@ -252,49 +255,50 @@ export default function LoansPage() {
     return [
       {
         key: "loan_type",
-        label: "Tipo",
+        label: t("loans:fields.type"),
         render: (row) => {
           const type = row.loan_type === "RENTAL" ? "rental" : "loan";
+
           return (
             <span className={`df-status-badge df-status-badge--${type}`}>
-              {row.loan_type === "RENTAL" ? "Alquiler" : "Préstamo"}
+              {row.loan_type === "RENTAL" ? t("loans:types.rental") : t("loans:types.loan")}
             </span>
           );
         },
       },
       {
         key: "dress",
-        label: t("loans:fields.dress", "Vestido"),
+        label: t("loans:fields.dress"),
         render: (row) => (row.dress_code ? `${row.dress_code} - ${row.dress_name}` : "—"),
       },
       {
         key: "customer",
-        label: t("loans:fields.customer", "Cliente"),
+        label: t("loans:fields.customer"),
         render: (row) => row.customer_full_name || "—",
       },
       {
         key: "start_date",
-        label: t("loans:fields.startDate", "Fecha inicio"),
+        label: t("loans:fields.startDate"),
         render: (row) => row.start_date,
       },
       {
         key: "expected_return_date",
-        label: t("loans:fields.expectedReturnDate", "Fecha esperada devolución"),
+        label: t("loans:fields.expectedReturnDate"),
         render: (row) => row.expected_return_date || "—",
       },
       {
         key: "actual_return_date",
-        label: t("loans:fields.actualReturnDate", "Fecha devolución"),
+        label: t("loans:fields.actualReturnDate"),
         render: (row) => row.actual_return_date || "—",
       },
       {
         key: "amount",
-        label: "Valor",
+        label: t("loans:fields.amount"),
         render: (row) => (row.loan_type === "RENTAL" ? money(row.amount) : "—"),
       },
       {
         key: "status",
-        label: t("loans:fields.status", "Estado"),
+        label: t("loans:fields.status"),
         render: (row) => (
           <span className={`df-status-badge df-status-badge--${row.status.toLowerCase()}`}>
             {t(`loans:status.${row.status}`, row.status)}
@@ -307,14 +311,14 @@ export default function LoansPage() {
         render: (row) =>
           row.status === "ACTIVE" ? (
             <button type="button" onClick={() => returnLoan(row.id)}>
-              {t("loans:actions.return", "Devolver")}
+              {t("loans:actions.return")}
             </button>
           ) : (
             "—"
           ),
       },
     ];
-  }, [t]);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -399,14 +403,9 @@ export default function LoansPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">{t("loans:hero.eyebrow", "Operaciones")}</p>
-          <h1 className="df-pro-page__title">Préstamos / Alquileres</h1>
-          <p className="df-pro-page__subtitle">
-            {t(
-              "loans:hero.subtitle",
-              "Gestioná préstamos activos, devoluciones y operaciones con clientes."
-            )}
-          </p>
+          <p className="df-pro-page__eyebrow">{t("loans:hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("loans:title")}</h1>
+          <p className="df-pro-page__subtitle">{t("loans:hero.subtitle")}</p>
         </div>
 
         <PrimaryButton
@@ -416,52 +415,52 @@ export default function LoansPage() {
             setShowCreateModal(true);
           }}
         >
-          Nuevo préstamo / alquiler
+          {t("loans:actions.new")}
         </PrimaryButton>
       </header>
 
       <section className="df-pro-card">
         <form onSubmit={handleSearchSubmit} className="df-pro-filter-grid df-pro-filter-grid--4">
           <div>
-            <label className="df-pro-label">{t("loans:filters.search", "Buscar")}</label>
+            <label className="df-pro-label">{t("loans:filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder={t("loans:filters.searchPlaceholder", "Buscar por vestido o cliente")}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder={t("loans:filters.searchPlaceholder")}
             />
           </div>
 
           <div>
-            <label className="df-pro-label">{t("loans:filters.status", "Estado")}</label>
+            <label className="df-pro-label">{t("loans:filters.status")}</label>
             <select
               className="df-pro-select"
               value={statusFilter}
-              onChange={(e) => {
+              onChange={(event) => {
                 setPage(1);
-                setStatusFilter(e.target.value);
+                setStatusFilter(event.target.value);
               }}
             >
-              <option value="">{t("loans:filters.allStatuses", "Todos los estados")}</option>
-              <option value="ACTIVE">{t("loans:status.ACTIVE", "Activo")}</option>
-              <option value="RETURNED">{t("loans:status.RETURNED", "Devuelto")}</option>
-              <option value="LATE">{t("loans:status.LATE", "Vencido")}</option>
+              <option value="">{t("loans:filters.allStatuses")}</option>
+              <option value="ACTIVE">{t("loans:status.ACTIVE")}</option>
+              <option value="RETURNED">{t("loans:status.RETURNED")}</option>
+              <option value="LATE">{t("loans:status.LATE")}</option>
             </select>
           </div>
 
           <div>
-            <label className="df-pro-label">Tipo</label>
+            <label className="df-pro-label">{t("loans:filters.type")}</label>
             <select
               className="df-pro-select"
               value={loanTypeFilter}
-              onChange={(e) => {
+              onChange={(event) => {
                 setPage(1);
-                setLoanTypeFilter(e.target.value);
+                setLoanTypeFilter(event.target.value);
               }}
             >
-              <option value="">Todos</option>
-              <option value="LOAN">Préstamos</option>
-              <option value="RENTAL">Alquileres</option>
+              <option value="">{t("loans:filters.allTypes")}</option>
+              <option value="LOAN">{t("loans:types.loanPlural")}</option>
+              <option value="RENTAL">{t("loans:types.rentalPlural")}</option>
             </select>
           </div>
 
@@ -489,11 +488,11 @@ export default function LoansPage() {
 
       {loading ? (
         <section className="df-pro-card">
-          <p>{t("common:status.loading", "Cargando...")}</p>
+          <p>{t("loans:messages.loading")}</p>
         </section>
       ) : rows.length === 0 ? (
         <section className="df-pro-card">
-          <p>{t("loans:empty", "No hay registros para mostrar.")}</p>
+          <p>{t("loans:messages.empty")}</p>
         </section>
       ) : (
         <section className="df-pro-card">
@@ -503,18 +502,29 @@ export default function LoansPage() {
 
       <footer className="df-pro-pagination">
         <div>
-          {t("common:pagination.showing", "Mostrando")} {rows.length} / {total}
+          {t("loans:pagination.showing", {
+            count: rows.length,
+            total,
+          })}
         </div>
 
         <div className="df-pro-actions-row">
           <button type="button" onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
             {t("common:pagination.previous", "Anterior")}
           </button>
+
           <span>
-            {t("common:pagination.page", "Página")} {page} {t("common:pagination.of", "de")}{" "}
-            {totalPages}
+            {t("loans:pagination.page", {
+              page,
+              totalPages,
+            })}
           </span>
-          <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={page >= totalPages}>
+
+          <button
+            type="button"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={page >= totalPages}
+          >
             {t("common:pagination.next", "Siguiente")}
           </button>
         </div>
@@ -523,27 +533,28 @@ export default function LoansPage() {
       <Modal
         open={showCreateModal}
         onClose={closeCreateModal}
-        title={loanType === "RENTAL" ? "Nuevo alquiler" : "Nuevo préstamo"}
+        title={loanType === "RENTAL" ? t("loans:modal.createRental") : t("loans:modal.createLoan")}
         width="min(820px, 100%)"
       >
         <form onSubmit={createLoan} style={{ display: "grid", gap: 16 }}>
-          <div className="df-loans-modal-note">
-            Registrá una salida de vestido como <strong>préstamo</strong> o <strong>alquiler</strong> desde el mismo flujo.
-          </div>
+          <div className="df-loans-modal-note">{t("loans:modal.note")}</div>
 
           <div className="df-loans-modal-grid">
             <div className="df-loans-modal-field">
-              <label>Tipo</label>
-              <select value={loanType} onChange={(e) => setLoanType(e.target.value as "LOAN" | "RENTAL")}>
-                <option value="LOAN">Préstamo</option>
-                <option value="RENTAL">Alquiler</option>
+              <label>{t("loans:modal.type")}</label>
+              <select
+                value={loanType}
+                onChange={(event) => setLoanType(event.target.value as "LOAN" | "RENTAL")}
+              >
+                <option value="LOAN">{t("loans:types.loan")}</option>
+                <option value="RENTAL">{t("loans:types.rental")}</option>
               </select>
             </div>
 
             <div className="df-loans-modal-field">
-              <label>{t("loans:form.dress", "Vestido")}</label>
-              <select value={dressId} onChange={(e) => setDressId(e.target.value)}>
-                <option value="">{t("loans:form.dressPlaceholder", "Seleccionar vestido")}</option>
+              <label>{t("loans:modal.dress")}</label>
+              <select value={dressId} onChange={(event) => setDressId(event.target.value)}>
+                <option value="">{t("loans:modal.dressPlaceholder")}</option>
                 {availableDresses.map((dress) => (
                   <option key={dress.id} value={dress.id}>
                     {dress.code} - {dress.name}
@@ -553,9 +564,9 @@ export default function LoansPage() {
             </div>
 
             <div className="df-loans-modal-field">
-              <label>{t("loans:form.customer", "Cliente")}</label>
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-                <option value="">{t("loans:form.customerPlaceholder", "Seleccionar cliente")}</option>
+              <label>{t("loans:modal.customer")}</label>
+              <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+                <option value="">{t("loans:modal.customerPlaceholder")}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.code ? `${customer.code} · ` : ""}
@@ -566,53 +577,58 @@ export default function LoansPage() {
             </div>
 
             <div className="df-loans-modal-field">
-              <label>{t("loans:form.startDate", "Fecha de inicio")}</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <label>{t("loans:modal.startDate")}</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+              />
             </div>
 
             <div className="df-loans-modal-field">
-              <label>{t("loans:form.expectedReturnDate", "Fecha esperada de devolución")}</label>
+              <label>{t("loans:modal.expectedReturnDate")}</label>
               <input
                 type="date"
                 value={expectedReturnDate}
-                onChange={(e) => setExpectedReturnDate(e.target.value)}
+                onChange={(event) => setExpectedReturnDate(event.target.value)}
               />
             </div>
 
             {loanType === "RENTAL" && (
               <div className="df-loans-modal-field">
-                <label>Valor del alquiler</label>
+                <label>{t("loans:modal.amount")}</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Ej: 150.00"
+                  onChange={(event) => setAmount(event.target.value)}
+                  placeholder={t("loans:modal.amountPlaceholder")}
                 />
               </div>
             )}
 
             <div className="df-loans-modal-field df-loans-modal-field--full">
-              <label>Notas</label>
+              <label>{t("loans:modal.notes")}</label>
               <textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observaciones internas de la operación"
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder={t("loans:modal.notesPlaceholder")}
               />
             </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button type="button" onClick={closeCreateModal}>
-              Cancelar
+              {t("common:actions.cancel", "Cancelar")}
             </button>
+
             <PrimaryButton type="submit" disabled={creating}>
               {creating
                 ? t("common:status.saving", "Guardando...")
                 : loanType === "RENTAL"
-                ? "Crear alquiler"
-                : "Crear préstamo"}
+                ? t("loans:actions.createRental")
+                : t("loans:actions.createLoan")}
             </PrimaryButton>
           </div>
         </form>

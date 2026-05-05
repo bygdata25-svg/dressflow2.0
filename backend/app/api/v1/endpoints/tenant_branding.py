@@ -12,6 +12,7 @@ router = APIRouter(prefix="/tenant-branding", tags=["tenant-branding"])
 
 class TenantBrandingUpdate(BaseModel):
     primary_color: str | None = None
+    default_language: str | None = None
 
 
 @router.get("")
@@ -27,6 +28,7 @@ def get_tenant_branding(
         "logo_url": tenant.logo_url,
         "logo_public_id": getattr(tenant, "logo_public_id", None),
         "primary_color": tenant.primary_color,
+        "default_language": getattr(tenant, "default_language", "es"),
     }
 
 
@@ -43,6 +45,15 @@ def update_tenant_branding(
     if payload.primary_color is not None:
         tenant.primary_color = payload.primary_color
 
+    if payload.default_language is not None:
+        if payload.default_language not in {"es", "en"}:
+            raise HTTPException(
+                status_code=400,
+                detail="Idioma no válido. Valores permitidos: es, en.",
+            )
+
+        tenant.default_language = payload.default_language
+
     db.commit()
     db.refresh(tenant)
 
@@ -51,6 +62,7 @@ def update_tenant_branding(
         "logo_url": tenant.logo_url,
         "logo_public_id": getattr(tenant, "logo_public_id", None),
         "primary_color": tenant.primary_color,
+        "default_language": getattr(tenant, "default_language", "es"),
     }
 
 
@@ -65,7 +77,10 @@ def upload_logo(
         raise HTTPException(status_code=404, detail="Tenant no encontrado.")
 
     if not tenant.slug:
-        raise HTTPException(status_code=400, detail="El tenant no tiene slug configurado.")
+        raise HTTPException(
+            status_code=400,
+            detail="El tenant no tiene slug configurado.",
+        )
 
     old_public_id = getattr(tenant, "logo_public_id", None)
 
@@ -85,9 +100,6 @@ def upload_logo(
     db.commit()
     db.refresh(tenant)
 
-    # Si más adelante decidís usar public_id distinto por versión, esto sirve.
-    # En este caso, como usamos overwrite=True y el mismo public_id ("logo"),
-    # no hace falta borrar nada, pero lo dejamos por compatibilidad.
     if old_public_id and old_public_id != result["public_id"]:
         try:
             delete_image(old_public_id)
@@ -98,4 +110,6 @@ def upload_logo(
         "logo_url": tenant.logo_url,
         "logo_public_id": getattr(tenant, "logo_public_id", None),
         "primary_color": tenant.primary_color,
+        "default_language": getattr(tenant, "default_language", "es"),
     }
+

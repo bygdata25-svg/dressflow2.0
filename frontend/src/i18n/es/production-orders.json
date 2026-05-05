@@ -5,12 +5,11 @@
     "eyebrow": "Producción",
     "subtitle": "Gestioná órdenes de confección, reserva de materiales y entrega al taller con trazabilidad completa."
   },
-  "empty": "No hay órdenes de producción cargadas todavía.",
-
+  "empty": "No hay órdenes",
   "fields": {
-    "orderNumber": "Nro. de orden",
-    "workshop": "Taller / Modista",
-    "targetDressName": "Vestido objetivo",
+    "orderNumber": "Número de orden",
+    "workshop": "Taller",
+    "targetDressName": "Vestido",
     "targetDressCode": "Código objetivo",
     "targetSize": "Talle",
     "targetColor": "Color",
@@ -18,7 +17,7 @@
     "producedQuantity": "Cantidad producida",
     "status": "Estado",
     "priority": "Prioridad",
-    "dueDate": "Fecha compromiso",
+    "dueDate": "Entrega",
     "notes": "Notas",
     "receivedNotes": "Notas de recepción",
     "material": "Material",
@@ -32,9 +31,17 @@
     "unit": "Unidad",
     "unitCost": "Costo unitario",
     "eventType": "Evento",
-    "eventDate": "Fecha"
+    "eventDate": "Fecha",
+    "code": "Código",
+    "codeShort": "Cód.",
+    "size": "Talle",
+    "color": "Color",
+    "quantity": "Cantidad",
+    "name": "Nombre",
+    "workshopAssigned": "Taller asignado",
+    "progress": "Avance",
+    "designImage": "Imagen diseño"
   },
-
   "status": {
     "DRAFT": "Borrador",
     "APPROVED": "Aprobada",
@@ -45,23 +52,22 @@
     "COMPLETED": "Completada",
     "CANCELLED": "Cancelada"
   },
-
   "priority": {
     "LOW": "Baja",
     "NORMAL": "Normal",
     "HIGH": "Alta",
     "URGENT": "Urgente"
   },
-
   "filters": {
     "search": "Buscar",
     "searchPlaceholder": "Buscar por orden o vestido",
     "status": "Estado",
-    "allStatuses": "Todos los estados"
+    "allStatuses": "Todos los estados",
+    "title": "Listado de órdenes",
+    "subtitle": "Filtrá por número, taller, vestido, talle o código."
   },
-
   "form": {
-    "title": "Crear orden de producción",
+    "title": "Nueva orden de producción",
     "placeholders": {
       "orderNumber": "Ej: OP-0001",
       "workshop": "Seleccionar taller",
@@ -75,9 +81,16 @@
     },
     "messages": {
       "error": "No se pudo crear la orden."
-    }
+    },
+    "autoPlaceholder": "Automático",
+    "autoHint": "Dejalo vacío para generar automáticamente el próximo número OP.",
+    "selectWorkshop": "Seleccionar taller",
+    "targetDress": "Vestido objetivo",
+    "imageUrlPlaceholder": "URL de imagen",
+    "imageUrlHint": "Podés pegar una URL de imagen del diseño o referencia de la orden.",
+    "designPreview": "Vista previa del diseño",
+    "creating": "Creando..."
   },
-
   "materials": {
     "title": "Materiales",
     "empty": "No hay materiales asignados.",
@@ -91,9 +104,26 @@
     "returnTitle": "Registrar devolución / merma",
     "returnError": "No se pudo registrar la devolución.",
     "returnedPlaceholder": "Cantidad devuelta",
-    "wastePlaceholder": "Merma"
+    "wastePlaceholder": "Merma",
+    "fabric": "Tela",
+    "fabrics": "Telas",
+    "trim": "Avío",
+    "trims": "Avíos",
+    "addFabric": "Agregar tela",
+    "addFabricHint": "Cargá el insumo principal de la orden.",
+    "addTrim": "Agregar avío",
+    "addTrimHint": "Cargá insumos complementarios.",
+    "selectFabric": "Seleccionar tela",
+    "selectTrim": "Seleccionar avío",
+    "roll": "Rollo",
+    "free": "Libre",
+    "total": "Total",
+    "requires": "Requiere",
+    "available": "Disponible",
+    "checkingAvailability": "Validando disponibilidad...",
+    "noFabrics": "No hay telas asignadas.",
+    "noTrims": "No hay avíos asignados."
   },
-
   "receive": {
     "title": "Recepción de producción",
     "producedPlaceholder": "Cantidad producida",
@@ -102,7 +132,6 @@
     "notesPlaceholder": "Notas de recepción",
     "error": "No se pudo registrar la recepción."
   },
-
   "costs": {
     "title": "Costeo",
     "laborCost": "Mano de obra",
@@ -116,41 +145,37 @@
     "actualUnitCost": "Costo unitario real",
     "saveError": "No se pudo guardar el costeo."
   },
-
   "events": {
     "title": "Timeline",
     "empty": "No hay eventos registrados.",
     "showDetails": "Ver detalle",
     "hideDetails": "Ocultar detalle",
-
     "types": {
       "CREATED": "Orden creada",
       "FABRIC_ASSIGNED": "Tela asignada",
       "TRIM_ASSIGNED": "Avío asignado",
       "MATERIAL_ASSIGNED": "Material asignado",
       "MATERIAL_RESERVED": "Material reservado",
-      "MATERIAL_ISSUED": "Material entregado al taller",
+      "MATERIAL_ISSUED": "Material entregado",
       "MATERIAL_RETURNED": "Material devuelto",
       "ORDER_RECEIVED": "Recepción registrada",
-      "OUTPUT_CREATED": "Output creado",
+      "OUTPUT_CREATED": "Producción registrada",
       "COSTS_UPDATED": "Costos actualizados",
       "DESIGN_IMAGE_UPDATED": "Imagen de diseño actualizada"
     },
-
     "summaries": {
-      "CREATED": "Se creó la orden {{order_number}}.",
-      "FABRIC_ASSIGNED": "Se asignó la tela {{roll_code}} a la orden.",
-      "TRIM_ASSIGNED": "Se asignó el avío {{trim_code}} a la orden.",
+      "CREATED": "Se creó la orden.",
+      "FABRIC_ASSIGNED": "Se asignó una tela a la orden.",
+      "TRIM_ASSIGNED": "Se asignó un avío a la orden.",
       "MATERIAL_ASSIGNED": "Se asignó un material a la orden.",
       "MATERIAL_RESERVED": "Se reservó material para producción.",
       "MATERIAL_ISSUED": "Se entregó material al taller.",
-      "MATERIAL_RETURNED": "Se registró devolución o merma del material.",
+      "MATERIAL_RETURNED": "Se registró devolución o merma de material.",
       "ORDER_RECEIVED": "Se registró la recepción de producción.",
-      "OUTPUT_CREATED": "Se generó un output de producción.",
+      "OUTPUT_CREATED": "Se registró la producción generada.",
       "COSTS_UPDATED": "Se actualizaron los costos de la orden.",
       "DESIGN_IMAGE_UPDATED": "Se actualizó la imagen de diseño."
     },
-
     "payload": {
       "orderNumber": "Orden",
       "rollCode": "Rollo",
@@ -168,12 +193,145 @@
       "laborCost": "Mano de obra",
       "additionalCost": "Costo adicional",
       "currency": "Moneda",
-      "unitCostSnapshot": "Costo unitario snapshot"
-    }
+      "unitCostSnapshot": "Costo unitario",
+      "materialId": "Material",
+      "designPhotoUrl": "Imagen de diseño"
+    },
+    "subtitle": "Historial completo de acciones operativas y financieras."
   },
-
   "messages": {
     "loadError": "No se pudieron cargar las órdenes.",
-    "detailLoadError": "No se pudo cargar el detalle de la orden."
+    "detailLoadError": "No se pudo cargar el detalle de la orden.",
+    "emptyFiltered": "No hay órdenes para los filtros actuales."
+  },
+  "actions": {
+    "reserve": "Reservar",
+    "issue": "Entregar",
+    "remove": "Quitar",
+    "addFabric": "Agregar tela",
+    "addTrim": "Agregar avío",
+    "issueAll": "Entregar todo",
+    "issuing": "Entregando...",
+    "saveReceipt": "Registrar recepción",
+    "saveOutput": "Guardar output",
+    "addOutput": "Agregar output",
+    "issueReserved": "Entregar reservados",
+    "saveCosts": "Guardar costos",
+    "workshopPdf": "PDF Taller",
+    "costsPdf": "PDF Costos",
+    "selectFile": "Seleccionar archivo",
+    "refresh": "Actualizar",
+    "new": "Nueva orden",
+    "registerProduction": "Registrar Producción"
+  },
+  "operation": {
+    "design": {
+      "title": "Diseño",
+      "noImage": "Sin imagen de referencia",
+      "dress": "Vestido",
+      "reference": "Referencia",
+      "uploading": "Subiendo imagen...",
+      "noNotes": "Sin observaciones."
+    },
+    "summary": {
+      "title": "Resumen",
+      "progress": "Progreso"
+    },
+    "production": {
+      "title": "Producción"
+    },
+    "assigned": {
+      "title": "Asignado",
+      "hint": "{{count}} ítems vinculados a la orden."
+    },
+    "quickActions": {
+      "title": "Acciones rápidas",
+      "readyToIssue": "{{count}} materiales listos para entregar",
+      "noneReady": "No hay materiales reservados listos"
+    }
+  },
+  "materialStatus": {
+    "ISSUED": "Entregado",
+    "RESERVED": "Reservado",
+    "DRAFT": "Borrador",
+    "PENDING": "Pendiente"
+  },
+  "units": {
+    "meter": "metro",
+    "meters": "metros",
+    "unit": "unidad",
+    "units": "unidades",
+    "piece": "pieza",
+    "pieces": "piezas"
+  },
+  "output": {
+    "title": "Outputs",
+    "createDressRecords": "Crear vestidos en inventario",
+    "generated": "Outputs generados",
+    "empty": "Todavía no hay outputs creados.",
+    "registeredUnits": "{{count}} unidades registradas",
+    "registerProductionHint": "Registrá la producción terminada. Se crearán automáticamente los vestidos disponibles para la venta.",
+    "emptyProduction": "Todavía no hay vestidos generados.",
+    "readyForSale": "Vestido creado y disponible para la venta."
+  },
+  "finance": {
+    "suggestedUnitPrice": "Precio sugerido por unidad",
+    "approxEquivalent": "Equivalente aprox.",
+    "basedOnUnitCost": "basado en costo unitario",
+    "real": "real",
+    "estimated": "estimado",
+    "multiplierLower": "multiplicador",
+    "estimatedMargin": "Margen estimado",
+    "marginOverCost": "sobre costo total estimado/real disponible",
+    "materialCost": "Costo material",
+    "laborAndOthers": "Mano de obra / otros",
+    "estimatedTotal": "Total estimado",
+    "updateCosts": "Actualizar costos",
+    "updateCostsHint": "Mano de obra, costos adicionales, moneda y parámetros comerciales.",
+    "costCurrency": "Moneda de costos",
+    "exchangeRate": "Tipo de cambio",
+    "exchangeRatePlaceholder": "Ej. 1000",
+    "multiplier": "Multiplicador",
+    "economicSummary": "Resumen económico",
+    "economicSummaryHint": "Lectura rápida del costo comercial de la orden.",
+    "suggestedPriceARS": "Precio sugerido ARS",
+    "suggestedPriceUSD": "Precio sugerido USD",
+    "margin": {
+      "good": "Rentable",
+      "warning": "Margen bajo",
+      "bad": "Riesgo"
+    }
+  },
+  "detail": {
+    "eyebrow": "Detalle de orden de producción"
+  },
+  "tabs": {
+    "operation": "Operación",
+    "finance": "Costos",
+    "events": "Movimientos"
+  },
+  "page": {
+    "eyebrow": "Producción",
+    "title": "Órdenes de producción",
+    "subtitle": "Seguimiento operativo y financiero en una sola vista de trabajo."
+  },
+  "kpis": {
+    "draft": "Borrador",
+    "reserved": "Reservadas",
+    "inProduction": "En producción",
+    "completed": "Completadas",
+    "overdue": "Vencidas"
+  },
+  "date": {
+    "noDate": "Sin fecha",
+    "overdue": "Atrasada",
+    "planned": "Planificada"
+  },
+  "operationalHints": {
+    "DRAFT": "Pendiente de preparación",
+    "MATERIALS_RESERVED": "Materiales reservados",
+    "IN_PRODUCTION": "Producción en curso",
+    "COMPLETED": "Orden finalizada",
+    "CANCELLED": "Orden cancelada"
   }
 }

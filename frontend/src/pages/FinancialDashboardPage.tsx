@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ResponsiveContainer,
   LineChart,
@@ -40,67 +41,6 @@ type FinancialDashboardResponse = {
   payment_methods: PaymentMethodRow[];
 };
 
-function formatMoney(value: number, currency: "ARS" | "USD") {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(value || 0);
-}
-
-function compactMoney(value: number, currency: "ARS" | "USD") {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency,
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value || 0);
-}
-
-function monthLabel(value: string) {
-  if (!value) return "";
-  const [year, month] = value.split("-");
-  return `${month}/${year.slice(2)}`;
-}
-
-function paymentMethodLabel(value?: string) {
-  const raw = String(value || "").toLowerCase().trim();
-  if (raw === "cash") return "Efectivo";
-  if (raw === "transfer") return "Transferencia";
-  if (raw === "debit") return "Débito";
-  if (raw === "credit") return "Crédito";
-  if (raw === "mercadopago") return "Mercado Pago";
-  if (raw === "other") return "Otro";
-  return value || "Sin definir";
-}
-
-function totalHeadline(data: FinancialDashboardResponse) {
-  const hasARS = Number(data.total_ars || 0) > 0;
-  const hasUSD = Number(data.total_usd || 0) > 0;
-
-  if (hasARS && hasUSD) {
-    return {
-      label: "TOTAL MIXTO",
-      value: `${formatMoney(data.total_usd, "USD")} + ${formatMoney(data.total_ars, "ARS")}`,
-      subtitle: "Ingresos consolidados por moneda",
-    };
-  }
-
-  if (hasUSD) {
-    return {
-      label: "TOTAL USD",
-      value: formatMoney(data.total_usd, "USD"),
-      subtitle: "Ingresos expresados en dólares",
-    };
-  }
-
-  return {
-    label: "TOTAL ARS",
-    value: formatMoney(data.total_ars, "ARS"),
-    subtitle: "Ingresos expresados en moneda local",
-  };
-}
-
 const PAYMENT_COLORS = [
   "#c38c7a",
   "#b08ad4",
@@ -111,8 +51,74 @@ const PAYMENT_COLORS = [
 ];
 
 export default function FinancialDashboardPage() {
+  const { t, i18n } = useTranslation("financial-dashboard");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [data, setData] = useState<FinancialDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
+  function formatMoney(value: number, currency: "ARS" | "USD") {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(value || 0);
+  }
+
+  function compactMoney(value: number, currency: "ARS" | "USD") {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(value || 0);
+  }
+
+  function monthLabel(value: string) {
+    if (!value) return "";
+    const [year, month] = value.split("-");
+    return `${month}/${year.slice(2)}`;
+  }
+
+  function paymentMethodLabel(value?: string) {
+    const raw = String(value || "").toUpperCase().trim();
+    return t(`payments.${raw}`, { defaultValue: value || "—" });
+  }
+
+  function operationLabel(count: number) {
+    return t("labels.operations", { count });
+  }
+
+  function totalHeadline(currentData: FinancialDashboardResponse) {
+    const hasARS = Number(currentData.total_ars || 0) > 0;
+    const hasUSD = Number(currentData.total_usd || 0) > 0;
+
+    if (hasARS && hasUSD) {
+      return {
+        label: t("headline.mixedTotal"),
+        value: `${formatMoney(currentData.total_usd, "USD")} + ${formatMoney(
+          currentData.total_ars,
+          "ARS"
+        )}`,
+        subtitle: t("headline.mixedSubtitle"),
+      };
+    }
+
+    if (hasUSD) {
+      return {
+        label: t("headline.usdTotal"),
+        value: formatMoney(currentData.total_usd, "USD"),
+        subtitle: t("headline.usdSubtitle"),
+      };
+    }
+
+    return {
+      label: t("headline.arsTotal"),
+      value: formatMoney(currentData.total_ars, "ARS"),
+      subtitle: t("headline.arsSubtitle"),
+    };
+  }
 
   const loadData = async () => {
     try {
@@ -122,7 +128,7 @@ export default function FinancialDashboardPage() {
       );
       setData(response.data);
     } catch (error) {
-      console.error("Error cargando dashboard financiero", error);
+      console.error("Error loading financial dashboard", error);
       setData(null);
     } finally {
       setLoading(false);
@@ -135,22 +141,24 @@ export default function FinancialDashboardPage() {
 
   const paymentChartData = useMemo(() => {
     if (!data) return [];
+
     return data.payment_methods.map((row) => ({
       name: paymentMethodLabel(row.payment_method),
       value: row.operations_count,
     }));
-  }, [data]);
+  }, [data, t]);
 
   const headline = useMemo(() => {
     if (!data) {
       return {
-        label: "TOTAL",
+        label: t("headline.arsTotal"),
         value: formatMoney(0, "ARS"),
         subtitle: "",
       };
     }
+
     return totalHeadline(data);
-  }, [data]);
+  }, [data, t, locale]);
 
   const hasEnoughMonthlyData = useMemo(() => {
     return (data?.monthly?.length || 0) >= 2;
@@ -159,7 +167,7 @@ export default function FinancialDashboardPage() {
   if (loading) {
     return (
       <section className="df-pro-page">
-        <div className="df-pro-card">Cargando dashboard financiero...</div>
+        <div className="df-pro-card">{t("messages.loading")}</div>
       </section>
     );
   }
@@ -167,9 +175,7 @@ export default function FinancialDashboardPage() {
   if (!data) {
     return (
       <section className="df-pro-page">
-        <div className="df-pro-card">
-          No se pudo cargar el dashboard financiero.
-        </div>
+        <div className="df-pro-card">{t("errors.load")}</div>
       </section>
     );
   }
@@ -178,12 +184,9 @@ export default function FinancialDashboardPage() {
     <section className="df-pro-page">
       <header className="df-pro-page__hero">
         <div>
-          <p className="df-pro-page__eyebrow">Análisis</p>
-          <h1 className="df-pro-page__title">Dashboard financiero</h1>
-          <p className="df-pro-page__subtitle">
-            Ingresos, ticket promedio y evolución de ventas con lectura
-            separada por moneda.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
       </header>
 
@@ -196,7 +199,7 @@ export default function FinancialDashboardPage() {
 
         <div className="df-fin-hero-card__side">
           <div className="df-fin-hero-pill">
-            {data.sales_count} operación{data.sales_count === 1 ? "" : "es"}
+            {operationLabel(data.sales_count)}
           </div>
 
           <div className="df-fin-hero-inline">
@@ -213,33 +216,33 @@ export default function FinancialDashboardPage() {
 
       <div className="df-financial-grid">
         <div className="df-fin-card">
-          <span>Ventas ARS</span>
+          <span>{t("kpis.salesARS")}</span>
           <strong>{formatMoney(data.total_ars, "ARS")}</strong>
-          <small>{data.sales_count_ars} operación(es) en ARS</small>
+          <small>{t("kpis.salesARSSubtitle", { count: data.sales_count_ars })}</small>
         </div>
 
         <div className="df-fin-card">
-          <span>Ventas USD</span>
+          <span>{t("kpis.salesUSD")}</span>
           <strong>{formatMoney(data.total_usd, "USD")}</strong>
-          <small>{data.sales_count_usd} operación(es) en USD</small>
+          <small>{t("kpis.salesUSDSubtitle", { count: data.sales_count_usd })}</small>
         </div>
 
         <div className="df-fin-card">
-          <span>Ventas</span>
+          <span>{t("kpis.sales")}</span>
           <strong>{data.sales_count}</strong>
-          <small>Operaciones totales</small>
+          <small>{t("kpis.salesSubtitle")}</small>
         </div>
 
         <div className="df-fin-card highlight">
-          <span>Ticket promedio ARS</span>
+          <span>{t("kpis.avgTicketARS")}</span>
           <strong>{formatMoney(data.avg_ticket_ars, "ARS")}</strong>
-          <small>Promedio en moneda local</small>
+          <small>{t("kpis.avgTicketARSSubtitle")}</small>
         </div>
 
         <div className="df-fin-card">
-          <span>Ticket promedio USD</span>
+          <span>{t("kpis.avgTicketUSD")}</span>
           <strong>{formatMoney(data.avg_ticket_usd, "USD")}</strong>
-          <small>Promedio en dólares</small>
+          <small>{t("kpis.avgTicketUSDSubtitle")}</small>
         </div>
       </div>
 
@@ -253,9 +256,11 @@ export default function FinancialDashboardPage() {
       >
         <section className="df-pro-card">
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ margin: 0, color: "#32273c" }}>Evolución de ventas</h3>
+            <h3 style={{ margin: 0, color: "#32273c" }}>
+              {t("sections.evolution")}
+            </h3>
             <p style={{ margin: "6px 0 0", color: "#8b8193" }}>
-              Tendencia mensual en ARS y USD.
+              {t("sections.evolutionSubtitle")}
             </p>
           </div>
 
@@ -320,10 +325,7 @@ export default function FinancialDashboardPage() {
                   <strong>{monthLabel(row.month)}</strong>
                   <div>ARS: {formatMoney(row.total_ars, "ARS")}</div>
                   <div>USD: {formatMoney(row.total_usd, "USD")}</div>
-                  <small>
-                    {row.sales_count} operación
-                    {row.sales_count === 1 ? "" : "es"}
-                  </small>
+                  <small>{operationLabel(row.sales_count)}</small>
                 </div>
               ))}
             </div>
@@ -332,9 +334,11 @@ export default function FinancialDashboardPage() {
 
         <section className="df-pro-card">
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ margin: 0, color: "#32273c" }}>Métodos de pago</h3>
+            <h3 style={{ margin: 0, color: "#32273c" }}>
+              {t("sections.paymentMethods")}
+            </h3>
             <p style={{ margin: "6px 0 0", color: "#8b8193" }}>
-              Participación por cantidad de operaciones.
+              {t("sections.paymentMethodsSubtitle")}
             </p>
           </div>
 
@@ -366,10 +370,7 @@ export default function FinancialDashboardPage() {
               <div key={row.payment_method} className="df-fin-method-row">
                 <div>
                   <strong>{paymentMethodLabel(row.payment_method)}</strong>
-                  <small>
-                    {row.operations_count} operación
-                    {row.operations_count === 1 ? "" : "es"}
-                  </small>
+                  <small>{operationLabel(row.operations_count)}</small>
                 </div>
 
                 <div className="df-fin-method-row__totals">

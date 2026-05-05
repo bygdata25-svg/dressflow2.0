@@ -1,0 +1,85 @@
+{
+  "title": "Usuarios",
+  "hero": {
+    "eyebrow": "Gestión de acceso",
+    "subtitle": "Administrá usuarios, roles y estado de acceso por empresa."
+  },
+  "actions": {
+    "new": "Nuevo usuario"
+  },
+  "columns": {
+    "user": "Usuario",
+    "email": "Email",
+    "role": "Rol",
+    "status": "Estado"
+  },
+  "roles": {
+    "admin": "Admin",
+    "manager": "Manager",
+    "staff": "Staff"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo"
+  },
+  "states": {
+    "loading": "Cargando usuarios...",
+    "empty": "No hay usuarios cargados."
+  },
+  "messages": {
+    "loadError": "No se pudieron cargar los usuarios."
+  },
+  "modal": {
+    "createTitle": "Nuevo usuario",
+    "editTitle": "Editar usuario"
+  },
+  "language": {
+    "preferredLanguage": "Mi idioma",
+    "useTenantDefault": "Usar idioma de la empresa",
+    "spanish": "Español",
+    "english": "Inglés"
+  },
+  "form": {
+    "fields": {
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Email",
+      "password": "Contraseña",
+      "role": "Rol",
+      "status": "Estado"
+    },
+    "placeholders": {
+      "firstName": "Juan",
+      "lastName": "Pérez",
+      "email": "usuario@empresa.com",
+      "password": "••••••••"
+    },
+    "validation": {
+      "emailRequired": "El email es obligatorio.",
+      "firstNameRequired": "El nombre es obligatorio.",
+      "lastNameRequired": "El apellido es obligatorio.",
+      "passwordRequired": "La contraseña es obligatoria.",
+      "invalidEmail": "Ingresá un email válido."
+    },
+    "messages": {
+      "createError": "No se pudo crear el usuario.",
+      "updateError": "No se pudo actualizar el usuario."
+    },
+    "actions": {
+      "create": "Crear",
+      "update": "Actualizar"
+    },
+    "security": {
+      "title": "Seguridad",
+      "description": "Generá una contraseña temporal para este usuario.",
+      "resetPassword": "Reset password",
+      "cancelReset": "Cancelar reset",
+      "warningPrefix": "Se generará una contraseña temporal",
+      "warningSuffix": "El usuario deberá cambiarla al ingresar.",
+      "confirmReset": "Confirmar reset password",
+      "resetting": "Reseteando...",
+      "resetError": "No se pudo resetear la contraseña.",
+      "resetSuccess": "Contraseña temporal generada: {{password}}. El usuario deberá cambiarla al ingresar."
+    }
+  }
+}

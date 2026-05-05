@@ -1,39 +1,39 @@
 {
-  "title": "Movimientos de rollos",
+  "title": "Roll movements",
   "hero": {
-    "eyebrow": "Operaciones de stock",
-    "subtitle": "Registrá entradas, salidas y ajustes con trazabilidad completa del rollo e impacto en stock."
+    "eyebrow": "Stock operations",
+    "subtitle": "Track inputs, outputs and adjustments with full roll traceability and stock impact."
   },
-  "empty": "No hay movimientos cargados todavía.",
+  "empty": "No movements recorded yet.",
   "fields": {
-    "roll": "Rollo",
-    "fabric": "Tela",
-    "type": "Tipo",
-    "quantity": "Cantidad",
-    "reference": "Referencia",
-    "notes": "Notas"
+    "roll": "Roll",
+    "fabric": "Fabric",
+    "type": "Type",
+    "quantity": "Quantity",
+    "reference": "Reference",
+    "notes": "Notes"
   },
   "types": {
-    "IN": "Entrada",
-    "OUT": "Salida",
-    "ADJUSTMENT": "Ajuste"
+    "IN": "In",
+    "OUT": "Out",
+    "ADJUSTMENT": "Adjustment"
   },
   "filters": {
-    "search": "Buscar",
-    "searchPlaceholder": "Buscar por rollo, tela o referencia",
-    "type": "Tipo",
-    "allTypes": "Todos los tipos"
+    "search": "Search",
+    "searchPlaceholder": "Search by roll, fabric or reference",
+    "type": "Type",
+    "allTypes": "All types"
   },
   "form": {
-    "title": "Crear movimiento",
+    "title": "Create movement",
     "placeholders": {
-      "roll": "Seleccionar rollo",
-      "quantity": "Ej: 5",
-      "reference": "Ej: Corte taller / Compra / Ajuste",
-      "notes": "Notas del movimiento"
+      "roll": "Select roll",
+      "quantity": "Ex: 5",
+      "reference": "Ex: Workshop cut / Purchase / Adjustment",
+      "notes": "Movement notes"
     },
     "messages": {
-      "error": "No se pudo crear el movimiento."
+      "error": "Could not create movement."
     }
   }
 }

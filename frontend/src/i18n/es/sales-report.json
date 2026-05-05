@@ -1,0 +1,111 @@
+{
+  "title": "Ventas unificadas",
+
+  "hero": {
+    "eyebrow": "Reportes",
+    "subtitle": "Vestidos, accesorios y multipagos en un solo tablero."
+  },
+
+  "headline": {
+    "total": "Total",
+    "mixedTotal": "Total mixto",
+    "arsSubtitle": "Total en pesos",
+    "usdSubtitle": "Total en dólares",
+    "mixedSubtitle": "{{count}} {{operationLabel}} con múltiples monedas",
+    "operationSingular": "operación",
+    "operationPlural": "operaciones"
+  },
+
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "N° venta, cliente, notas",
+    "status": "Estado",
+    "currency": "Moneda",
+    "from": "Desde",
+    "to": "Hasta",
+    "all": "Todos",
+    "allStatuses": "Todos los estados",
+    "allCurrencies": "Todas las monedas"
+  },
+
+  "kpis": {
+    "sales": "Ventas",
+    "salesSubtitle": "Cantidad de ventas",
+    "totalARS": "Total ARS",
+    "totalARSSubtitle": "Total facturado en ARS",
+    "totalUSD": "Total USD",
+    "totalUSDSubtitle": "Total facturado en USD",
+    "mixed": "Operaciones mixtas",
+    "mixedSubtitle": "Ventas con múltiples monedas"
+  },
+
+  "summary": {
+    "records": "Registros",
+    "totals": "Totales"
+  },
+
+  "fields": {
+    "sale": "N° Venta",
+    "date": "Fecha",
+    "customer": "Cliente",
+    "currency": "Moneda",
+    "total": "Total",
+    "payments": "Pagos",
+    "status": "Estado",
+    "detail": "Detalle"
+  },
+
+  "sections": {
+    "items": "Ítems",
+    "payments": "Pagos",
+    "summary": "Resumen"
+  },
+
+  "labels": {
+    "mixedSale": "TOTAL MIXTO"
+  },
+
+  "status": {
+    "COMPLETED": "Completada",
+    "CANCELLED": "Cancelada",
+    "PAID": "Pagada",
+    "PARTIAL": "Parcial",
+    "PENDING": "Pendiente"
+  },
+
+  "payments": {
+    "CASH": "Efectivo",
+    "TRANSFER": "Transferencia",
+    "DEBIT": "Débito",
+    "CREDIT": "Crédito",
+    "MERCADOPAGO": "Mercado Pago",
+    "OTHER": "Otro"
+  },
+
+  "itemTypes": {
+    "DRESS": "Vestido",
+    "ACCESSORY": "Accesorio",
+    "ITEM": "Ítem"
+  },
+
+  "messages": {
+    "loading": "Cargando ventas..."
+  },
+
+  "errors": {
+    "load": "No se pudo cargar el reporte.",
+    "export": "No se pudo exportar."
+  },
+
+  "empty": "Sin ventas.",
+
+  "actions": {
+    "viewDetail": "Ver detalles"
+  },
+  
+  "currency": {
+    "USD": "USD",
+    "ARS": "ARS",
+    "MIXED": "Mixto"
+  }
+}

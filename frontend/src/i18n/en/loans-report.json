@@ -1,0 +1,52 @@
+{
+  "title": "Loans / Rentals",
+  "hero": {
+    "eyebrow": "Reports",
+    "subtitle": "View active, overdue and returned loans, including rentals and accumulated value."
+  },
+  "fields": {
+    "type": "Type",
+    "dress": "Dress",
+    "customer": "Customer",
+    "startDate": "Start",
+    "expectedReturnDate": "Due date",
+    "actualReturnDate": "Return",
+    "amount": "Amount",
+    "status": "Status",
+    "notes": "Notes"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Dress, customer or note",
+    "status": "Status",
+    "type": "Type",
+    "from": "From",
+    "to": "To",
+    "all": "All"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "LATE": "Late",
+    "RETURNED": "Returned"
+  },
+  "types": {
+    "LOAN": "Loan",
+    "RENTAL": "Rental"
+  },
+  "kpis": {
+    "records": "Records",
+    "loans": "Loans",
+    "rentals": "Rentals",
+    "active": "Active",
+    "late": "Late",
+    "rentalRevenue": "Rental revenue"
+  },
+  "messages": {
+    "loading": "Loading report..."
+  },
+  "errors": {
+    "load": "Could not load report.",
+    "export": "Could not export report."
+  },
+  "empty": "No data to display."
+}

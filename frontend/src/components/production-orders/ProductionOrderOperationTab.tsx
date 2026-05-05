@@ -105,11 +105,6 @@ type TrimForm = {
   notes: string;
 };
 
-type ReceiveForm = {
-  produced_quantity: string;
-  status: string;
-  received_notes: string;
-};
 
 type OutputForm = {
   name: string;
@@ -160,8 +155,6 @@ type Props = {
   setTrimForm: Dispatch<SetStateAction<TrimForm>>;
   outputForm: OutputForm;
   setOutputForm: Dispatch<SetStateAction<OutputForm>>;
-  receiveForm: ReceiveForm;
-  setReceiveForm: Dispatch<SetStateAction<ReceiveForm>>;
   fabricAvailability: FabricAvailability | null;
   checkingAvailability: boolean;
   availableRollOptions: AvailableRollOption[];
@@ -177,18 +170,85 @@ type Props = {
   issueAllMaterials: () => Promise<void>;
   issuingAll: boolean;
   createOutput: (event: FormEvent) => Promise<void>;
-  receiveOrder: (event: FormEvent) => Promise<void>;
   formatMoney: (value?: string | number | null, currency?: string) => string;
   materialStatusClass: (status: string) => string;
 };
 
+
+type TranslateFn = ((key: string, fallback?: string, options?: Record<string, unknown>) => string) | null | undefined;
+
+function tr(t: TranslateFn, key: string, fallback: string, options?: Record<string, unknown>) {
+  if (typeof t !== "function") return fallback;
+  return t(key, fallback, options);
+}
+
+function translateUnit(t: TranslateFn, unit?: string | null) {
+  const raw = String(unit || "").trim();
+  const key = raw.toLowerCase();
+
+  const map: Record<string, string> = {
+    meter: "meter",
+    meters: "meters",
+    metro: "meter",
+    metros: "meters",
+    m: "meters",
+    unit: "unit",
+    units: "units",
+    unidad: "unit",
+    unidades: "units",
+    piece: "piece",
+    pieces: "pieces",
+    pieza: "piece",
+    piezas: "pieces",
+    pcs: "pieces",
+  };
+
+  const normalized = map[key];
+  if (!normalized) return raw;
+
+  return tr(t, `production-orders:units.${normalized}`, raw);
+}
+
+function translateMaterialType(t: TranslateFn, materialType?: string | null) {
+  const key = String(materialType || "").trim().toUpperCase();
+
+  if (key === "TRIM") return tr(t, "production-orders:materials.trim", "Avío");
+  if (key === "FABRIC_ROLL") return tr(t, "production-orders:materials.fabric", "Tela");
+
+  return tr(t, "production-orders:fields.material", "Material");
+}
+
+function translateMaterialBadge(t: TranslateFn, badge?: string | null) {
+  const key = String(badge || "").trim().toUpperCase();
+
+  const map: Record<string, string> = {
+    ENTREGADO: "ISSUED",
+    RESERVADO: "RESERVED",
+    PENDIENTE: "PENDING",
+    BORRADOR: "DRAFT",
+  };
+
+  const normalized = map[key] || key;
+
+  const fallbackMap: Record<string, string> = {
+    ISSUED: "Entregado",
+    RESERVED: "Reservado",
+    PENDING: "Pendiente",
+    DRAFT: "Borrador",
+  };
+
+  return tr(t, `production-orders:materialStatus.${normalized}`, fallbackMap[normalized] || badge || "-");
+}
+
 function CompactMaterialCard({
+  t,
   material,
   onReserve,
   onIssue,
   onRemove,
   materialStatusClass,
 }: {
+  t: TranslateFn;
   material: MaterialCard;
   onReserve: (id: string) => void;
   onIssue: (id: string) => void;
@@ -200,53 +260,53 @@ function CompactMaterialCard({
       <div className="po-compact-card__top">
         <div>
           <div className="po-compact-card__title">
-            {material.description_snapshot || (material.material_type === "TRIM" ? "Avío" : "Tela")}
+            {material.description_snapshot || translateMaterialType(t, material.material_type)}
           </div>
           <div className="po-compact-card__meta">
             <span>
-              {material.planned_quantity} {material.unit}
+              {material.planned_quantity} {translateUnit(t, material.unit)}
             </span>
 
             {material.roll_code ? <span>{material.roll_code}</span> : null}
 
             {material.material_type === "FABRIC_ROLL" ? (
               <span>
-                Libre {Number(material.free || 0).toFixed(2)} {material.unit}
+                {tr(t, "production-orders:materials.free", "Libre")} {Number(material.free || 0).toFixed(2)} {translateUnit(t, material.unit)}
               </span>
             ) : null}
 
             {/* 🔥 NUEVO */}
             {material.unit_cost_snapshot ? (
               <span>
-                $ {Number(material.unit_cost_snapshot).toLocaleString("es-AR")} / {material.unit}
+                $ {Number(material.unit_cost_snapshot).toLocaleString("es-AR")} / {translateUnit(t, material.unit)}
               </span>
             ) : null}
 
             {/* 🔥 COSTO TOTAL */}
             <span style={{ fontWeight: 600 }}>
-              Total: ${material.totalCost.toLocaleString("es-AR")}
+              {tr(t, "production-orders:materials.total", "Total")}: ${material.totalCost.toLocaleString("es-AR")}
             </span>
           </div>
         </div>
 
-        <span className={materialStatusClass(material.badgeLabel)}>{material.badgeLabel}</span>
+        <span className={materialStatusClass(material.badgeLabel)}>{translateMaterialBadge(t, material.badgeLabel)}</span>
       </div>
 
       <div className="po-compact-card__actions">
         {material.canReserve ? (
           <button type="button" className="po-secondary-btn" onClick={() => onReserve(material.id)}>
-            Reservar
+            {tr(t, "production-orders:actions.reserve", "Reservar")}
           </button>
         ) : null}
 
         {material.canIssue ? (
           <button type="button" className="po-primary-btn" onClick={() => onIssue(material.id)}>
-            Entregar
+            {tr(t, "production-orders:actions.issue", "Entregar")}
           </button>
         ) : null}
 
         <button type="button" className="po-ghost-btn" onClick={() => onRemove(material.id)}>
-          Quitar
+          {tr(t, "production-orders:actions.remove", "Quitar")}
         </button>
       </div>
     </article>
@@ -291,6 +351,7 @@ function getProgressPercent(planned: number, produced: number) {
 }
 
 export default function ProductionOrderOperationTab({
+  t,
   order,
   designPhoto,
   uploadingDesignImage,
@@ -303,8 +364,6 @@ export default function ProductionOrderOperationTab({
   setTrimForm,
   outputForm,
   setOutputForm,
-  receiveForm,
-  setReceiveForm,
   fabricAvailability,
   checkingAvailability,
   availableRollOptions,
@@ -320,7 +379,6 @@ export default function ProductionOrderOperationTab({
   issueAllMaterials,
   issuingAll,
   createOutput,
-  receiveOrder,
   materialStatusClass,
 }: Props) {
   const outputCount = useMemo(
@@ -336,68 +394,137 @@ export default function ProductionOrderOperationTab({
 
   return (
     <>
+      <style>{`
+        .po-file-upload-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 40px;
+          padding: 0 14px;
+          border: 1px solid #d8cfc3;
+          border-radius: 14px;
+          background: #fff;
+          color: #2f2940;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+          box-shadow: 0 8px 18px rgba(20, 20, 20, 0.05);
+          transition: transform 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .po-file-upload-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 24px rgba(20, 20, 20, 0.08);
+        }
+      `}</style>
+
       <div className="po-op-rail-layout">
         <div className="po-op-work">
           <section className="po-section-card">
             <div className="po-section-head">
-              <h3>Diseño</h3>
-            </div>
-
-            <div className="po-op-hero">
-              <div className="po-op-hero__image">
-                {designPhoto ? (
-                  <img src={designPhoto} alt={order.target_dress_name} />
-                ) : (
-                  <div className="po-op-hero__empty">Sin imagen de referencia</div>
+              <h3>{tr(t, "production-orders:output.title", "Producción registrada")}</h3>
+              <p>
+                {tr(
+                  t,
+                  "production-orders:output.registerProductionHint",
+                  "Registrá la producción terminada. Se crearán automáticamente los vestidos disponibles para la venta."
                 )}
-              </div>
-
-              <div className="po-op-hero__info">
-                <div className="po-op-hero__card">
-                  <span className="po-op-hero__label">Vestido</span>
-                  <strong>{order.target_dress_name}</strong>
-                  <div className="po-op-hero__chips">
-                    {order.target_dress_code ? <span>Cód. {order.target_dress_code}</span> : null}
-                    {order.target_size ? <span>Talle {order.target_size}</span> : null}
-                    {order.target_color ? <span>{order.target_color}</span> : null}
-                  </div>
-                </div>
-
-                <div className="po-op-hero__card">
-                  <span className="po-op-hero__label">Referencia</span>
-                  <div className="po-op-upload-row">
-                    <input
-                      className="df-pro-input"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadDesignImage(file);
-                      }}
-                    />
-                  </div>
-                  {uploadingDesignImage ? <div className="po-soft-text">Subiendo imagen...</div> : null}
-                  {designImageError ? <div className="po-inline-error">{designImageError}</div> : null}
-                </div>
-
-                <div className="po-op-hero__card">
-                  <span className="po-op-hero__label">Observaciones</span>
-                  <div className="po-op-notes">{order.notes || "Sin observaciones."}</div>
-                </div>
-              </div>
+              </p>
             </div>
-          </section>
 
+            <form onSubmit={createOutput} className="po-op-output-form">
+              <div>
+                <label className="df-pro-label">
+                  {tr(t, "production-orders:fields.producedQuantity", "Cantidad producida")}
+                </label>
+                <input
+                  className="df-pro-input"
+                  type="number"
+                  min="1"
+                  value={outputForm.quantity}
+                  onChange={(e) =>
+                    setOutputForm((prev) => ({ ...prev, quantity: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="df-pro-label">
+                  {tr(t, "production-orders:fields.notes", "Notas")}
+                </label>
+                <input
+                  className="df-pro-input"
+                  placeholder={tr(t, "production-orders:fields.notes", "Notas")}
+                  value={outputForm.notes}
+                  onChange={(e) =>
+                    setOutputForm((prev) => ({ ...prev, notes: e.target.value }))
+                  }
+                />
+              </div>
+
+              <button type="submit" className="po-primary-btn">
+                {tr(t, "production-orders:actions.registerProduction", "Registrar Producción")}
+              </button>
+            </form>
+
+            <div className="po-op-output-list">
+              {outputs.length === 0 ? (
+                <div className="po-empty-state">
+                  {tr(
+                    t,
+                    "production-orders:output.emptyProduction",
+                    "Todavía no hay vestidos generados."
+                  )}
+                </div>
+              ) : (
+                outputs.map((output) => (
+                  <article key={output.id} className="po-op-output-card">
+                    <div className="po-op-output-card__top">
+                      <strong>{output.name}</strong>
+                      <span className="df-status-badge df-status-badge--available">
+                        {tr(t, "production-orders:status.AVAILABLE", "Disponible")}
+                      </span>
+                    </div>
+
+                    <div className="po-op-output-card__meta">
+                      {output.code ? (
+                        <span>
+                          {tr(t, "production-orders:fields.codeShort", "Cód.")} {output.code}
+                        </span>
+                      ) : null}
+                      {output.size ? (
+                        <span>
+                          {tr(t, "production-orders:fields.size", "Talle")} {output.size}
+                        </span>
+                      ) : null}
+                      {output.color ? <span>{output.color}</span> : null}
+                      <span>{output.quantity} u.</span>
+                    </div>
+
+                    {output.dress_id ? (
+                      <div className="po-op-output-card__notes">
+                        {tr(
+                          t,
+                          "production-orders:output.readyForSale",
+                          "Vestido creado y disponible para la venta."
+                        )}
+                      </div>
+                    ) : null}
+                  </article>
+                ))
+              )}
+            </div>
+          </section> 
           <div className="po-op-entry-grid">
             <section className="po-section-card">
               <div className="po-section-head">
-                <h3>Agregar tela</h3>
-                <p>Cargá el insumo principal de la orden.</p>
+                <h3>{tr(t, "production-orders:materials.addFabric", "Agregar tela")}</h3>
+                <p>{tr(t, "production-orders:materials.addFabricHint", "Cargá el insumo principal de la orden.")}</p>
               </div>
 
               <form onSubmit={addFabricMaterial} className="po-op-entry-form">
                 <div>
-                  <label className="df-pro-label">Tela</label>
+                  <label className="df-pro-label">{tr(t, "production-orders:materials.fabric", "Tela")}</label>
                   <select
                     className="df-pro-select"
                     value={fabricForm.fabric_id}
@@ -409,7 +536,7 @@ export default function ProductionOrderOperationTab({
                       }))
                     }
                   >
-                    <option value="">Seleccionar tela</option>
+                    <option value="">{tr(t, "production-orders:materials.selectFabric", "Seleccionar tela")}</option>
                     {fabrics.map((fabric) => (
                       <option key={fabric.id} value={fabric.id}>
                         {fabric.name} {fabric.color ? `· ${fabric.color}` : ""}
@@ -419,7 +546,7 @@ export default function ProductionOrderOperationTab({
                 </div>
 
                 <div>
-                  <label className="df-pro-label">Rollo</label>
+                  <label className="df-pro-label">{tr(t, "production-orders:materials.roll", "Rollo")}</label>
                   <select
                     className="df-pro-select"
                     value={fabricForm.fabric_roll_id}
@@ -427,17 +554,17 @@ export default function ProductionOrderOperationTab({
                       setFabricForm((prev) => ({ ...prev, fabric_roll_id: e.target.value }))
                     }
                   >
-                    <option value="">Seleccionar rollo</option>
+                    <option value="">{tr(t, "production-orders:materials.rollPlaceholder", "Seleccionar rollo")}</option>
                     {availableRollOptions.map((roll) => (
                       <option key={roll.id} value={roll.id}>
-                        {roll.roll_code} · Libre {Number(roll.free_length).toFixed(2)} m
+                        {roll.roll_code} · {tr(t, "production-orders:materials.free", "Libre")} {Number(roll.free_length).toFixed(2)} m
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="df-pro-label">Cantidad</label>
+                  <label className="df-pro-label">{tr(t, "production-orders:fields.quantity", "Cantidad")}</label>
                   <input
                     className="df-pro-input"
                     type="number"
@@ -451,20 +578,20 @@ export default function ProductionOrderOperationTab({
                 </div>
 
                 <div>
-                  <label className="df-pro-label">Unidad</label>
+                  <label className="df-pro-label">{tr(t, "production-orders:fields.unit", "Unidad")}</label>
                   <input
                     className="df-pro-input"
                     value={fabricForm.unit || "metros"}
                     onChange={(e) =>
                       setFabricForm((prev) => ({ ...prev, unit: e.target.value }))
                     }
-                    placeholder="metros"
+                    placeholder={tr(t, "production-orders:units.meters", "metros")}
                   />
                 </div>
 
                 <div className="po-op-entry-form__action">
                   <button type="submit" className="po-primary-btn">
-                    Agregar tela
+                    {tr(t, "production-orders:actions.addFabric", "Agregar tela")}
                   </button>
                 </div>
               </form>
@@ -474,30 +601,30 @@ export default function ProductionOrderOperationTab({
                   <strong>{fabricAvailability.fabric_name}</strong>
                   <span>{fabricAvailability.message}</span>
                   <small>
-                    Requiere {fabricAvailability.required_meters} m · Disponible{" "}
+                    {tr(t, "production-orders:materials.requires", "Requiere")} {fabricAvailability.required_meters} m · {tr(t, "production-orders:materials.available", "Disponible")}{" "}
                     {fabricAvailability.total_available} m
                   </small>
                 </div>
               ) : checkingAvailability ? (
-                <div className="po-soft-text">Validando disponibilidad...</div>
+                <div className="po-soft-text">{tr(t, "production-orders:materials.checkingAvailability", "Validando disponibilidad...")}</div>
               ) : null}
             </section>
 
             <section className="po-section-card">
               <div className="po-section-head">
-                <h3>Agregar avío</h3>
-                <p>Cargá insumos complementarios.</p>
+                <h3>{tr(t, "production-orders:materials.addTrim", "Agregar avío")}</h3>
+                <p>{tr(t, "production-orders:materials.addTrimHint", "Cargá insumos complementarios.")}</p>
               </div>
 
               <form onSubmit={addTrimMaterial} className="po-op-entry-form po-op-entry-form--trim">
                 <div>
-                  <label className="df-pro-label">Avío</label>
+                  <label className="df-pro-label">{tr(t, "production-orders:materials.trim", "Avío")}</label>
                   <select
                     className="df-pro-select"
                     value={trimForm.trim_id}
                     onChange={(e) => setTrimForm((prev) => ({ ...prev, trim_id: e.target.value }))}
                   >
-                    <option value="">Seleccionar avío</option>
+                    <option value="">{tr(t, "production-orders:materials.selectTrim", "Seleccionar avío")}</option>
                     {trims.map((trim) => (
                       <option key={trim.id} value={trim.id}>
                         {trim.name} · {trim.code}
@@ -507,7 +634,7 @@ export default function ProductionOrderOperationTab({
                 </div>
 
                 <div>
-                  <label className="df-pro-label">Cantidad</label>
+                  <label className="df-pro-label">{tr(t, "production-orders:fields.quantity", "Cantidad")}</label>
                   <input
                     className="df-pro-input"
                     type="number"
@@ -522,103 +649,32 @@ export default function ProductionOrderOperationTab({
 
                 <div className="po-op-entry-form__action">
                   <button type="submit" className="po-primary-btn">
-                    Agregar avío
+                    {tr(t, "production-orders:actions.addTrim", "Agregar avío")}
                   </button>
                 </div>
               </form>
             </section>
           </div>
-
-          <section className="po-section-card">
-            <div className="po-section-head">
-              <h3>Outputs</h3>
-              <p>{outputCount} unidades registradas</p>
-            </div>
-
-            <form onSubmit={createOutput} className="po-op-output-form">
-              <input
-                className="df-pro-input"
-                placeholder="Nombre"
-                value={outputForm.name}
-                onChange={(e) => setOutputForm((prev) => ({ ...prev, name: e.target.value }))}
-              />
-              <input
-                className="df-pro-input"
-                placeholder="Código"
-                value={outputForm.code}
-                onChange={(e) => setOutputForm((prev) => ({ ...prev, code: e.target.value }))}
-              />
-              <input
-                className="df-pro-input"
-                placeholder="Talle"
-                value={outputForm.size}
-                onChange={(e) => setOutputForm((prev) => ({ ...prev, size: e.target.value }))}
-              />
-              <input
-                className="df-pro-input"
-                placeholder="Color"
-                value={outputForm.color}
-                onChange={(e) => setOutputForm((prev) => ({ ...prev, color: e.target.value }))}
-              />
-              <input
-                className="df-pro-input"
-                type="number"
-                min="1"
-                placeholder="Cantidad"
-                value={outputForm.quantity}
-                onChange={(e) => setOutputForm((prev) => ({ ...prev, quantity: e.target.value }))}
-              />
-              <button type="submit" className="po-primary-btn">
-                Agregar output
-              </button>
-            </form>
-
-            <div className="po-op-output-list">
-              {outputs.length === 0 ? (
-                <div className="po-empty-state">Todavía no hay outputs creados.</div>
-              ) : (
-                outputs.map((output) => (
-                  <article key={output.id} className="po-op-output-card">
-                    <div className="po-op-output-card__top">
-                      <strong>{output.name}</strong>
-                      <span className="df-status-badge df-status-badge--completed">
-                        {output.quantity} u.
-                      </span>
-                    </div>
-
-                    <div className="po-op-output-card__meta">
-                      {output.code ? <span>Cód. {output.code}</span> : null}
-                      {output.size ? <span>Talle {output.size}</span> : null}
-                      {output.color ? <span>{output.color}</span> : null}
-                    </div>
-
-                    {output.notes ? (
-                      <div className="po-op-output-card__notes">{output.notes}</div>
-                    ) : null}
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
         </div>
 
         <aside className="po-op-rail">
           <div className="po-op-rail__sticky">
             <section className="po-section-card">
               <div className="po-section-head">
-                <h3>Asignado</h3>
-                <p>{assignedCount} ítems vinculados a la orden.</p>
+                <h3>{tr(t, "production-orders:operation.assigned.title", "Asignado")}</h3>
+                <p>{tr(t, "production-orders:operation.assigned.hint", "{{count}} ítems vinculados a la orden.", { count: assignedCount })}</p>
               </div>
 
               <div className="po-op-rail-groups">
-                <RailAccordion title="Telas" count={fabricMaterials.length} defaultOpen>
+                <RailAccordion title={tr(t, "production-orders:materials.fabrics", "Telas")} count={fabricMaterials.length} defaultOpen>
                   <div className="po-compact-list">
                     {fabricMaterials.length === 0 ? (
-                      <div className="po-empty-state">No hay telas asignadas.</div>
+                      <div className="po-empty-state">{tr(t, "production-orders:materials.noFabrics", "No hay telas asignadas.")}</div>
                     ) : (
                       fabricMaterials.map((material) => (
                         <CompactMaterialCard
                           key={material.id}
+                          t={t}
                           material={material}
                           onReserve={reserveMaterial}
                           onIssue={issueMaterial}
@@ -630,14 +686,15 @@ export default function ProductionOrderOperationTab({
                   </div>
                 </RailAccordion>
 
-                <RailAccordion title="Avíos" count={trimMaterials.length}>
+                <RailAccordion title={tr(t, "production-orders:materials.trims", "Avíos")} count={trimMaterials.length}>
                   <div className="po-compact-list">
                     {trimMaterials.length === 0 ? (
-                      <div className="po-empty-state">No hay avíos asignados.</div>
+                      <div className="po-empty-state">{tr(t, "production-orders:materials.noTrims", "No hay avíos asignados.")}</div>
                     ) : (
                       trimMaterials.map((material) => (
                         <CompactMaterialCard
                           key={material.id}
+                          t={t}
                           material={material}
                           onReserve={reserveMaterial}
                           onIssue={issueMaterial}
@@ -653,7 +710,7 @@ export default function ProductionOrderOperationTab({
 
             <section className="po-section-card po-quick-rail-card">
               <div className="po-section-head">
-                <h3>Acciones rápidas</h3>
+                <h3>{tr(t, "production-orders:operation.quickActions.title", "Acciones rápidas")}</h3>
               </div>
 
               <div className="po-quick-rail">
@@ -663,49 +720,14 @@ export default function ProductionOrderOperationTab({
                   disabled={issuingAll}
                   onClick={issueAllMaterials}
                 >
-                  {issuingAll ? "Entregando..." : "Entregar reservados"}
+                  {issuingAll ? tr(t, "production-orders:actions.issuing", "Entregando...") : tr(t, "production-orders:actions.issueReserved", "Entregar reservados")}
                 </button>
 
                 <div className="po-quick-rail__hint">
                   {quickIssueReadyCount > 0
-                    ? `${quickIssueReadyCount} materiales listos para entregar`
-                    : "No hay materiales reservados listos"}
+                    ? tr(t, "production-orders:operation.quickActions.readyToIssue", "{{count}} materiales listos para entregar", { count: quickIssueReadyCount })
+                    : tr(t, "production-orders:operation.quickActions.noneReady", "No hay materiales reservados listos")}
                 </div>
-
-                <form onSubmit={receiveOrder} className="po-op-side-form">
-                  <input
-                    className="df-pro-input"
-                    type="number"
-                    min="0"
-                    placeholder="Cantidad producida"
-                    value={receiveForm.produced_quantity}
-                    onChange={(e) =>
-                      setReceiveForm((prev) => ({ ...prev, produced_quantity: e.target.value }))
-                    }
-                  />
-
-                  <select
-                    className="df-pro-select"
-                    value={receiveForm.status}
-                    onChange={(e) => setReceiveForm((prev) => ({ ...prev, status: e.target.value }))}
-                  >
-                    <option value="PARTIALLY_RECEIVED">Parcialmente recibida</option>
-                    <option value="COMPLETED">Completada</option>
-                  </select>
-
-                  <input
-                    className="df-pro-input"
-                    placeholder="Notas de recepción"
-                    value={receiveForm.received_notes}
-                    onChange={(e) =>
-                      setReceiveForm((prev) => ({ ...prev, received_notes: e.target.value }))
-                    }
-                  />
-
-                  <button type="submit" className="po-secondary-btn">
-                    Registrar recepción
-                  </button>
-                </form>
               </div>
             </section>
           </div>
@@ -715,17 +737,17 @@ export default function ProductionOrderOperationTab({
       <div className="po-bottom-bar">
         <div className="po-bottom-bar__stats">
           <div className="po-bottom-bar__stat">
-            <span>Asignado</span>
+            <span>{tr(t, "production-orders:operation.assigned.title", "Asignado")}</span>
             <strong>{assignedCount}</strong>
           </div>
 
           <div className="po-bottom-bar__stat">
-            <span>Outputs</span>
+            <span>{tr(t, "production-orders:output.title", "Producción")}</span>
             <strong>{outputCount}</strong>
           </div>
 
           <div className="po-bottom-bar__stat po-bottom-bar__stat--wide">
-            <span>Progreso</span>
+            <span>{tr(t, "production-orders:operation.summary.progress", "Progreso")}</span>
             <div className="po-bottom-bar__progress">
               <div className="po-progress-track">
                 <div className="po-progress-fill" style={{ width: `${progressPercent}%` }} />
@@ -742,7 +764,7 @@ export default function ProductionOrderOperationTab({
             disabled={issuingAll}
             onClick={issueAllMaterials}
           >
-            {issuingAll ? "Entregando..." : "Entregar reservados"}
+            {issuingAll ? tr(t, "production-orders:actions.issuing", "Entregando...") : tr(t, "production-orders:actions.issueReserved", "Entregar reservados")}
           </button>
         </div>
       </div>

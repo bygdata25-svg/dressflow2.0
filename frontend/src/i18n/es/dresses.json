@@ -3,7 +3,8 @@
   "empty": "No hay vestidos cargados todavía.",
   "hero": {
     "eyebrow": "Gestión de colección",
-    "subtitle": "Administrá tu inventario de vestidos con una vista de catálogo premium y control operativo en un solo lugar."
+    "subtitle": "Administrá tu inventario de vestidos con una vista de catálogo premium y control operativo en un solo lugar.",
+    "catalogSubtitle": "Gestioná todos los vestidos disponibles en tu catálogo."
   },
   "fields": {
     "image": "Imagen",
@@ -13,8 +14,11 @@
     "size": "Talle",
     "color": "Color",
     "status": "Estado",
-    "purchasePrice": "Precio de compra",
-    "rentalPrice": "Precio de alquiler"
+    "purchasePrice": "Precio de venta",
+    "rentalPrice": "Precio alquiler",
+    "capsule": "Cápsula",
+    "noCapsule": "Sin cápsula",
+    "salePrice": "Precio venta"
   },
   "status": {
     "AVAILABLE": "Disponible",
@@ -36,12 +40,15 @@
     "error": "No se pudo eliminar el vestido."
   },
   "images": {
-    "title": "Imágenes",
-    "noImage": "Sin foto",
+    "title": "Imagen",
+    "noImage": "Sin imagen",
     "mainImage": "Imagen principal",
     "uploadError": "No se pudo subir la imagen.",
     "deleteError": "No se pudo eliminar la imagen.",
-    "setPrimaryError": "No se pudo actualizar la imagen principal."
+    "setPrimaryError": "No se pudo actualizar la imagen principal.",
+    "previewAlt": "Vista previa del vestido",
+    "selectImage": "Seleccionar imagen",
+    "removeImage": "Quitar imagen"
   },
   "history": {
     "title": "Historial de préstamos",
@@ -49,7 +56,11 @@
     "customer": "Cliente",
     "start": "Inicio",
     "expectedReturn": "Devolución esperada",
-    "actualReturn": "Devolución real"
+    "actualReturn": "Devolución real",
+    "statusTitle": "Historial de estado",
+    "statusSubtitle": "Seguimiento operativo del vestido.",
+    "loading": "Cargando historial...",
+    "noStatusChanges": "Todavía no hay cambios de estado registrados."
   },
   "edit": {
     "title": "Editar vestido",
@@ -60,20 +71,97 @@
   "form": {
     "title": "Crear vestido",
     "placeholders": {
-      "code": "Ej: DR-001",
-      "name": "Ej: Vestido noche negro",
-      "description": "Detalle del vestido",
-      "size": "Ej: M",
-      "color": "Ej: Negro",
+      "code": "V-001",
+      "name": "Vestido Gala",
+      "description": "Descripción",
+      "size": "M",
+      "color": "Negro",
       "purchasePrice": "Ej: 120000",
-      "rentalPrice": "Ej: 35000"
+      "rentalPrice": "Ej: 35000",
+      "price": "0.00"
     },
     "validation": {
       "required": "Código y nombre son obligatorios."
     },
     "messages": {
       "created": "Vestido creado correctamente.",
-      "error": "No se pudo crear el vestido."
+      "error": "No se pudo guardar la imagen del vestido."
+    }
+  },
+  "sections": {
+    "inventory": "Inventario"
+  },
+  "actions": {
+    "new": "Nuevo vestido",
+    "loan": "Prestar vestido",
+    "rent": "Alquilar vestido",
+    "cleaning": "Enviar a limpieza",
+    "maintenance": "Enviar a reparación",
+    "available": "Marcar como disponible"
+  },
+  "states": {
+    "loading": "Cargando vestidos...",
+    "empty": "No hay vestidos cargados."
+  },
+  "errors": {
+    "available": "No se pudo marcar el vestido como disponible.",
+    "cleaning": "No se pudo enviar el vestido a limpieza.",
+    "maintenance": "No se pudo enviar el vestido a reparación."
+  },
+  "operations": {
+    "loan": "Préstamo",
+    "rental": "Alquiler",
+    "loanTitle": "Prestar vestido",
+    "rentalTitle": "Alquilar vestido",
+    "suggestedValue": "Valor sugerido",
+    "customer": "Cliente",
+    "selectCustomer": "Seleccionar cliente",
+    "startDate": "Fecha de salida",
+    "returnDate": "Fecha de devolución",
+    "rentalValue": "Valor del alquiler",
+    "rentalValuePlaceholder": "Ej: 150.00",
+    "notes": "Notas",
+    "rentalNotesPlaceholder": "Ej: reserva para evento, condiciones, observaciones...",
+    "loanNotesPlaceholder": "Notas internas del préstamo",
+    "confirmRental": "Confirmar alquiler",
+    "confirmLoan": "Confirmar préstamo",
+    "registeringRental": "Registrando alquiler...",
+    "registeringLoan": "Registrando préstamo...",
+    "validation": {
+      "customerRequired": "Seleccioná un cliente.",
+      "startDateRequired": "Ingresá la fecha de salida."
+    },
+    "messages": {
+      "rentalError": "No se pudo registrar el alquiler.",
+      "loanError": "No se pudo registrar el préstamo."
+    }
+  },
+  "customer": {
+    "newCustomer": "Nuevo cliente",
+    "hideInlineCreate": "Ocultar alta de cliente",
+    "fields": {
+      "code": "Código",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Email",
+      "phone": "Teléfono",
+      "notes": "Notas"
+    },
+    "placeholders": {
+      "code": "CLI-001",
+      "notes": "Observaciones del cliente"
+    },
+    "actions": {
+      "create": "Crear cliente",
+      "creating": "Creando..."
+    },
+    "validation": {
+      "codeRequired": "El código del cliente es obligatorio.",
+      "firstNameRequired": "El nombre es obligatorio.",
+      "lastNameRequired": "El apellido es obligatorio."
+    },
+    "messages": {
+      "createError": "No se pudo crear el cliente."
     }
   }
 }

@@ -1,0 +1,173 @@
+{
+  "title": "Ventas",
+  "hero": {
+    "eyebrow": "Operaciones",
+    "subtitle": "Gestioná ventas unificadas de vestidos y accesorios"
+  },
+  "modal": {
+    "eyebrow": "Operación comercial",
+    "title": "Nueva venta",
+    "subtitle": "Armá una venta unificada con una experiencia más ágil, visual y ordenada."
+  },
+  "actions": {
+    "new": "Nueva venta",
+    "create": "Crear venta",
+    "cancel": "Cancelar",
+    "newCustomer": "Nuevo cliente",
+    "saving": "Guardando...",
+    "confirming": "Confirmando...",
+    "confirmSale": "Confirmar venta",
+    "addPayment": "Agregar pago",
+    "removePayment": "Eliminar pago",
+    "removeItem": "Eliminar ítem",
+    "saveCustomer": "Guardar cliente"
+  },
+  "sections": {
+    "list": "Listado de ventas",
+    "listSubtitle": "Consultá las operaciones registradas y su resumen general.",
+    "customer": "Cliente",
+    "customerSubtitle": "Buscá o creá un cliente sin salir de la venta.",
+    "items": "Agregar ítems",
+    "itemsSubtitle": "Sumá vestidos y accesorios con búsqueda rápida.",
+    "payments": "Pagos"
+  },
+  "fields": {
+    "searchCustomer": "Buscar cliente",
+    "selectedCustomer": "Cliente seleccionado",
+    "dress": "Vestido",
+    "accessory": "Accesorio",
+    "notes": "Notas",
+    "amount": "Monto",
+    "quantity": "Cantidad",
+    "qtyShort": "Cant.",
+    "price": "Precio",
+    "total": "Total"
+  },
+  "customer": {
+    "unselected": "Sin seleccionar",
+    "unnamed": "Cliente sin nombre"
+  },
+  "placeholders": {
+    "searchCustomer": "Escribí nombre del cliente",
+    "searchDress": "Buscar vestido por código o nombre",
+    "searchAccessory": "Buscar accesorio por código o nombre",
+    "loadingCustomers": "Cargando clientes...",
+    "loadingDresses": "Cargando vestidos...",
+    "loadingAccessories": "Cargando accesorios...",
+    "notes": "Observaciones de la venta...",
+    "exchangeRate": "Ej: 1200",
+    "paymentAmount": "Monto",
+    "paymentReference": "Referencia (opcional)"
+  },
+  "messages": {
+    "loading": "Cargando ventas...",
+    "refreshing": "Actualizando...",
+    "recordsCount": "{{count}} registro",
+    "recordsCount_plural": "{{count}} registros",
+    "loadingHint": "Estamos trayendo la información más reciente.",
+    "emptySales": "Aún no hay ventas registradas.",
+    "emptySalesHint": "Iniciá una nueva operación para comenzar.",
+    "emptyItems": "Agregá vestidos o accesorios para comenzar la venta.",
+    "noCustomers": "No se encontraron clientes.",
+    "noAccessories": "No se encontraron accesorios.",
+    "noDresses": "No hay vestidos disponibles.",
+    "saleSuccess": "Venta guardada correctamente",
+    "saleSuccessWithNumber": "Venta {{number}} guardada correctamente",
+    "saleError": "No se pudo guardar la venta.",
+    "customerRequired": "Debés seleccionar un cliente.",
+    "itemsRequired": "Debés agregar al menos un ítem.",
+    "paymentRequired": "Debés cargar al menos una forma de pago.",
+    "invalidPaymentAmount": "Ingresá un monto de pago mayor a 0.",
+    "invalidQuantity": "La cantidad de todos los ítems debe ser mayor a 0.",
+    "invalidItems": "Hay ítems incompletos o inválidos.",
+    "invalidPayments": "Hay pagos incompletos o inválidos.",
+    "exchangeRateRequired": "Debés ingresar un tipo de cambio válido para convertir entre ARS y USD.",
+    "customerNameRequired": "Debés ingresar el nombre del cliente.",
+    "customerCreated": "Cliente creado correctamente.",
+    "customerCreateError": "No se pudo crear el cliente."
+  },
+  "items": {
+    "dress": "Vestido",
+    "accessory": "Accesorio",
+    "free": "Bonificado",
+    "perUnit": "por unidad",
+    "item": "Ítem"
+  },
+  "payments": {
+    "title": "Formas de pago",
+    "empty": "Todavía no hay pagos cargados.",
+    "emptyShort": "Sin pagos cargados.",
+    "detail": "Detalle fino",
+    "totalArs": "Total pagos ARS",
+    "totalUsd": "Total pagos USD",
+    "balanceArs": "Saldo ARS",
+    "balanceUsd": "Saldo USD",
+    "differenceEquivalentArs": "Diferencia equivalente ARS",
+    "methods": {
+      "cash": "Efectivo",
+      "transfer": "Transferencia",
+      "debit": "Débito",
+      "credit": "Crédito",
+      "mercadopago": "Mercado Pago",
+      "other": "Otro"
+    }
+  },
+  "status": {
+    "PAID": "Pagada",
+    "PARTIAL": "Pago parcial",
+    "PENDING": "Pendiente",
+    "COMPLETED": "Completada",
+    "CANCELLED": "Cancelada"
+  },
+  "summary": {
+    "total": "TOTAL",
+    "mixed": "TOTAL MIXTO",
+    "emptyHint": "Agregá ítems para ver el resumen",
+    "usdHint": "Venta expresada en USD",
+    "arsHint": "Venta expresada en ARS",
+    "exchangeRateHint": "Cargá tipo de cambio para ver equivalente consolidado",
+    "customer": "Cliente",
+    "paymentStatus": "Estado de pago",
+    "items": "Ítems",
+    "units": "Unidades",
+    "itemsUsd": "Total ítems USD",
+    "itemsArs": "Total ítems ARS",
+    "equivalentArs": "Total equivalente ARS",
+    "defineExchangeRate": "Definí TC",
+    "paidUsd": "Pagado USD",
+    "paidArs": "Pagado ARS",
+    "paidEquivalentArs": "Pagado equivalente ARS",
+    "exchangeRate": "Tipo de cambio USD → ARS",
+    "exchangeRateWarning": "Ingresá el tipo de cambio solo si querés consolidar una operación mixta.",
+    "usdItemsEquivalent": "Equivalente de ítems USD en ARS:",
+    "arsItemsEquivalent": "Equivalente de ítems en ARS:"
+  },
+  "table": {
+    "number": "Número",
+    "date": "Fecha",
+    "customer": "Cliente",
+    "currency": "Moneda",
+    "items": "Ítems",
+    "payments": "Pagos",
+    "total": "Total",
+    "status": "Estado"
+  },
+  "customerModal": {
+    "eyebrow": "Alta rápida",
+    "title": "Nuevo cliente",
+    "subtitle": "Crealo desde la venta y seguí el flujo sin salir del modal.",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Email",
+    "phone": "Teléfono",
+    "firstNamePlaceholder": "Nombre",
+    "lastNamePlaceholder": "Apellido",
+    "emailPlaceholder": "cliente@email.com",
+    "phonePlaceholder": "Teléfono"
+  },
+  "currency": {
+    "USD": "USD",
+    "ARS": "ARS",
+    "MIXED": "Mixto"
+  }
+}

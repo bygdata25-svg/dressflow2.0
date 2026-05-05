@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { applyTenantBranding } from "../lib/tenantBranding";
 import "./DressesPage.css";
@@ -6,16 +7,22 @@ import "./DressesPage.css";
 type MeResponse = {
   tenant_logo_url?: string | null;
   tenant_primary_color?: string | null;
+  tenant_default_language?: "es" | "en" | null;
 };
 
 export default function TenantBrandingPage() {
+  const { t } = useTranslation("branding");
+
   const [logo, setLogo] = useState<string | null>(null);
   const [primaryColor, setPrimaryColor] = useState("#3d3648");
+  const [defaultLanguage, setDefaultLanguage] = useState<"es" | "en">("es");
+
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   const saveTimeout = useRef<number | null>(null);
   const successTimeout = useRef<number | null>(null);
@@ -24,12 +31,8 @@ export default function TenantBrandingPage() {
     void loadBranding();
 
     return () => {
-      if (saveTimeout.current) {
-        clearTimeout(saveTimeout.current);
-      }
-      if (successTimeout.current) {
-        clearTimeout(successTimeout.current);
-      }
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+      if (successTimeout.current) clearTimeout(successTimeout.current);
     };
   }, []);
 
@@ -41,9 +44,7 @@ export default function TenantBrandingPage() {
       primary_color: primaryColor,
     });
 
-    if (saveTimeout.current) {
-      clearTimeout(saveTimeout.current);
-    }
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
 
     saveTimeout.current = window.setTimeout(async () => {
       try {
@@ -53,13 +54,12 @@ export default function TenantBrandingPage() {
 
         await api.put("/tenant-branding", {
           primary_color: primaryColor,
+          default_language: defaultLanguage,
         });
 
-        setSuccess("Color guardado automáticamente.");
+        setSuccess(t("color.saved"));
 
-        if (successTimeout.current) {
-          clearTimeout(successTimeout.current);
-        }
+        if (successTimeout.current) clearTimeout(successTimeout.current);
 
         successTimeout.current = window.setTimeout(() => {
           setSuccess("");
@@ -68,28 +68,29 @@ export default function TenantBrandingPage() {
         const detail = err?.response?.data?.detail;
         if (typeof detail === "string") setError(detail);
         else if (detail?.message) setError(detail.message);
-        else setError("No se pudo guardar el color.");
+        else setError(t("color.saveError"));
       } finally {
         setSaving(false);
       }
     }, 800);
 
     return () => {
-      if (saveTimeout.current) {
-        clearTimeout(saveTimeout.current);
-      }
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
-  }, [primaryColor, logo, loaded]);
+  }, [primaryColor, defaultLanguage, logo, loaded, t]);
 
   const loadBranding = async () => {
     try {
       setError("");
       const res = await api.get<MeResponse>("/auth/me");
+
       const currentLogo = res.data.tenant_logo_url || null;
       const currentColor = res.data.tenant_primary_color || "#3d3648";
+      const currentLanguage = res.data.tenant_default_language || "es";
 
       setLogo(currentLogo);
       setPrimaryColor(currentColor);
+      setDefaultLanguage(currentLanguage);
 
       applyTenantBranding({
         logo_url: currentLogo,
@@ -101,7 +102,7 @@ export default function TenantBrandingPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo cargar el branding.");
+      else setError(t("loadError"));
     }
   };
 
@@ -129,11 +130,9 @@ export default function TenantBrandingPage() {
         primary_color: primaryColor,
       });
 
-      setSuccess("Logo actualizado correctamente.");
+      setSuccess(t("logo.updated"));
 
-      if (successTimeout.current) {
-        clearTimeout(successTimeout.current);
-      }
+      if (successTimeout.current) clearTimeout(successTimeout.current);
 
       successTimeout.current = window.setTimeout(() => {
         setSuccess("");
@@ -142,7 +141,7 @@ export default function TenantBrandingPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo subir el logo.");
+      else setError(t("logo.uploadError"));
     } finally {
       setUploading(false);
     }
@@ -162,11 +161,9 @@ export default function TenantBrandingPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Identidad visual</p>
-          <h1 className="df-pro-page__title">Branding</h1>
-          <p className="df-pro-page__subtitle">
-            Personalizá la identidad visual de tu empresa dentro de DressFlow.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("subtitle")}</p>
         </div>
       </header>
 
@@ -200,8 +197,11 @@ export default function TenantBrandingPage() {
         </section>
       )}
 
+      {/* LOGO */}
       <section className="df-pro-card">
-        <h3 style={{ marginTop: 0, marginBottom: 18 }}>Logo</h3>
+        <h3 style={{ marginTop: 0, marginBottom: 18 }}>
+          {t("logo.title")}
+        </h3>
 
         <div
           style={{
@@ -227,7 +227,7 @@ export default function TenantBrandingPage() {
             {logo ? (
               <img
                 src={logo}
-                alt="Tenant logo"
+                alt={t("logo.alt")}
                 style={{
                   maxWidth: "100%",
                   maxHeight: "100%",
@@ -242,41 +242,80 @@ export default function TenantBrandingPage() {
                   textAlign: "center",
                 }}
               >
-                Sin logo
+                {t("logo.noLogo")}
               </span>
             )}
           </div>
 
           <div style={{ display: "grid", gap: 10 }}>
             <label className="df-pro-label" style={{ marginBottom: 0 }}>
-              Subir logo
+              {t("logo.upload")}
             </label>
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  void handleUpload(e.target.files[0]);
-                }
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                flexWrap: "wrap",
               }}
-            />
+            >
+              <label
+                htmlFor="tenant-logo-upload"
+                style={{
+                  background: primaryColor,
+                  color: "#fff",
+                  padding: "8px 14px",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  boxShadow: "0 8px 18px rgba(61, 54, 72, 0.12)",
+                }}
+              >
+                {t("logo.selectFile")}
+              </label>
+
+              <span style={{ fontSize: 13, color: "#8a7f78" }}>
+                {selectedFileName || t("logo.noFileSelected")}
+              </span>
+
+              <input
+                id="tenant-logo-upload"
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+
+                  if (file) {
+                    setSelectedFileName(file.name);
+                    void handleUpload(file);
+                  } else {
+                    setSelectedFileName(null);
+                  }
+                }}
+              />
+            </div>
 
             <span style={{ fontSize: 12, color: "#8a7f78" }}>
-              Recomendado: PNG con fondo transparente.
+              {t("logo.recommended")}
             </span>
 
             {uploading && (
               <span style={{ fontSize: 13, color: "#8a7f78" }}>
-                Subiendo logo...
+                {t("logo.uploading")}
               </span>
             )}
           </div>
         </div>
       </section>
 
+      {/* COLOR */}
       <section className="df-pro-card">
-        <h3 style={{ marginTop: 0, marginBottom: 18 }}>Color principal</h3>
+        <h3 style={{ marginTop: 0, marginBottom: 18 }}>
+          {t("color.title")}
+        </h3>
 
         <div
           style={{
@@ -328,7 +367,7 @@ export default function TenantBrandingPage() {
               fontWeight: 600,
             }}
           >
-            {saving ? "Guardando..." : "Autosave activado"}
+            {saving ? t("color.saving") : t("color.autosave")}
           </span>
         </div>
 
@@ -345,10 +384,58 @@ export default function TenantBrandingPage() {
             transition: "background 180ms ease",
           }}
         >
-          <span style={{ fontSize: 14, opacity: 0.85 }}>Vista previa</span>
-          <span style={{ fontSize: 28, fontWeight: 700 }}>Preview de marca</span>
+          <span style={{ fontSize: 14, opacity: 0.85 }}>
+            {t("preview.label")}
+          </span>
+          <span style={{ fontSize: 28, fontWeight: 700 }}>
+            {t("preview.title")}
+          </span>
           <span style={{ fontSize: 14, opacity: 0.92 }}>
-            Así se verán botones, acentos y elementos principales de la interfaz.
+            {t("preview.description")}
+          </span>
+        </div>
+      </section>
+
+      {/* LANGUAGE */}
+      <section className="df-pro-card">
+        <h3 style={{ marginTop: 0, marginBottom: 18 }}>
+          {t("language.title")}
+        </h3>
+
+        <div
+          style={{
+            display: "grid",
+            gap: 10,
+            maxWidth: 420,
+          }}
+        >
+          <label className="df-pro-label">
+            {t("language.defaultTenantLanguage")}
+          </label>
+
+          <select
+            className="df-pro-select"
+            value={defaultLanguage}
+            onChange={(e) => {
+              setError("");
+              setSuccess("");
+              setDefaultLanguage(e.target.value as "es" | "en");
+            }}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid #eadfd7",
+              background: "#fff",
+              fontWeight: 600,
+              color: "#3d3648",
+            }}
+          >
+            <option value="es">{t("language.spanish")}</option>
+            <option value="en">{t("language.english")}</option>
+          </select>
+
+          <span style={{ fontSize: 12, color: "#8a7f78" }}>
+            {t("language.help")}
           </span>
         </div>
       </section>

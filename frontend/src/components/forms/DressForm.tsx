@@ -92,25 +92,10 @@ const textareaStyle: React.CSSProperties = {
   resize: "vertical",
 };
 
-function formatStatus(status: string) {
-  switch (String(status || "").toUpperCase()) {
-    case "AVAILABLE":
-      return "Disponible";
-    case "CLEANING":
-      return "Limpieza";
-    case "MAINTENANCE":
-      return "Mantenimiento";
-    case "LOANED":
-      return "Prestado";
-    case "RENTED":
-      return "Alquilado";
-    case "SOLD":
-      return "Vendido";
-    case "RETIRED":
-      return "Retirado";
-    default:
-      return status || "—";
-  }
+function formatStatus(t: any, status: string) {
+  const key = String(status || "").toUpperCase();
+  if (!key) return "—";
+  return t(`dresses:status.${key}`, status || "—");
 }
 
 function statusIcon(status: string) {
@@ -175,7 +160,7 @@ export function DressForm({
   onUpdated,
   onCancel,
 }: DressFormProps) {
-  const { t } = useTranslation(["common", "dresses"]);
+  const { t, i18n } = useTranslation(["common", "dresses"]);
 
   const [form, setForm] = useState<DressFormState>(initialState);
   const [capsules, setCapsules] = useState<Capsule[]>([]);
@@ -198,7 +183,7 @@ export function DressForm({
         const data = await fetchCapsules();
         setCapsules(data.filter((c) => c.is_active));
       } catch (err) {
-        console.error("Error cargando cápsulas", err);
+        console.error("Error loading capsules", err);
       } finally {
         setLoadingCapsules(false);
       }
@@ -257,7 +242,7 @@ export function DressForm({
         );
         setStatusHistory(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
-        console.error("Error cargando historial de estado", err);
+        console.error("Error loading dress status history", err);
         setStatusHistory([]);
       } finally {
         setLoadingHistory(false);
@@ -367,7 +352,7 @@ export function DressForm({
     setError("");
 
     if (!payload.code || !payload.name) {
-      setError("Código y nombre son obligatorios.");
+      setError(t("dresses:form.validation.required"));
       return;
     }
 
@@ -394,7 +379,7 @@ export function DressForm({
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo guardar la imagen del vestido.");
+      else setError(t("dresses:form.messages.error"));
     } finally {
       setSubmitting(false);
     }
@@ -510,7 +495,7 @@ export function DressForm({
         }}
       >
         <div>
-          <label style={labelStyle}>Imagen</label>
+          <label style={labelStyle}>{t("dresses:images.title")}</label>
 
           <div
             style={{
@@ -533,7 +518,7 @@ export function DressForm({
               {previewUrl ? (
                 <img
                   src={previewUrl}
-                  alt="Preview vestido"
+                  alt={t("dresses:images.previewAlt", "Vista previa del vestido")}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -580,7 +565,7 @@ export function DressForm({
                   color: "#111827",
                 }}
               >
-                Seleccionar imagen
+                {t("dresses:images.selectImage", "Seleccionar imagen")}
                 <input
                   type="file"
                   accept="image/*"
@@ -615,7 +600,7 @@ export function DressForm({
                       color: "#111827",
                     }}
                   >
-                    Quitar imagen
+                    {t("dresses:images.removeImage", "Quitar imagen")}
                   </button>
                 </>
               )}
@@ -636,7 +621,7 @@ export function DressForm({
               className="df-pro-input"
               value={form.code}
               onChange={handleChange("code")}
-              placeholder="V-001"
+              placeholder={t("dresses:form.placeholders.code")}
               readOnly={mode === "edit"}
               style={{
                 ...inputStyle,
@@ -658,7 +643,7 @@ export function DressForm({
               style={inputStyle}
               value={form.name}
               onChange={handleChange("name")}
-              placeholder="Vestido Gala"
+              placeholder={t("dresses:form.placeholders.name")}
             />
           </div>
 
@@ -669,7 +654,7 @@ export function DressForm({
               style={inputStyle}
               value={form.size}
               onChange={handleChange("size")}
-              placeholder="M"
+              placeholder={t("dresses:form.placeholders.size")}
             />
           </div>
 
@@ -680,12 +665,12 @@ export function DressForm({
               style={inputStyle}
               value={form.color}
               onChange={handleChange("color")}
-              placeholder="Negro"
+              placeholder={t("dresses:form.placeholders.color")}
             />
           </div>
 
           <div style={{ gridColumn: "span 4" }}>
-            <label style={labelStyle}>Cápsula</label>
+            <label style={labelStyle}>{t("dresses:fields.capsule", "Cápsula")}</label>
             <select
               className="df-pro-select"
               style={inputStyle}
@@ -693,7 +678,7 @@ export function DressForm({
               onChange={handleChange("capsule_id")}
               disabled={loadingCapsules}
             >
-              <option value="">Sin cápsula</option>
+              <option value="">{t("dresses:fields.noCapsule", "Sin cápsula")}</option>
               {capsules.map((capsule) => (
                 <option key={capsule.id} value={capsule.id}>
                   {capsule.name}
@@ -703,7 +688,7 @@ export function DressForm({
           </div>
 
           <div style={{ gridColumn: "span 4" }}>
-            <label style={labelStyle}>Precio compra</label>
+            <label style={labelStyle}>{t("dresses:fields.purchasePrice")}</label>
             <input
               className="df-pro-input"
               style={inputStyle}
@@ -712,12 +697,12 @@ export function DressForm({
               step="0.01"
               value={form.sale_price}
               onChange={handleChange("sale_price")}
-              placeholder="0.00"
+              placeholder={t("dresses:form.placeholders.price", "0.00")}
             />
           </div>
 
           <div style={{ gridColumn: "span 4" }}>
-            <label style={labelStyle}>Precio alquiler</label>
+            <label style={labelStyle}>{t("dresses:fields.rentalPrice")}</label>
             <input
               className="df-pro-input"
               style={inputStyle}
@@ -726,7 +711,7 @@ export function DressForm({
               step="0.01"
               value={form.rental_price}
               onChange={handleChange("rental_price")}
-              placeholder="0.00"
+              placeholder={t("dresses:form.placeholders.price", "0.00")}
             />
           </div>
 
@@ -737,7 +722,7 @@ export function DressForm({
               style={textareaStyle}
               value={form.description}
               onChange={handleChange("description")}
-              placeholder="Descripción"
+              placeholder={t("dresses:form.placeholders.description")}
               rows={4}
             />
           </div>
@@ -834,11 +819,11 @@ export function DressForm({
                   <div className="df-dress-timeline__card">
                     <div className="df-dress-timeline__title">
                       <span style={{ color: statusAccent(item.from) }}>
-                        {statusIcon(item.from)} {formatStatus(item.from)}
+                        {statusIcon(item.from)} {formatStatus(t, item.from)}
                       </span>
                       <span className="df-dress-timeline__arrow">→</span>
                       <span style={{ color: statusAccent(item.to) }}>
-                        {statusIcon(item.to)} {formatStatus(item.to)}
+                        {statusIcon(item.to)} {formatStatus(t, item.to)}
                       </span>
                     </div>
                     <div
@@ -848,7 +833,7 @@ export function DressForm({
                         fontSize: 11,
                       }}
                     >
-                      {new Date(item.date).toLocaleString("es-AR")}
+                      {new Date(item.date).toLocaleString(i18n.language === "en" ? "en-US" : "es-AR")}
                       {item.user ? ` · ${item.user}` : ""}
                     </div>
                   </div>
@@ -878,7 +863,11 @@ export function DressForm({
       <FormActions
         saving={submitting}
         submitLabel={
-          mode === "edit" ? t("common:actions.update") : t("common:actions.create")
+          submitting
+            ? t("common:status.saving", "Saving...")
+            : mode === "edit"
+              ? t("common:actions.update", "Update")
+              : t("common:actions.create", "Create")
         }
         onClear={resetForm}
         onCancel={onCancel}

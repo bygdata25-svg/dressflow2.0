@@ -3,7 +3,8 @@
   "empty": "There are no dresses yet.",
   "hero": {
     "eyebrow": "Collection Management",
-    "subtitle": "Curate your dress inventory with a premium catalog view and operational control in one place."
+    "subtitle": "Curate your dress inventory with a premium catalog view and operational control in one place.",
+    "catalogSubtitle": "Manage all dresses available in your catalog."
   },
   "fields": {
     "image": "Image",
@@ -13,8 +14,11 @@
     "size": "Size",
     "color": "Color",
     "status": "Status",
-    "purchasePrice": "Purchase price",
-    "rentalPrice": "Rental price"
+    "purchasePrice": "Sale price",
+    "rentalPrice": "Rental price",
+    "capsule": "Capsule",
+    "noCapsule": "No capsule",
+    "salePrice": "Sale price"
   },
   "status": {
     "AVAILABLE": "Available",
@@ -36,12 +40,15 @@
     "error": "Could not delete the dress."
   },
   "images": {
-    "title": "Images",
+    "title": "Image",
     "noImage": "No image",
     "mainImage": "Main image",
     "uploadError": "Could not upload the image.",
     "deleteError": "Could not delete the image.",
-    "setPrimaryError": "Could not update the main image."
+    "setPrimaryError": "Could not update the main image.",
+    "previewAlt": "Dress preview",
+    "selectImage": "Select image",
+    "removeImage": "Remove image"
   },
   "history": {
     "title": "Loan history",
@@ -49,7 +56,11 @@
     "customer": "Customer",
     "start": "Start",
     "expectedReturn": "Expected return",
-    "actualReturn": "Actual return"
+    "actualReturn": "Actual return",
+    "statusTitle": "Status history",
+    "statusSubtitle": "Operational tracking of the dress.",
+    "loading": "Loading history...",
+    "noStatusChanges": "No status changes recorded yet."
   },
   "edit": {
     "title": "Edit dress",
@@ -60,20 +71,97 @@
   "form": {
     "title": "Create dress",
     "placeholders": {
-      "code": "Ex: DR-001",
-      "name": "Ex: Black evening dress",
-      "description": "Dress details",
-      "size": "Ex: M",
-      "color": "Ex: Black",
+      "code": "D-001",
+      "name": "Gala dress",
+      "description": "Description",
+      "size": "M",
+      "color": "Black",
       "purchasePrice": "Ex: 120000",
-      "rentalPrice": "Ex: 35000"
+      "rentalPrice": "Ex: 35000",
+      "price": "0.00"
     },
     "validation": {
       "required": "Code and name are required."
     },
     "messages": {
       "created": "Dress created successfully.",
-      "error": "Could not create the dress."
+      "error": "Could not save the dress image."
+    }
+  },
+  "sections": {
+    "inventory": "Inventory"
+  },
+  "actions": {
+    "new": "New dress",
+    "loan": "Loan dress",
+    "rent": "Rent dress",
+    "cleaning": "Send to cleaning",
+    "maintenance": "Send to maintenance",
+    "available": "Mark as available"
+  },
+  "states": {
+    "loading": "Loading dresses...",
+    "empty": "No dresses loaded."
+  },
+  "errors": {
+    "available": "Could not mark the dress as available.",
+    "cleaning": "Could not send the dress to cleaning.",
+    "maintenance": "Could not send the dress to maintenance."
+  },
+  "operations": {
+    "loan": "Loan",
+    "rental": "Rental",
+    "loanTitle": "Loan dress",
+    "rentalTitle": "Rent dress",
+    "suggestedValue": "Suggested value",
+    "customer": "Customer",
+    "selectCustomer": "Select customer",
+    "startDate": "Start date",
+    "returnDate": "Return date",
+    "rentalValue": "Rental value",
+    "rentalValuePlaceholder": "Ex: 150.00",
+    "notes": "Notes",
+    "rentalNotesPlaceholder": "Ex: event reservation, terms, notes...",
+    "loanNotesPlaceholder": "Internal loan notes",
+    "confirmRental": "Confirm rental",
+    "confirmLoan": "Confirm loan",
+    "registeringRental": "Registering rental...",
+    "registeringLoan": "Registering loan...",
+    "validation": {
+      "customerRequired": "Select a customer.",
+      "startDateRequired": "Enter the start date."
+    },
+    "messages": {
+      "rentalError": "Could not register rental.",
+      "loanError": "Could not register loan."
+    }
+  },
+  "customer": {
+    "newCustomer": "New customer",
+    "hideInlineCreate": "Hide customer creation",
+    "fields": {
+      "code": "Code",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "notes": "Notes"
+    },
+    "placeholders": {
+      "code": "CLI-001",
+      "notes": "Customer notes"
+    },
+    "actions": {
+      "create": "Create customer",
+      "creating": "Creating..."
+    },
+    "validation": {
+      "codeRequired": "Customer code is required.",
+      "firstNameRequired": "First name is required.",
+      "lastNameRequired": "Last name is required."
+    },
+    "messages": {
+      "createError": "Could not create customer."
     }
   }
 }

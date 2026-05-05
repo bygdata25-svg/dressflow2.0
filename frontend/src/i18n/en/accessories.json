@@ -1,0 +1,82 @@
+{
+  "title": "Accessories",
+  "hero": {
+    "eyebrow": "Inventory",
+    "subtitle": "Manage accessory catalog, stock and pricing."
+  },
+  "empty": "There are no accessories to show.",
+  "actions": {
+    "new": "New accessory",
+    "create": "Create accessory",
+    "selectFile": "Select File"
+  },
+  "kpis": {
+    "visible": "Visible total",
+    "lowStock": "Low stock",
+    "noStock": "No stock"
+  },
+  "fields": {
+    "photo": "Photo",
+    "image": "Image",
+    "code": "Code",
+    "name": "Name",
+    "accessory": "Accessory",
+    "description": "Description",
+    "category": "Category",
+    "color": "Color",
+    "size": "Size",
+    "stock": "Current stock",
+    "minStock": "Minimum stock",
+    "unitCost": "Unit cost",
+    "salePrice": "Sale price",
+    "status": "Status",
+    "notes": "Notes"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "INACTIVE": "Inactive"
+  },
+  "stock": {
+    "available": "Available",
+    "lowStock": "Low stock",
+    "noStock": "No stock"
+  },
+  "images": {
+    "noImage": "No photo",
+    "preview": "Preview"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Code, name, category, color...",
+    "status": "Status",
+    "category": "Category",
+    "allStatuses": "All statuses",
+    "allCategories": "All categories"
+  },
+  "modal": {
+    "new": "New accessory",
+    "edit": "Edit accessory"
+  },
+  "form": {
+    "placeholders": {
+      "code": "Ex: ACC-001",
+      "name": "Accessory name",
+      "category": "Ex: Belt, handbag, necklace",
+      "color": "Color",
+      "size": "Size",
+      "description": "Accessory description",
+      "notes": "Internal notes"
+    }
+  },
+  "validation": {
+    "nameRequired": "Name is required."
+  },
+  "messages": {
+    "loadError": "Could not load accessories.",
+    "saveError": "Could not save the accessory."
+  },
+  "delete": {
+    "confirm": "Do you want to delete this accessory?",
+    "error": "Could not delete the accessory."
+  }
+}

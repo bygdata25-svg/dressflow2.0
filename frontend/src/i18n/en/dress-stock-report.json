@@ -1,0 +1,60 @@
+{
+  "title": "Dress stock valuation",
+  "hero": {
+    "eyebrow": "Reports",
+    "subtitle": "Inventory value available for sale and rental.",
+    "saleValuation": "Sale valuation",
+    "saleValuationSubtitle": "Potential value of inventory available for sale."
+  },
+  "mainValuation": {
+    "label": "Sale valuation",
+    "subtitle": "Potential value of inventory available for sale.",
+    "saleValue": "Sale value",
+    "rentalValue": "Rental value"
+  },
+  "fields": {
+    "code": "Code",
+    "name": "Dress",
+    "capsule": "Capsule",
+    "size": "Size",
+    "color": "Color",
+    "status": "Status",
+    "salePrice": "Sale price",
+    "rentalPrice": "Rental price"
+  },
+  "summary": {
+    "records": "Records",
+    "currency": "Currency"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Code, dress, capsule, size or color"
+  },
+  "kpis": {
+    "total": "Total dresses",
+    "available": "Available",
+    "saleValue": "Sale value",
+    "rentalValue": "Rental value"
+  },
+  "summary": {
+    "records": "Records",
+    "currency": "Currency"
+  },
+  "status": {
+    "AVAILABLE": "Available",
+    "LOANED": "Loaned",
+    "RENTED": "Rented",
+    "CLEANING": "Cleaning",
+    "MAINTENANCE": "Maintenance",
+    "SOLD": "Sold",
+    "RETIRED": "Retired"
+  },
+  "messages": {
+    "loading": "Loading report..."
+  },
+  "errors": {
+    "load": "Could not load dress stock valuation report.",
+    "export": "Could not export report."
+  },
+  "empty": "No data to display."
+}

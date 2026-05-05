@@ -1,0 +1,53 @@
+{
+  "title": "Costos de producción",
+  "hero": {
+    "eyebrow": "Reportes",
+    "subtitle": "Resumen económico de órdenes de producción."
+  },
+  "fields": {
+    "order": "Orden",
+    "dress": "Vestido",
+    "workshop": "Taller",
+    "status": "Estado",
+    "dueDate": "Entrega",
+    "planned": "Planificado",
+    "produced": "Producido",
+    "material": "Material",
+    "laborOther": "Mano de obra / otros",
+    "totalEstimated": "Total estimado"
+  },
+  "summary": {
+    "records": "Registros",
+    "simplifiedView": "Vista simplificada",
+    "simplifiedViewDetail": "Material + Mano de obra / otros + Total estimado"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Orden, vestido o taller",
+    "status": "Estado",
+    "from": "Desde",
+    "to": "Hasta",
+    "all": "Todos"
+  },
+  "kpis": {
+    "orders": "Órdenes",
+    "material": "Costo material",
+    "labor": "Mano de obra / otros",
+    "total": "Total estimado"
+  },
+  "status": {
+    "DRAFT": "Borrador",
+    "MATERIALS_RESERVED": "Materiales reservados",
+    "IN_PRODUCTION": "En producción",
+    "COMPLETED": "Completada",
+    "CANCELLED": "Cancelada"
+  },
+  "messages": {
+    "loading": "Cargando reporte..."
+  },
+  "errors": {
+    "load": "No se pudo cargar el reporte.",
+    "export": "No se pudo exportar."
+  },
+  "empty": "No hay datos para mostrar."
+}

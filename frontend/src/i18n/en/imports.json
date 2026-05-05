@@ -1,0 +1,29 @@
+{
+  "title": "Imports",
+  "hero": {
+    "eyebrow": "Settings",
+    "subtitle": "Bulk data import into the system."
+  },
+  "cards": {
+    "fabrics": {
+      "title": "Import fabrics",
+      "description": "Bulk import of fabrics, suppliers and rolls.",
+      "action": "Upload file"
+    }
+  },
+  "modal": {
+  "title": "Import fabric file",
+  "subtitle": "Upload a file, preview the data and confirm the import.",
+  "file": {
+    "label": "File",
+    "select": "Select file",
+    "empty": "No file selected",
+    "formats": "Supported formats: XLSX, CSV, ODS"
+  },
+  "actions": {
+    "preview": "Preview",
+    "confirm": "Confirm import",
+    "close": "Close"
+  }
+}
+}

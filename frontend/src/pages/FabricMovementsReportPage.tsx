@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import "./DressesPage.css";
@@ -21,34 +22,6 @@ type FabricMovementsResponse = {
   total: number;
 };
 
-function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value || 0);
-}
-
-function movementLabel(value: string) {
-  switch ((value || "").toUpperCase()) {
-    case "IN":
-      return "Entrada";
-    case "OUT":
-      return "Salida";
-    case "ADJUST":
-      return "Ajuste";
-    default:
-      return value || "—";
-  }
-}
-
 function movementStyles(value: string) {
   switch ((value || "").toUpperCase()) {
     case "IN":
@@ -62,6 +35,7 @@ function movementStyles(value: string) {
         color: "#b42318",
       };
     case "ADJUST":
+    case "ADJUSTMENT":
       return {
         background: "#f4ede3",
         color: "#8b5e34",
@@ -75,6 +49,11 @@ function movementStyles(value: string) {
 }
 
 export default function FabricMovementsReportPage() {
+  const { t, i18n } = useTranslation("fabric-movements-report");
+  const { t: tc } = useTranslation("common");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [rows, setRows] = useState<FabricMovementRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -86,6 +65,30 @@ export default function FabricMovementsReportPage() {
   const [movementType, setMovementType] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  function formatDate(value: string | null) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date);
+  }
+
+  function formatNumber(value: number) {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value || 0);
+  }
+
+  function movementLabel(value: string) {
+    const raw = String(value || "").toUpperCase();
+    return t(`types.${raw}`, { defaultValue: value || "—" });
+  }
 
   const loadReport = async () => {
     try {
@@ -101,12 +104,13 @@ export default function FabricMovementsReportPage() {
         },
       });
 
-      setRows(response.data.items || []);
+      setRows(Array.isArray(response.data.items) ? response.data.items : []);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo cargar el reporte.");
+      else setError(t("errors.load"));
     } finally {
       setLoading(false);
     }
@@ -134,12 +138,15 @@ export default function FabricMovementsReportPage() {
       setExporting(true);
       setError("");
 
+      const lang = i18n.language?.startsWith("en") ? "en" : "es";
+
       const response = await api.get("/reports/fabric-movements/export", {
         params: {
           search: search || undefined,
           movement_type: movementType || undefined,
           date_from: dateFrom || undefined,
           date_to: dateTo || undefined,
+          lang,
         },
         responseType: "blob",
       });
@@ -151,16 +158,17 @@ export default function FabricMovementsReportPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "movimientos_tela.xlsx";
+      link.download = lang === "en" ? "fabric_movements.xlsx" : "movimientos_tela.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo exportar el reporte.");
+      else setError(t("errors.export"));
     } finally {
       setExporting(false);
     }
@@ -170,12 +178,12 @@ export default function FabricMovementsReportPage() {
     return [
       {
         key: "created_at",
-        label: "Fecha",
+        label: t("fields.date"),
         render: (row) => formatDate(row.created_at),
       },
       {
         key: "type",
-        label: "Tipo",
+        label: t("fields.type"),
         render: (row) => {
           const styles = movementStyles(row.type);
           return (
@@ -198,31 +206,36 @@ export default function FabricMovementsReportPage() {
       },
       {
         key: "fabric_name",
-        label: "Tela",
+        label: t("fields.fabric"),
         render: (row) => row.fabric_name || "—",
       },
       {
         key: "fabric_color",
-        label: "Color",
+        label: t("fields.color"),
         render: (row) => row.fabric_color || "—",
       },
       {
         key: "roll_code",
-        label: "Rollo",
+        label: t("fields.roll"),
         render: (row) => row.roll_code || "—",
       },
       {
         key: "quantity",
-        label: "Cantidad",
+        label: t("fields.quantity"),
         render: (row) => formatNumber(row.quantity),
       },
       {
+        key: "reference",
+        label: t("fields.reference"),
+        render: (row) => row.reference || "—",
+      },
+      {
         key: "notes",
-        label: "Notas",
+        label: t("fields.notes"),
         render: (row) => row.notes || "—",
       },
     ];
-  }, []);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -238,11 +251,9 @@ export default function FabricMovementsReportPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Reportes</p>
-          <h1 className="df-pro-page__title">Movimientos de tela</h1>
-          <p className="df-pro-page__subtitle">
-            Consultá entradas, salidas y ajustes de rollos, con exportación a Excel.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
 
         <button
@@ -250,7 +261,7 @@ export default function FabricMovementsReportPage() {
           onClick={handleExport}
           disabled={exporting}
         >
-          {exporting ? "Exportando..." : "Exportar a Excel"}
+          {exporting ? tc("status.exporting") : tc("actions.exportExcel")}
         </button>
       </header>
 
@@ -265,31 +276,32 @@ export default function FabricMovementsReportPage() {
           }}
         >
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Tela, color, rollo o nota"
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
           <div>
-            <label className="df-pro-label">Tipo</label>
+            <label className="df-pro-label">{t("filters.type")}</label>
             <select
               className="df-pro-select"
               value={movementType}
               onChange={(e) => setMovementType(e.target.value)}
             >
-              <option value="">Todos</option>
-              <option value="IN">Entrada</option>
-              <option value="OUT">Salida</option>
-              <option value="ADJUST">Ajuste</option>
+              <option value="">{t("filters.all")}</option>
+              <option value="IN">{t("types.IN")}</option>
+              <option value="OUT">{t("types.OUT")}</option>
+              <option value="ADJUST">{t("types.ADJUST")}</option>
+              <option value="ADJUSTMENT">{t("types.ADJUSTMENT")}</option>
             </select>
           </div>
 
           <div>
-            <label className="df-pro-label">Desde</label>
+            <label className="df-pro-label">{t("filters.from")}</label>
             <input
               className="df-pro-input"
               type="date"
@@ -299,7 +311,7 @@ export default function FabricMovementsReportPage() {
           </div>
 
           <div>
-            <label className="df-pro-label">Hasta</label>
+            <label className="df-pro-label">{t("filters.to")}</label>
             <input
               className="df-pro-input"
               type="date"
@@ -309,9 +321,9 @@ export default function FabricMovementsReportPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "end", gap: 10 }}>
-            <button type="submit">Buscar</button>
+            <button type="submit">{tc("actions.search")}</button>
             <button type="button" onClick={handleClear}>
-              Limpiar
+              {tc("actions.clear")}
             </button>
           </div>
         </form>
@@ -334,13 +346,13 @@ export default function FabricMovementsReportPage() {
 
       <section className="df-pro-card">
         <div style={{ color: "#8a7f78", fontSize: 14, marginBottom: 16 }}>
-          Registros: <strong>{rows.length}</strong>
+          {t("summary.records")}: <strong>{rows.length}</strong>
         </div>
 
         {loading ? (
-          <p>Cargando reporte...</p>
+          <p>{t("messages.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay datos para mostrar.</p>
+          <p>{t("empty")}</p>
         ) : (
           <DataGrid
             rows={rows}

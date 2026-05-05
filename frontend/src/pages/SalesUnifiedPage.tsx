@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import "./SalesUnifiedPage.css";
 
 type CurrencyCode = "USD" | "ARS";
@@ -121,48 +122,35 @@ function getCustomerDisplayName(
   return [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim();
 }
 
-function formatMoney(amount: number, currency: CurrencyCode) {
-  return new Intl.NumberFormat("es-AR", {
+function formatMoney(amount: number, currency: CurrencyCode, locale = "es-AR") {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
   }).format(Number(amount || 0));
 }
 
-function getPaymentMethodLabel(method?: string) {
-  switch (String(method || "").toLowerCase()) {
-    case "cash":
-      return "Efectivo";
-    case "transfer":
-      return "Transferencia";
-    case "debit":
-      return "Débito";
-    case "credit":
-      return "Crédito";
-    case "mercadopago":
-      return "Mercado Pago";
-    case "other":
-      return "Otro";
-    default:
-      return method || "Sin definir";
-  }
+function getPaymentMethodLabel(method?: string, t?: any) {
+  const map: Record<string, string> = {
+    EFECTIVO: "cash",
+    TRANSFERENCIA: "transfer",
+    TARJETA_CREDITO: "credit",
+    TARJETA_DEBITO: "debit",
+    MERCADO_PAGO: "mercadopago",
+  };
+
+  const normalized =
+    map[String(method || "").toUpperCase()] ||
+    String(method || "other").toLowerCase();
+
+  return t
+    ? t(`payments.methods.${normalized}`, { defaultValue: method || "—" })
+    : method || "—";
 }
 
-function getPaymentStatusLabel(status?: string) {
-  switch (String(status || "").toUpperCase()) {
-    case "PAID":
-      return "Pagada";
-    case "PARTIAL":
-      return "Pago parcial";
-    case "PENDING":
-      return "Pendiente";
-    case "COMPLETED":
-      return "Completada";
-    case "CANCELLED":
-      return "Cancelada";
-    default:
-      return status || "Sin estado";
-  }
+function getPaymentStatusLabel(status?: string, t?: any) {
+  const key = String(status || "").toUpperCase();
+  return t ? t(`status.${key}`, { defaultValue: status || "—" }) : status || "—";
 }
 
 function getSaleCurrencyBreakdown(sale: SaleRecord) {
@@ -213,6 +201,9 @@ function getSaleDisplayTotal(sale: SaleRecord) {
 }
 
 export default function SalesUnifiedPage() {
+  const { t, i18n } = useTranslation("sales");
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";  
+ 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
 
@@ -329,17 +320,23 @@ export default function SalesUnifiedPage() {
     const paidEquivalentARS = Number(
       (paidARS + (exchangeRateNumber > 0 ? paidUSD * exchangeRateNumber : 0)).toFixed(2)
     );
-
     let paymentStatus: "PAID" | "PARTIAL" | "PENDING" = "PENDING";
-    const anyPaid = paidUSD > 0 || paidARS > 0;
-    const usdCovered = Math.abs(balanceUSD) <= 0.01 || paidUSD >= itemsUSD;
-    const arsCovered = Math.abs(balanceARS) <= 0.01 || paidARS >= itemsARS;
 
-    if (usdCovered && arsCovered) {
+    const hasItems = itemsUSD > 0 || itemsARS > 0;
+    const anyPaid = paidUSD > 0 || paidARS > 0;
+
+    const usdCovered =
+      itemsUSD <= 0 || Math.abs(balanceUSD) <= 0.01 || paidUSD >= itemsUSD;
+
+    const arsCovered =
+      itemsARS <= 0 || Math.abs(balanceARS) <= 0.01 || paidARS >= itemsARS;
+
+    if (hasItems && usdCovered && arsCovered) {
       paymentStatus = "PAID";
-    } else if (anyPaid) {
+    } else if (hasItems && anyPaid) {
       paymentStatus = "PARTIAL";
-    }
+    } 
+    
 
     return {
       itemsUSD,
@@ -396,38 +393,38 @@ export default function SalesUnifiedPage() {
     if (hasUSD && hasARS) {
       return {
         mode: "mixed" as const,
-        label: "TOTAL MIXTO",
+        label: t("summary.mixed"),
         value: `${formatMoney(summaryTotals.itemsUSD, "USD")} + ${formatMoney(summaryTotals.itemsARS, "ARS")}`,
         hint:
           exchangeRateNumber > 0
             ? `Equiv. ${formatMoney(totalEquivalentArs, "ARS")}`
-            : "Cargá tipo de cambio para ver equivalente consolidado",
+            : t("summary.exchangeRateHint"),
       };
     }
 
     if (hasUSD) {
       return {
         mode: "usd" as const,
-        label: "TOTAL",
+        label: t("summary.total"),
         value: formatMoney(summaryTotals.itemsUSD, "USD"),
-        hint: "Venta expresada en USD",
+        hint: t("summary.usdHint"),
       };
     }
 
     if (hasARS) {
       return {
         mode: "ars" as const,
-        label: "TOTAL",
+        label: t("summary.total"),
         value: formatMoney(summaryTotals.itemsARS, "ARS"),
-        hint: "Venta expresada en ARS",
+        hint: t("summary.arsHint"),
       };
     }
 
     return {
       mode: "empty" as const,
-      label: "TOTAL",
+      label: t("summary.total"),
       value: formatMoney(0, "ARS"),
-      hint: "Agregá ítems para ver el resumen",
+      hint: t("summary.emptyHint"),
     };
   }, [summaryTotals, exchangeRateNumber, totalEquivalentArs]);
 
@@ -707,7 +704,7 @@ export default function SalesUnifiedPage() {
     const amount = Number(paymentAmount || 0);
 
     if (amount <= 0) {
-      toast.error("Ingresá un monto de pago mayor a 0.");
+      toast.error(t("messages.invalidPaymentAmount"));
       return;
     }
 
@@ -733,23 +730,23 @@ export default function SalesUnifiedPage() {
 
   const handleSubmitSale = async () => {
     if (!form.customer_id) {
-      toast.error("Debés seleccionar un cliente.");
+      toast.error(t("messages.customerRequired"));
       return;
     }
 
     if (!form.items.length) {
-      toast.error("Debés agregar al menos un ítem.");
+      toast.error(t("messages.itemsRequired"));
       return;
     }
 
     const invalidQty = form.items.some((item) => Number(item.quantity) <= 0);
     if (invalidQty) {
-      toast.error("La cantidad de todos los ítems debe ser mayor a 0.");
+      toast.error(t("messages.invalidQuantity"));
       return;
     }
 
     if (payments.length === 0) {
-      toast.error("Debés cargar al menos una forma de pago.");
+      toast.error(t("messages.paymentRequired"));
       return;
     }
 
@@ -774,7 +771,7 @@ export default function SalesUnifiedPage() {
 
     if (invalidItem) {
       console.error("INVALID ITEM", invalidItem);
-      toast.error("Hay ítems incompletos o inválidos.");
+      toast.error(t("messages.invalidItems"));
       return;
     }
 
@@ -792,7 +789,7 @@ export default function SalesUnifiedPage() {
 
     if (invalidPayment) {
       console.error("INVALID PAYMENT", invalidPayment);
-      toast.error("Hay pagos incompletos o inválidos.");
+      toast.error(t("messages.invalidPayments"));
       return;
     }
 
@@ -820,7 +817,7 @@ export default function SalesUnifiedPage() {
       paymentTotals.usd + 0.01 < itemTotals.usd;
 
     if (needsExchangeRate && exchangeRateNumber <= 0) {
-      toast.error("Debés ingresar un tipo de cambio válido para convertir entre ARS y USD.");
+      toast.error(t("messages.exchangeRateRequired"));
       return;
     }
 
@@ -848,8 +845,8 @@ export default function SalesUnifiedPage() {
 
       toast.success(
         createdSaleNumber
-          ? `Venta ${createdSaleNumber} guardada correctamente`
-          : "Venta guardada correctamente"
+          ? t("messages.saleSuccessWithNumber", { number: createdSaleNumber })
+          : t("messages.saleSuccess")
       );
 
       closeSaleModal();
@@ -864,7 +861,7 @@ export default function SalesUnifiedPage() {
       toast.error(
         typeof (error as any)?.response?.data?.detail === "string"
           ? (error as any).response.data.detail
-          : "No se pudo guardar la venta."
+          : (t("messages.saleError"))
       );
     } finally {
       setSubmittingSale(false);
@@ -873,7 +870,7 @@ export default function SalesUnifiedPage() {
 
   const handleSubmitCustomer = async () => {
     if (!customerForm.first_name.trim()) {
-      toast.error("Debés ingresar el nombre del cliente.");
+      toast.error(t("messages.customerNameRequired"));
       return;
     }
 
@@ -904,10 +901,10 @@ export default function SalesUnifiedPage() {
       );
 
       closeCustomerModal();
-      toast.success("Cliente creado correctamente.");
+      toast.success(t("messages.customerCreated"));
     } catch (error) {
       console.error("Error creating customer", error);
-      toast.error("No se pudo crear el cliente.");
+      toast.error(t("messages.customerCreateError"));
     } finally {
       setSubmittingCustomer(false);
     }
@@ -1073,16 +1070,16 @@ export default function SalesUnifiedPage() {
       `}</style>
       <div className="sales-hero">
         <div className="sales-hero-copy">
-          <div className="sales-kicker">Operaciones</div>
-          <h1>Ventas</h1>
+          <div className="sales-kicker">{t("hero.eyebrow")}</div>
+          <h1>{t("title")}</h1>
           <p>
-            Gestioná ventas unificadas de vestidos y accesorios
+            {t("hero.subtitle")}
           </p>
         </div>
 
         <div className="sales-hero-actions">
           <button className="sales-primary-btn" onClick={openNewSaleModal}>
-            Nueva venta
+            {t("actions.new")}
           </button>
         </div>
       </div>
@@ -1090,18 +1087,18 @@ export default function SalesUnifiedPage() {
       <div className="sales-panel">
         <div className="sales-panel-header">
           <div>
-            <h2>Listado de ventas</h2>
-            <p>Consultá las operaciones registradas y su resumen general.</p>
+            <h2>{t("sections.list")}</h2>
+            <p>{t("sections.listSubtitle")}</p>
           </div>
 
           <div className="sales-panel-chip">
             {loadingSales
-              ? "Actualizando..."
-              : `${sales.length} registro${sales.length === 1 ? "" : "s"}`}
+              ? t("messages.refreshing")
+              : t("messages.recordsCount", { count: sales.length })}
           </div>
 
           {isRefreshingSales && (
-            <div className="sales-refresh-badge">Actualizando...</div>
+            <div className="sales-refresh-badge">{t("messages.refreshing")}</div>
           )}
         </div>
 
@@ -1110,16 +1107,16 @@ export default function SalesUnifiedPage() {
             <div className="sales-empty-state">
               <div className="sales-empty-icon">◌</div>
               <div>
-                <strong>Cargando ventas</strong>
-                <p>Estamos trayendo la información más reciente.</p>
+                <strong>{t("messages.loading")}</strong>
+                <p>{t("messages.loadingHint")}</p>
               </div>
             </div>
           ) : sales.length === 0 ? (
             <div className="sales-empty-state">
               <div className="sales-empty-icon">＋</div>
               <div>
-                <strong>Todavía no hay ventas registradas</strong>
-                <p>Creá tu primera venta unificada de vestidos y accesorios.</p>
+                <strong>{t("messages.emptySales")}</strong>
+                <p>{t("messages.emptySalesHint")}</p>
               </div>
             </div>
           ) : (
@@ -1127,14 +1124,15 @@ export default function SalesUnifiedPage() {
               <table className="data-table sales-table">
                 <thead>
                   <tr>
-                    <th>Número</th>
-                    <th>Fecha</th>
-                    <th>Cliente</th>
-                    <th>Moneda</th>
-                    <th>Ítems</th>
-                    <th>Pagos</th>
-                    <th>Total</th>
-                    <th>Estado</th>
+                    <th>{t("table.number")}</th>
+                    <th>{t("table.date")}</th>
+                    <th>{t("table.customer")}</th>
+                    <th>{t("table.currency")}</th>
+                    <th>{t("table.items")}</th>
+
+                    <th>{t("table.payments")}</th>
+                    <th>{t("table.total")}</th>
+                    <th>{t("table.status")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1160,7 +1158,12 @@ export default function SalesUnifiedPage() {
                           : "-"}
                       </td>
                       <td>{sale.customer_full_name || "-"}</td>
-                      <td>{sale.currency || "-"}</td>
+                      <td>
+                         {t(
+                           `currency.${String(sale.currency || "").toUpperCase()}`,
+                           sale.currency || "-"
+                         )}
+                      </td>
                       <td>
                         <div className="sales-table-stacked">
                           {(sale.items || []).length === 0 ? (
@@ -1168,8 +1171,13 @@ export default function SalesUnifiedPage() {
                           ) : (
                             (sale.items || []).map((item) => (
                               <div key={item.id} className="sales-table-line">
-                                <strong>{item.item_type === "dress" ? "Vestido" : item.item_type === "DRESS" ? "Vestido" : "Accesorio"}</strong>{" "}
-                                · {item.description_snapshot || "Ítem"} · x{item.quantity} · {formatMoney(Number(item.line_total || 0), item.currency || "ARS")}
+                                <strong>
+                                  {String(item.item_type).toLowerCase() === "dress"
+                                    ? t("items.dress")
+                                    : t("items.accessory")}
+                                </strong>{" "}
+                                · {item.description_snapshot || t("items.item")} · x{item.quantity} ·{" "}
+                                {formatMoney(Number(item.line_total || 0), item.currency || "ARS", locale)}
                               </div>
                             ))
                           )}
@@ -1182,7 +1190,7 @@ export default function SalesUnifiedPage() {
                           ) : (
                             (sale.payments || []).map((payment) => (
                               <div key={payment.id} className="sales-table-line">
-                                <strong>{getPaymentMethodLabel(payment.payment_method || "other")}</strong>{" "}
+                                <strong>{getPaymentMethodLabel(payment.payment_method || "other", t)}</strong>{" "}
                                 · {formatMoney(Number(payment.amount || 0), payment.currency || "ARS")}
                               </div>
                             ))
@@ -1194,7 +1202,7 @@ export default function SalesUnifiedPage() {
                       </td>
                       <td>
                         <span className={`sales-items-pill sales-status-pill sales-status-pill--${String(sale.status || "").toLowerCase()}`}>
-                          {getPaymentStatusLabel(sale.status)}
+                          {getPaymentStatusLabel(sale.status, t)}
                         </span>
                       </td>
                     </tr>
@@ -1215,11 +1223,10 @@ export default function SalesUnifiedPage() {
           >
             <div className="modal-header sales-modal-header-pro">
               <div>
-                <div className="sales-kicker">Operación comercial</div>
-                <h2>Nueva venta</h2>
+                <div className="sales-kicker">{t("modal.eyebrow")}</div>
+                <h2>{t("modal.title")}</h2>
                 <p>
-                  Armá una venta unificada con una experiencia más ágil, visual
-                  y ordenada.
+                  {t("modal.subtitle")}
                 </p>
               </div>
 
@@ -1237,21 +1244,21 @@ export default function SalesUnifiedPage() {
                 <div className="sales-pro-card">
                   <div className="sales-pro-card-head">
                     <div>
-                      <h3>Cliente</h3>
-                      <p>Buscá o creá un cliente sin salir de la venta.</p>
+                      <h3>{t("sections.customer")}</h3>
+                      <p>{t("sections.customerSubtitle")}</p>
                     </div>
                     <button
                       type="button"
                       className="sales-secondary-btn"
                       onClick={openCustomerModal}
                     >
-                      Nuevo cliente
+                      {t("actions.newCustomer")}
                     </button>
                   </div>
 
                   <div className="sales-search-grid">
                     <div className="sales-search-field" ref={customerBoxRef}>
-                      <label>Buscar cliente</label>
+                      <label>{t("fields.searchCustomer")}</label>
                       <input
                         type="text"
                         value={customerQuery}
@@ -1262,8 +1269,8 @@ export default function SalesUnifiedPage() {
                         onFocus={() => setCustomerOpen(true)}
                         placeholder={
                           loadingCustomers
-                            ? "Cargando clientes..."
-                            : "Escribí nombre del cliente"
+                            ? t("placeholders.loadingCustomers")
+                            : t("placeholders.searchCustomer")
                         }
                       />
 
@@ -1271,7 +1278,7 @@ export default function SalesUnifiedPage() {
                         <div className="sales-dropdown">
                           {filteredCustomers.length === 0 ? (
                             <div className="sales-dropdown-empty">
-                              No se encontraron clientes.
+                              {t("messages.noCustomers")}
                             </div>
                           ) : (
                             filteredCustomers.map((customer) => (
@@ -1282,7 +1289,7 @@ export default function SalesUnifiedPage() {
                                 onClick={() => selectCustomer(customer)}
                               >
                                 <strong>
-                                  {getCustomerDisplayName(customer) || "Cliente sin nombre"}
+                                  {getCustomerDisplayName(customer) || t("customer.unnamed")}
                                 </strong>
                               </button>
                             ))
@@ -1292,9 +1299,9 @@ export default function SalesUnifiedPage() {
                     </div>
 
                     <div className="sales-search-selected">
-                      <label>Cliente seleccionado</label>
+                      <label>{t("fields.selectedCustomer")}</label>
                       <div className="sales-selected-chip">
-                        {getCustomerDisplayName(selectedCustomer) || "Sin seleccionar"}
+                        {getCustomerDisplayName(selectedCustomer) || t("customer.unselected")}
                       </div>
                     </div>
                   </div>
@@ -1303,14 +1310,14 @@ export default function SalesUnifiedPage() {
                 <div className="sales-pro-card">
                   <div className="sales-pro-card-head">
                     <div>
-                      <h3>Agregar ítems</h3>
-                      <p>Sumá vestidos y accesorios con búsqueda rápida.</p>
+                      <h3>{t("sections.items")}</h3>
+                      <p>{t("sections.itemsSubtitle")}</p>
                     </div>
                   </div>
 
                   <div className="sales-search-grid">
                     <div className="sales-search-field" ref={dressBoxRef}>
-                      <label>Vestido</label>
+                      <label>{t("fields.dress")}</label>
                       <input
                         type="text"
                         value={dressQuery}
@@ -1321,15 +1328,15 @@ export default function SalesUnifiedPage() {
                         onFocus={() => setDressOpen(true)}
                         placeholder={
                           loadingCatalogs
-                            ? "Cargando vestidos..."
-                            : "Buscar vestido por código o nombre"
+                            ? t("placeholders.loadingDresses")
+                            : t("placeholders.searchDress")
                         }
                       />
                       {dressOpen && (
                         <div className="sales-dropdown">
                           {filteredDresses.length === 0 ? (
                             <div className="sales-dropdown-empty">
-                              No hay vestidos disponibles.
+                              {t("messages.noDresses")}
                             </div>
                           ) : (
                             filteredDresses.map((dress) => (
@@ -1353,7 +1360,7 @@ export default function SalesUnifiedPage() {
                     </div>
 
                     <div className="sales-search-field" ref={accessoryBoxRef}>
-                      <label>Accesorio</label>
+                      <label>{t("fields.accessory")}</label>
                       <input
                         type="text"
                         value={accessoryQuery}
@@ -1364,15 +1371,15 @@ export default function SalesUnifiedPage() {
                         onFocus={() => setAccessoryOpen(true)}
                         placeholder={
                           loadingCatalogs
-                            ? "Cargando accesorios..."
-                            : "Buscar accesorio por código o nombre"
+                            ? t("placeholders.loadingAccessories")
+                            : t("placeholders.searchAccessory")
                         }
                       />
                       {accessoryOpen && (
                         <div className="sales-dropdown">
                           {filteredAccessories.length === 0 ? (
                             <div className="sales-dropdown-empty">
-                              No se encontraron accesorios.
+                              {t("messages.noAccessories")}
                             </div>
                           ) : (
                             filteredAccessories.map((accessory) => (
@@ -1389,7 +1396,7 @@ export default function SalesUnifiedPage() {
                                 </strong>
                                 <span>
                                   {Number(accessory.sale_price ?? 0) === 0
-                                    ? "Bonificado"
+                                    ? t("items.free")
                                     : formatMoney(Number(accessory.sale_price ?? 0), "ARS")}
                                 </span>
                               </button>
@@ -1402,7 +1409,7 @@ export default function SalesUnifiedPage() {
 
                   {form.items.length === 0 ? (
                     <div className="sales-empty-inline">
-                      Agregá vestidos o accesorios para comenzar la venta.
+                      {t("messages.emptyItems")}
                     </div>
                   ) : (
                     <div className="sales-items-list">
@@ -1420,22 +1427,22 @@ export default function SalesUnifiedPage() {
                                     : "sale-badge-accessory"
                                 }`}
                               >
-                                {item.type === "dress" ? "Vestido" : "Accesorio"}
+                                {item.type === "dress" ? t("items.dress") : t("items.accessory")}
                               </span>
 
                               <div className="sales-item-card-copy">
                                 <strong>{item.name}</strong>
                                 <span>
                                   {isBonus
-                                    ? "Bonificado"
-                                    : `${formatMoney(Number(item.price), item.currency)} por unidad`}
+                                    ? t("items.free")
+                                    : `${formatMoney(Number(item.price), item.currency)} ${t("items.perUnit")}`}
                                 </span>
                               </div>
                             </div>
 
                             <div className="sales-item-card-right">
                               <div className="sales-inline-field">
-                                <label>Cant.</label>
+                                <label>{t("fields.qtyShort")}</label>
                                 <input
                                   type="number"
                                   min={1}
@@ -1447,7 +1454,7 @@ export default function SalesUnifiedPage() {
                               </div>
 
                               <div className="sales-inline-field">
-                                <label>Precio ({item.currency})</label>
+                                <label>{t("fields.price")} ({item.currency})</label>
                                 <input
                                   type="number"
                                   min={0}
@@ -1461,7 +1468,7 @@ export default function SalesUnifiedPage() {
 
                               <div className="sales-item-subtotal">
                                 {isBonus
-                                  ? "Bonificado"
+                                  ? t("items.free")
                                   : formatMoney(
                                       Number(item.price) * Number(item.quantity),
                                       item.currency
@@ -1472,7 +1479,7 @@ export default function SalesUnifiedPage() {
                                 className="icon-btn danger"
                                 onClick={() => removeItem(index)}
                                 type="button"
-                                title="Eliminar ítem"
+                                title={t("actions.removeItem")}
                               >
                                 🗑
                               </button>
@@ -1484,9 +1491,9 @@ export default function SalesUnifiedPage() {
                   )}
 
                   <div className="sales-field sales-notes-field">
-                    <label>Notas</label>
+                    <label>{t("fields.notes")}</label>
                     <textarea
-                      placeholder="Observaciones de la venta..."
+                      placeholder={t("placeholders.notes")}
                       value={form.notes}
                       onChange={(e) =>
                         setForm((prev) => ({
@@ -1509,98 +1516,98 @@ export default function SalesUnifiedPage() {
 
                   <div className="sales-summary-metrics">
                     <div className="sales-summary-metric">
-                      <span>Cliente</span>
+                      <span>{t("summary.customer")}</span>
                       <strong>
-                        {getCustomerDisplayName(selectedCustomer) || "Sin seleccionar"}
+                        {getCustomerDisplayName(selectedCustomer) || t("customer.unselected")}
                       </strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Estado de pago</span>
-                      <strong>{getPaymentStatusLabel(summaryTotals.paymentStatus)}</strong>
+                      <span>{t("summary.paymentStatus")}</span>
+                      <strong>{getPaymentStatusLabel(summaryTotals.paymentStatus, t)}</strong> 
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Ítems</span>
+                      <span>{t("summary.items")}</span>
                       <strong>{summaryTotals.itemCount}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Unidades</span>
+                      <span>{t("summary.units")}</span>
                       <strong>{summaryTotals.units}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Total ítems USD</span>
+                      <span>{t("summary.itemsUsd")}</span>
                       <strong>{formatMoney(summaryTotals.itemsUSD, "USD")}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Total ítems ARS</span>
+                      <span>{t("summary.itemsArs")}</span>
                       <strong>{formatMoney(summaryTotals.itemsARS, "ARS")}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Total equivalente ARS</span>
+                      <span>{t("summary.equivalentArs")}</span>
                       <strong>
                         {exchangeRateNumber > 0 || summaryTotals.itemsUSD === 0
                           ? formatMoney(summaryTotals.equivalentARS, "ARS")
-                          : "Definí TC"}
+                          : t("summary.defineExchangeRate")}
                       </strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Pagado USD</span>
+                      <span>{t("summary.paidUsd")}</span>
                       <strong>{formatMoney(summaryTotals.paidUSD, "USD")}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Pagado ARS</span>
+                      <span>{t("summary.paidArs")}</span>
                       <strong>{formatMoney(summaryTotals.paidARS, "ARS")}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
-                      <span>Pagado equivalente ARS</span>
+                      <span>{t("summary.paidEquivalentArs")}</span>
                       <strong>
                         {exchangeRateNumber > 0 || summaryTotals.paidUSD === 0
                           ? formatMoney(summaryTotals.paidEquivalentARS, "ARS")
-                          : "Definí TC"}
+                          : t("summary.defineExchangeRate")}
                       </strong>
                     </div>
                   </div>
 
                   <div className="sales-payment-box">
-                    <label>Tipo de cambio USD → ARS</label>
+                    <label>{t("summary.exchangeRate")}</label>
                     <input
                       type="number"
                       min={0}
                       step="0.01"
                       value={exchangeRate}
                       onChange={(e) => setExchangeRate(e.target.value)}
-                      placeholder="Ej: 1200"
+                      placeholder={t("placeholders.exchangeRate")}
                     />
 
                     {requiresExchangeRate && exchangeRateNumber <= 0 && (
                       <div className="sales-payment-hint sales-payment-warning">
-                        Ingresá el tipo de cambio solo si querés consolidar una operación mixta.
+                        {t("summary.exchangeRateWarning")}
                       </div>
                     )}
 
                     {exchangeRateNumber > 0 && summaryTotals.itemsUSD > 0 && (
                       <div className="sales-payment-hint">
-                        Equivalente de ítems USD en ARS: <strong>{formatMoney(convertedUsdToArs, "ARS")}</strong>
+                        {t("summary.usdItemsEquivalent")} <strong>{formatMoney(convertedUsdToArs, "ARS")}</strong>
                       </div>
                     )}
 
                     <div className="sales-payment-total-line">
-                      <span>Total equivalente ARS</span>
+                      <span>{t("summary.arsItemsEquivalent")}</span>
                       <strong>{formatMoney(totalEquivalentArs, "ARS")}</strong>
                     </div>
                   </div>
 
                   <div className="sales-payment-methods-box">
                     <div className="sales-payment-methods-head">
-                      <span>Formas de pago</span>
+                      <span>{t("payments.title")}</span>
                     </div>
 
                     <div className="sales-payment-form">
@@ -1608,12 +1615,12 @@ export default function SalesUnifiedPage() {
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                       >
-                        <option value="cash">Efectivo</option>
-                        <option value="transfer">Transferencia</option>
-                        <option value="debit">Débito</option>
-                        <option value="credit">Crédito</option>
-                        <option value="mercadopago">Mercado Pago</option>
-                        <option value="other">Otro</option>
+                        <option value="cash">{t("payments.methods.cash")}</option>
+                        <option value="transfer">{t("payments.methods.transfer")}</option>
+                        <option value="debit">{t("payments.methods.debit")}</option>
+                        <option value="credit">{t("payments.methods.credit")}</option>
+                        <option value="mercadopago">{t("payments.methods.mercadopago")}</option>
+                        <option value="other">{t("payments.methods.other")}</option>
                       </select>
 
                       <select
@@ -1630,14 +1637,14 @@ export default function SalesUnifiedPage() {
                         step="0.01"
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}
-                        placeholder="Monto"
+                        placeholder={t("placeholders.paymentAmount")}
                       />
 
                       <input
                         type="text"
                         value={paymentReference}
                         onChange={(e) => setPaymentReference(e.target.value)}
-                        placeholder="Referencia (opcional)"
+                        placeholder={t("placeholders.paymentReference")}
                       />
 
                       <button
@@ -1645,20 +1652,20 @@ export default function SalesUnifiedPage() {
                         className="sales-secondary-btn"
                         onClick={addPayment}
                       >
-                        Agregar pago
+                        {t("actions.addPayment")}
                       </button>
                     </div>
 
                     {payments.length === 0 ? (
                       <div className="sales-payment-empty">
-                        Todavía no hay pagos cargados.
+                        {t("payments.empty")}
                       </div>
                     ) : (
                       <div className="sales-payment-list">
                         {payments.map((payment, index) => (
                           <div className="sales-payment-item" key={`${payment.method}-${payment.currency}-${index}`}>
                             <div className="sales-payment-item-copy">
-                              <strong>{getPaymentMethodLabel(payment.method)}</strong>
+                              <strong>{getPaymentMethodLabel(payment.method, t)}</strong>
                               <span>
                                 {formatMoney(payment.amount, payment.currency)}
                                 {payment.reference ? ` · ${payment.reference}` : ""}
@@ -1669,7 +1676,7 @@ export default function SalesUnifiedPage() {
                               type="button"
                               className="icon-btn danger"
                               onClick={() => removePayment(index)}
-                              title="Eliminar pago"
+                              title={t("actions.removePayment")}
                             >
                               🗑
                             </button>
@@ -1680,11 +1687,11 @@ export default function SalesUnifiedPage() {
 
                     <div className="sales-payment-detail-box">
                       <div className="sales-payment-methods-head">
-                        <span>Detalle fino</span>
+                        <span>{t("payments.detail")}</span>
                       </div>
 
                       {summaryTotals.paymentBreakdown.length === 0 ? (
-                        <div className="sales-payment-empty">Sin pagos cargados.</div>
+                        <div className="sales-payment-empty">{t("payments.emptyShort")}</div>
                       ) : (
                         <div className="sales-payment-breakdown-list">
                           {summaryTotals.paymentBreakdown.map((row, index) => (
@@ -1713,7 +1720,7 @@ export default function SalesUnifiedPage() {
                                   overflowWrap: "anywhere",
                                 }}
                               >
-                                {getPaymentMethodLabel(row.method)}
+                                {getPaymentMethodLabel(row.method, t)}
                               </div>
                               <div
                                 style={{
@@ -1734,31 +1741,31 @@ export default function SalesUnifiedPage() {
 
                     <div className="sales-payment-balance">
                       <div>
-                        <span>Total pagos ARS</span>
+                        <span>{t("payments.totalArs")}</span>
                         <strong>{formatMoney(summaryTotals.paidARS, "ARS")}</strong>
                       </div>
 
                       <div>
-                        <span>Total pagos USD</span>
+                        <span>{t("payments.totalUsd")}</span>
                         <strong>{formatMoney(summaryTotals.paidUSD, "USD")}</strong>
                       </div>
 
                       <div>
-                        <span>Saldo ARS</span>
+                        <span>{t("payments.balanceArs")}</span>
                         <strong className={summaryTotals.balanceARS === 0 ? "sales-balance-ok" : "sales-balance-pending"}>
                           {formatMoney(summaryTotals.balanceARS, "ARS")}
                         </strong>
                       </div>
 
                       <div>
-                        <span>Saldo USD</span>
+                        <span>{t("payments.balanceUsd")}</span>
                         <strong className={summaryTotals.balanceUSD === 0 ? "sales-balance-ok" : "sales-balance-pending"}>
                           {formatMoney(summaryTotals.balanceUSD, "USD")}
                         </strong>
                       </div>
 
                       <div>
-                        <span>Diferencia equivalente ARS</span>
+                        <span>{t("payments.differenceEquivalentArs")}</span>
                         <strong
                           className={
                             Math.abs(paymentDifferenceEquivalentArs) <= 0.01
@@ -1777,7 +1784,7 @@ export default function SalesUnifiedPage() {
                       onClick={closeSaleModal}
                       type="button"
                     >
-                      Cancelar
+                      {t("actions.cancel")}
                     </button>
 
                     <button
@@ -1786,7 +1793,7 @@ export default function SalesUnifiedPage() {
                       disabled={submittingSale}
                       type="button"
                     >
-                      {submittingSale ? "Confirmando..." : "Confirmar venta"}
+                      {submittingSale ? t("actions.confirming") : t("actions.confirmSale")}
                     </button>
                   </div>
                 </div>
@@ -1804,9 +1811,9 @@ export default function SalesUnifiedPage() {
           >
             <div className="modal-header sales-modal-header-pro">
               <div>
-                <div className="sales-kicker">Alta rápida</div>
-                <h2>Nuevo cliente</h2>
-                <p>Crealo desde la venta y seguí el flujo sin salir del modal.</p>
+                <div className="sales-kicker">{t("customerModal.eyebrow")}</div>
+                <h2>{t("customerModal.title")}</h2>
+                <p>{t("customerModal.subtitle")}</p>
               </div>
 
               <button
@@ -1822,7 +1829,7 @@ export default function SalesUnifiedPage() {
               <div className="sales-pro-card">
                 <div className="sales-customer-grid">
                   <div className="sales-field">
-                    <label>Nombre</label>
+                    <label>{t("customerModal.firstName")}</label>
                     <input
                       type="text"
                       value={customerForm.first_name}
@@ -1832,12 +1839,12 @@ export default function SalesUnifiedPage() {
                           first_name: e.target.value,
                         }))
                       }
-                      placeholder="Nombre"
+                      placeholder={t("customerModal.firstNamePlaceholder")}
                     />
                   </div>
 
                   <div className="sales-field">
-                    <label>Apellido</label>
+                    <label>{t("customerModal.lastName")}</label>
                     <input
                       type="text"
                       value={customerForm.last_name}
@@ -1847,12 +1854,12 @@ export default function SalesUnifiedPage() {
                           last_name: e.target.value,
                         }))
                       }
-                      placeholder="Apellido"
+                      placeholder={t("customerModal.lastNamePlaceholder")}
                     />
                   </div>
 
                   <div className="sales-field">
-                    <label>Email</label>
+                    <label>{t("customerModal.email")}</label>
                     <input
                       type="email"
                       value={customerForm.email}
@@ -1862,12 +1869,12 @@ export default function SalesUnifiedPage() {
                           email: e.target.value,
                         }))
                       }
-                      placeholder="cliente@email.com"
+                      placeholder={t("customerModal.emailPlaceholder")}
                     />
                   </div>
 
                   <div className="sales-field">
-                    <label>Teléfono</label>
+                    <label>{t("customerModal.phone")}</label>
                     <input
                       type="text"
                       value={customerForm.phone}
@@ -1877,7 +1884,7 @@ export default function SalesUnifiedPage() {
                           phone: e.target.value,
                         }))
                       }
-                      placeholder="Teléfono"
+                      placeholder={t("customerModal.phonePlaceholder")}
                     />
                   </div>
                 </div>
@@ -1889,7 +1896,7 @@ export default function SalesUnifiedPage() {
                   onClick={closeCustomerModal}
                   type="button"
                 >
-                  Cancelar
+                  {t("actions.cancel")}
                 </button>
 
                 <button
@@ -1898,7 +1905,7 @@ export default function SalesUnifiedPage() {
                   disabled={submittingCustomer}
                   type="button"
                 >
-                  {submittingCustomer ? "Guardando..." : "Guardar cliente"}
+                  {submittingCustomer ? t("actions.saving") : t("actions.saveCustomer")}
                 </button>
               </div>
             </div>

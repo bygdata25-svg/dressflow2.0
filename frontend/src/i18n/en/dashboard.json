@@ -1,58 +1,205 @@
 {
-  "eyebrow": "Editorial Tech Fashion",
-  "title": "Welcome to DressFlow",
-  "subtitle": "A fashion operations platform with the precision of an ERP and the visual language of a premium brand.",
-  "today": "Today",
-  "heroValueSuffix": "active operations",
-  "heroMeta": "Loans, stock updates and atelier activity in one place.",
-  "stats": {
-    "availableDresses": "Available Dresses",
-    "activeLoans": "Active Loans",
-    "availableRolls": "Available Rolls",
-    "soldDresses": "Sold Dresses"
+  "hero": {
+    "title": "Your operation in one view",
+    "subtitle": "Production, stock, loans and alerts to make faster decisions.",
+    "lastUpdate": "Last update",
+    "autoUpdate": "Auto refresh"
   },
-  "collection": {
-    "eyebrow": "Collection",
-    "title": "Discover Our Collection",
-    "noImage": "No image"
+  "states": {
+    "loading": "Loading dashboard...",
+    "loadError": "Failed to load data"
   },
-  "stock": {
-    "eyebrow": "Stock",
-    "title": "Roll Movements",
-    "empty": "No recent movements"
+  "sections": {
+    "operations": {
+      "eyebrow": "Operations",
+      "title": "Production focus"
+    },
+    "inventory": {
+      "eyebrow": "Inventory",
+      "title": "Operational base"
+    }
   },
-  "operations": {
-    "eyebrow": "Operations",
-    "title": "Loan Activity",
-    "empty": "No recent loans"
+  "kpis": {
+    "activeOrders": {
+      "label": "Active orders",
+      "meta": "In production"
+    },
+    "delayed": {
+      "label": "Delayed",
+      "meta": "Out of schedule"
+    },
+    "dueSoon": {
+      "label": "Due soon",
+      "meta": "Upcoming deadlines"
+    },
+    "workshops": {
+      "label": "Workshops",
+      "meta": "Active"
+    },
+    "availableDresses": {
+      "label": "Available dresses",
+      "meta": "{{count}} on loan"
+    },
+    "availableRolls": {
+      "label": "Available rolls",
+      "meta": "{{count}} depleted"
+    },
+    "criticalAccessories": {
+      "label": "Critical trims",
+      "meta": "Low stock"
+    },
+    "activeAlerts": {
+      "label": "Alerts",
+      "meta": "Active"
+    }
   },
-  "summary": {
-    "activeLoans": "Active Loans",
-    "overdue": "Overdue",
-    "dueSoon": "Due Soon"
+  "executive": {
+    "delayedProduction": {
+      "title": "Delayed production",
+      "subtitle": "orders out of schedule"
+    },
+    "criticalSupplies": {
+      "title": "Critical supplies",
+      "subtitle": "need restock"
+    },
+    "overdueLoans": {
+      "title": "Overdue loans",
+      "subtitle": "pending returns"
+    }
   },
   "alerts": {
-    "overdueTitle": "Overdue loans",
-    "overdueMessage": "There are {{count}} overdue loan(s).",
-    "dueSoonTitle": "Loans due soon",
-    "dueSoonMessage": "There are {{count}} loan(s) with an upcoming return date.",
-    "depletedRollsTitle": "Depleted rolls",
-    "depletedRollsMessage": "There are {{count}} depleted roll(s)."
+    "title": "Critical alerts",
+    "today": "Today",
+    "empty": "No active alerts",
+    "categories": {
+      "production": "Production",
+      "stock": "Stock",
+      "loans": "Loans",
+      "inventory": "Inventory",
+      "financial": "Financial",
+      "general": "General"
+    },
+    "actions": {
+      "viewDetail": "View detail",
+      "viewAccessories": "View accessories",
+      "viewTrims": "View trims"
+    },
+    "generated": {
+      "accessoriesLow": {
+        "title": "Low accessories stock",
+        "message": "{{count}} accessories with low stock"
+      },
+      "trimsLow": {
+        "title": "Low trims stock",
+        "message": "{{count}} trims with low stock"
+      }
+    }
   },
-  "statuses": {
-    "AVAILABLE": "Available",
-    "LOANED": "Loaned",
-    "MAINTENANCE": "Maintenance",
-    "SOLD": "Sold",
-    "RETIRED": "Retired",
-    "ACTIVE": "Active",
-    "RETURNED": "Returned",
-    "LATE": "Late",
+  "orders": {
+    "title": "Production orders",
+    "empty": "No active orders",
+    "noWorkshop": "No workshop",
+    "noProduct": "No product",
+    "noDate": "No date",
+    "dueDate": "Due: {{date}}",
+    "daysLate": "{{count}} days late",
+    "dueStates": {
+      "normal": "On time",
+      "dueSoon": "Due soon",
+      "delayed": "Delayed"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "MATERIALS_RESERVED": "Materials reserved",
+      "APPROVED": "Approved",
+      "IN_PRODUCTION": "In production",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "priorities": {
+      "LOW": "Low",
+      "NORMAL": "Normal",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    }
+  },
+  "charts": {
+    "dresses": {
+      "title": "Dress status",
+      "subtitle": "Current distribution",
+      "labels": {
+        "available": "Available",
+        "loaned": "Loaned",
+        "maintenance": "Workshop",
+        "sold": "Sold"
+      }
+    },
+    "loans": {
+      "title": "Loan status",
+      "subtitle": "Current situation",
+      "labels": {
+        "active": "Active",
+        "overdue": "Overdue",
+        "dueSoon": "Due soon"
+      }
+    },
+    "workshops": {
+      "title": "Workshop load",
+      "subtitle": "Active orders",
+      "empty": "No active workshops",
+      "activeOrders": "{{count}} active orders"
+    }
+  },
+  "lists": {
+    "topDresses": {
+      "title": "Top dresses",
+      "empty": "No data",
+      "loans": "{{count}} loans"
+    },
+    "idleDresses": {
+      "title": "Idle dresses",
+      "empty": "No data",
+      "daysWithoutMovement": "{{count}} days without movement"
+    },
+    "recentLoans": {
+      "title": "Recent loans",
+      "empty": "No data",
+      "noDress": "No dress",
+      "noCustomer": "No customer",
+      "returns": "Return: {{date}}"
+    },
+    "recentMovements": {
+      "title": "Recent movements",
+      "empty": "No data",
+      "noRollCode": "No code",
+      "fabricFallback": "Fabric"
+    }
+  },
+  "insights": {
+    "eyebrow": "Insights",
+    "title": "Smart insights",
+    "fallback": {
+      "topDress": {
+        "title": "Top dress",
+        "description": "{{count}} loans"
+      },
+      "idleDresses": {
+        "title": "Idle dresses",
+        "description": "Check rotation"
+      },
+      "productionDelay": {
+        "title": "Production delay",
+        "description": "Review planning"
+      },
+      "workshopLoad": {
+        "title": "Busiest workshop",
+        "description": "{{count}} active orders"
+      }
+    }
+  },
+  "movementTypes": {
     "IN": "In",
     "OUT": "Out",
     "ADJUSTMENT": "Adjustment"
-  },
-  "meta": {
-    "returns": "Returns {{date}}"
   }
 }

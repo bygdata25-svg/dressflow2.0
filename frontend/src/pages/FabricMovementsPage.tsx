@@ -33,6 +33,7 @@ const PAGE_SIZE = 20;
 
 export default function FabricMovementsPage() {
   const { t } = useTranslation(["common", "fabric-movements"]);
+
   const [rows, setRows] = useState<Movement[]>([]);
   const [rolls, setRolls] = useState<Roll[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,7 @@ export default function FabricMovementsPage() {
     type: "OUT",
     quantity: "",
     reference: "",
-    notes: ""
+    notes: "",
   });
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -66,38 +67,44 @@ export default function FabricMovementsPage() {
             page,
             page_size: PAGE_SIZE,
             search: search || undefined,
-            type: typeFilter || undefined
-          }
+            type: typeFilter || undefined,
+          },
         }),
         api.get<PaginatedResponse<Roll>>("/fabric-rolls", {
-          params: { page: 1, page_size: 100, status: "AVAILABLE" }
-        })
+          params: { page: 1, page_size: 100, status: "AVAILABLE" },
+        }),
       ]);
 
-      setRows(movementsResponse.data.items);
-      setTotal(movementsResponse.data.total);
-      setRolls(rollsResponse.data.items);
+      setRows(Array.isArray(movementsResponse.data.items) ? movementsResponse.data.items : []);
+      setTotal(Number(movementsResponse.data.total || 0));
+      setRolls(Array.isArray(rollsResponse.data.items) ? rollsResponse.data.items : []);
     } catch (err: any) {
-      setError(err?.response?.data?.detail?.message || t("fabric-movements:form.messages.error"));
+      const detail = err?.response?.data?.detail;
+
+      if (typeof detail === "string") setError(detail);
+      else if (detail?.message) setError(detail.message);
+      else setError(t("fabric-movements:form.messages.error"));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
   }, [page, search, typeFilter]);
 
   const createMovement = async (event: React.FormEvent) => {
     event.preventDefault();
+
     try {
       setError("");
+
       await api.post("/fabric-movements", {
         fabric_roll_id: form.fabric_roll_id,
         type: form.type,
         quantity: Number(form.quantity),
         reference: form.reference || null,
-        notes: form.notes || null
+        notes: form.notes || null,
       });
 
       setForm({
@@ -105,31 +112,55 @@ export default function FabricMovementsPage() {
         type: "OUT",
         quantity: "",
         reference: "",
-        notes: ""
+        notes: "",
       });
 
       await loadAll();
     } catch (err: any) {
-      setError(err?.response?.data?.detail?.message || t("fabric-movements:form.messages.error"));
+      const detail = err?.response?.data?.detail;
+
+      if (typeof detail === "string") setError(detail);
+      else if (detail?.message) setError(detail.message);
+      else setError(t("fabric-movements:form.messages.error"));
     }
   };
 
   const columns = useMemo<DataGridColumn<Movement>[]>(() => {
     return [
-      { key: "roll_code", label: t("fabric-movements:fields.roll"), render: (row) => row.roll_code || "-" },
-      { key: "fabric_name", label: t("fabric-movements:fields.fabric"), render: (row) => row.fabric_name || "-" },
+      {
+        key: "roll_code",
+        label: t("fabric-movements:fields.roll"),
+        render: (row) => row.roll_code || "-",
+      },
+      {
+        key: "fabric_name",
+        label: t("fabric-movements:fields.fabric"),
+        render: (row) => row.fabric_name || "-",
+      },
       {
         key: "type",
         label: t("fabric-movements:fields.type"),
         render: (row) => (
           <span className={`df-status-badge df-status-badge--${row.type.toLowerCase()}`}>
-            {t(`fabric-movements:types.${row.type}`)}
+            {t(`fabric-movements:types.${row.type}`, { defaultValue: row.type })}
           </span>
-        )
+        ),
       },
-      { key: "quantity", label: t("fabric-movements:fields.quantity"), render: (row) => row.quantity },
-      { key: "reference", label: t("fabric-movements:fields.reference"), render: (row) => row.reference || "-" },
-      { key: "notes", label: t("fabric-movements:fields.notes"), render: (row) => row.notes || "-" }
+      {
+        key: "quantity",
+        label: t("fabric-movements:fields.quantity"),
+        render: (row) => row.quantity,
+      },
+      {
+        key: "reference",
+        label: t("fabric-movements:fields.reference"),
+        render: (row) => row.reference || "-",
+      },
+      {
+        key: "notes",
+        label: t("fabric-movements:fields.notes"),
+        render: (row) => row.notes || "-",
+      },
     ];
   }, [t]);
 
@@ -145,51 +176,68 @@ export default function FabricMovementsPage() {
 
       <section className="df-pro-card">
         <form onSubmit={createMovement} className="df-pro-form-grid df-pro-form-grid--6">
-          <select
-            className="df-pro-select"
-            value={form.fabric_roll_id}
-            onChange={(e) => setForm((prev) => ({ ...prev, fabric_roll_id: e.target.value }))}
-          >
-            <option value="">{t("fabric-movements:form.placeholders.roll")}</option>
-            {rolls.map((roll) => (
-              <option key={roll.id} value={roll.id}>
-                {roll.roll_code} - {roll.fabric_name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="df-pro-label">{t("fabric-movements:fields.roll")}</label>
+            <select
+              className="df-pro-select"
+              value={form.fabric_roll_id}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, fabric_roll_id: e.target.value }))
+              }
+            >
+              <option value="">{t("fabric-movements:form.placeholders.roll")}</option>
+              {rolls.map((roll) => (
+                <option key={roll.id} value={roll.id}>
+                  {roll.roll_code} - {roll.fabric_name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            className="df-pro-select"
-            value={form.type}
-            onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
-          >
-            <option value="IN">{t("fabric-movements:types.IN")}</option>
-            <option value="OUT">{t("fabric-movements:types.OUT")}</option>
-            <option value="ADJUSTMENT">{t("fabric-movements:types.ADJUSTMENT")}</option>
-          </select>
+          <div>
+            <label className="df-pro-label">{t("fabric-movements:fields.type")}</label>
+            <select
+              className="df-pro-select"
+              value={form.type}
+              onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
+            >
+              <option value="IN">{t("fabric-movements:types.IN")}</option>
+              <option value="OUT">{t("fabric-movements:types.OUT")}</option>
+              <option value="ADJUSTMENT">{t("fabric-movements:types.ADJUSTMENT")}</option>
+            </select>
+          </div>
 
-          <input
-            className="df-pro-input"
-            placeholder={t("fabric-movements:form.placeholders.quantity")}
-            type="number"
-            step="0.01"
-            value={form.quantity}
-            onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value }))}
-          />
+          <div>
+            <label className="df-pro-label">{t("fabric-movements:fields.quantity")}</label>
+            <input
+              className="df-pro-input"
+              placeholder={t("fabric-movements:form.placeholders.quantity")}
+              type="number"
+              step="0.01"
+              value={form.quantity}
+              onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value }))}
+            />
+          </div>
 
-          <input
-            className="df-pro-input"
-            placeholder={t("fabric-movements:form.placeholders.reference")}
-            value={form.reference}
-            onChange={(e) => setForm((prev) => ({ ...prev, reference: e.target.value }))}
-          />
+          <div>
+            <label className="df-pro-label">{t("fabric-movements:fields.reference")}</label>
+            <input
+              className="df-pro-input"
+              placeholder={t("fabric-movements:form.placeholders.reference")}
+              value={form.reference}
+              onChange={(e) => setForm((prev) => ({ ...prev, reference: e.target.value }))}
+            />
+          </div>
 
-          <input
-            className="df-pro-input"
-            placeholder={t("fabric-movements:form.placeholders.notes")}
-            value={form.notes}
-            onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-          />
+          <div>
+            <label className="df-pro-label">{t("fabric-movements:fields.notes")}</label>
+            <input
+              className="df-pro-input"
+              placeholder={t("fabric-movements:form.placeholders.notes")}
+              value={form.notes}
+              onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+            />
+          </div>
 
           <button type="submit">{t("common:actions.create")}</button>
         </form>
@@ -232,6 +280,7 @@ export default function FabricMovementsPage() {
           </div>
 
           <button type="submit">{t("common:actions.search")}</button>
+
           <button
             type="button"
             onClick={() => {
@@ -247,26 +296,36 @@ export default function FabricMovementsPage() {
       </section>
 
       {loading && <p>{t("common:status.loading")}</p>}
+
       {error && <p>{error}</p>}
+
       {!loading && rows.length > 0 && (
         <section className="df-pro-card">
           <DataGrid rows={rows} columns={columns} getRowKey={(row) => row.id} />
         </section>
       )}
+
       {!loading && rows.length === 0 && <p>{t("fabric-movements:empty")}</p>}
 
       <footer className="df-pro-pagination">
         <div>
           {t("common:pagination.showing")} {rows.length} / {total}
         </div>
+
         <div className="df-pro-actions-row">
-          <button onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
+          <button type="button" onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
             {t("common:pagination.previous")}
           </button>
+
           <span>
             {t("common:pagination.page")} {page} {t("common:pagination.of")} {totalPages}
           </span>
-          <button onClick={() => setPage((prev) => prev + 1)} disabled={page >= totalPages}>
+
+          <button
+            type="button"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={page >= totalPages}
+          >
             {t("common:pagination.next")}
           </button>
         </div>

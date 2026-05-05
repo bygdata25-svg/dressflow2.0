@@ -1,0 +1,76 @@
+{
+  "title": "Movimientos de accesorios",
+  "eyebrow": "Inventario",
+  "modal": {
+    "stock": "Stock"
+  },
+  "subtitle": "Registrá entradas, salidas y ajustes para mantener el stock siempre actualizado.",
+  "new": "Nuevo movimiento",
+
+  "kpis": {
+    "in": "Entradas visibles",
+    "out": "Salidas visibles",
+    "adjust": "Ajustes visibles"
+  },
+
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Código, accesorio, referencia...",
+    "type": "Tipo",
+    "searchButton": "Buscar",
+    "clear": "Limpiar"
+  },
+
+  "table": {
+    "date": "Fecha",
+    "type": "Tipo",
+    "accessory": "Accesorio",
+    "quantity": "Cantidad",
+    "reference": "Referencia",
+    "notes": "Notas"
+  },
+
+  "types": {
+    "all": "Todos los tipos",
+    "in": "Entrada",
+    "out": "Salida",
+    "adjust": "Ajuste"
+  },
+
+  "messages": {
+    "loading": "Cargando movimientos...",
+    "empty": "No hay movimientos de accesorios para mostrar.",
+    "errorLoad": "No se pudieron cargar los movimientos de accesorios.",
+    "errorSave": "No se pudo guardar el movimiento.",
+    "selectAccessory": "Seleccioná un accesorio.",
+    "invalidQuantity": "Ingresá una cantidad mayor a cero."
+  },
+
+  "pagination": {
+    "showing": "Mostrando {{count}} / {{total}}",
+    "page": "Página {{page}} de {{totalPages}}",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+
+  "modal": {
+    "title": "Nuevo movimiento de accesorio",
+    "accessory": "Accesorio",
+    "selectAccessory": "Seleccionar accesorio",
+    "type": "Tipo",
+    "quantity": "Cantidad",
+    "newStock": "Nuevo stock",
+    "reference": "Referencia",
+    "notes": "Notas",
+    "notesPlaceholder": "Observaciones del movimiento",
+    "referencePlaceholder": "Ej: Compra, venta, conteo...",
+    "quantityPlaceholder": "Ej: 3",
+    "adjustPlaceholder": "Ej: 15"
+  },
+
+  "actions": {
+    "cancel": "Cancelar",
+    "save": "Crear movimiento",
+    "saving": "Guardando..."
+  }
+}

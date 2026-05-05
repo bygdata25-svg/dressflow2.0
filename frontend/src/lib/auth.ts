@@ -18,6 +18,9 @@ export type MeResponse = {
   impersonated: boolean;
   impersonated_by?: string | null;
   original_sub?: string | null;
+  tenant_default_language?: "es" | "en";
+  preferred_language?: "es" | "en" | null;
+  effective_language?: "es" | "en";
 };
 
 export type TokenResponse = {

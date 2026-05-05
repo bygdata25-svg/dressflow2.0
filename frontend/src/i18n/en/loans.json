@@ -1,17 +1,25 @@
 {
-  "title": "Loans",
+  "title": "Loans / Rentals",
   "hero": {
     "eyebrow": "Operations",
-    "subtitle": "Manage active loans, returns and customer operations with a clean editorial workflow."
+    "subtitle": "Manage loans, rentals and returns from a unified flow."
   },
-  "empty": "There are no loans yet.",
+  "types": {
+    "loan": "Loan",
+    "rental": "Rental",
+    "loanPlural": "Loans",
+    "rentalPlural": "Rentals",
+    "all": "All"
+  },
   "fields": {
     "dress": "Dress",
     "customer": "Customer",
     "startDate": "Start date",
     "expectedReturnDate": "Expected return",
     "actualReturnDate": "Actual return",
-    "status": "Status"
+    "status": "Status",
+    "type": "Type",
+    "amount": "Amount"
   },
   "status": {
     "ACTIVE": "Active",
@@ -20,26 +28,47 @@
   },
   "filters": {
     "search": "Search",
-    "searchPlaceholder": "Search by dress or customer",
+    "searchPlaceholder": "Dress or customer",
     "status": "Status",
-    "allStatuses": "All statuses"
+    "allStatuses": "All statuses",
+    "type": "Type",
+    "allTypes": "All types"
   },
-  "form": {
-    "title": "Create loan",
+  "modal": {
+    "createLoan": "New loan",
+    "createRental": "New rental",
+    "note": "Register a dress checkout as a loan or rental from the same flow.",
+    "type": "Type",
     "dress": "Dress",
     "customer": "Customer",
     "startDate": "Start date",
     "expectedReturnDate": "Expected return date",
-    "create": "Create loan",
+    "amount": "Rental amount",
+    "notes": "Notes",
+    "notesPlaceholder": "Internal operation notes",
+    "amountPlaceholder": "Ex: 150.00",
     "dressPlaceholder": "Select dress",
     "customerPlaceholder": "Select customer"
   },
   "actions": {
-    "return": "Return"
+    "new": "New loan / rental",
+    "return": "Return",
+    "createLoan": "Create loan",
+    "createRental": "Create rental"
   },
   "messages": {
-    "loadError": "Could not load loans.",
-    "createError": "Could not create loan.",
-    "returnError": "Could not return loan."
+    "loading": "Loading records...",
+    "empty": "No records to display.",
+    "loadError": "Could not load records.",
+    "createError": "Could not create operation.",
+    "returnError": "Could not process return.",
+    "selectDress": "Select a dress.",
+    "selectCustomer": "Select a customer.",
+    "selectStartDate": "Enter the start date.",
+    "invalidAmount": "Enter a rental amount greater than zero."
+  },
+  "pagination": {
+    "showing": "Showing {{count}} / {{total}}",
+    "page": "Page {{page}} of {{totalPages}}"
   }
 }

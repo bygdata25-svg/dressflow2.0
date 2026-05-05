@@ -15,7 +15,9 @@
     "minStock": "Stock mínimo",
     "supplier": "Proveedor",
     "unitCost": "Costo unitario",
-    "notes": "Notas"
+    "notes": "Notas",
+    "photo": "Foto",
+    "image": "Imagen"
   },
   "filters": {
     "search": "Buscar",
@@ -23,6 +25,8 @@
   },
   "form": {
     "title": "Crear avío",
+    "selectFile": "Seleccionar archivo",
+    "noFileSelected": "Sin archivo seleccionado",
     "placeholders": {
       "code": "Ej: CIERRE-001",
       "name": "Ej: Cierre invisible negro",
@@ -36,6 +40,29 @@
     },
     "messages": {
       "error": "No se pudo crear el avío."
+    },
+    "validation": {
+      "required": "Código y nombre son obligatorios."
     }
+  },
+  "actions": {
+    "new": "Nuevo avío",
+    "selectFile": "Seleccionar archivo"
+  },
+  "status": {
+  "noFileSelected": "Sin archivo seleccionado"
+  },
+  "images": {
+    "noImage": "Sin foto",
+    "preview": "Vista previa",
+    "noFileSelected": "Sin archivo seleccionado"
+  },
+  "modal": {
+    "new": "Nuevo avío",
+    "edit": "Editar avío"
+  },
+  "delete": {
+    "confirm": "¿Eliminar avío?",
+    "error": "No se pudo eliminar el avío."
   }
 }

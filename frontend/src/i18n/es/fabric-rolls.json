@@ -4,16 +4,24 @@
     "eyebrow": "Estructura de stock",
     "subtitle": "Seguí cada rollo con metraje preciso, disponibilidad e información de la tela de origen."
   },
+   "actions": {
+    "new": "Nuevo rollo"
+  },
   "empty": "No hay rollos cargados todavía.",
   "fields": {
-    "rollCode": "Código de rollo",
-    "fabric": "Tela",
-    "initialLength": "Metraje inicial",
-    "currentLength": "Metraje actual",
-    "unit": "Unidad",
-    "status": "Estado",
-    "notes": "Notas"
-  },
+     "rollCode": "Código de rollo",
+     "fabric": "Tela",
+     "supplier": "Proveedor",
+     "initialLength": "Metraje inicial",
+     "currentLength": "Metraje actual",
+     "reservedLength": "Metros reservados",
+     "unit": "Unidad",
+     "status": "Estado",
+     "location": "Ubicación",
+     "pricePerMeter": "Precio / metro",
+     "purchaseDate": "Fecha compra",
+     "notes": "Notas"
+   },
   "status": {
     "AVAILABLE": "Disponible",
     "DEPLETED": "Agotado"
@@ -25,11 +33,15 @@
     "allStatuses": "Todos los estados"
   },
   "form": {
-    "title": "Crear rollo",
+    "createTitle": "Crear rollo",
+    "estimatedValue": "Precio estimado",
     "placeholders": {
       "fabric": "Seleccionar tela",
+      "noSupplier": "Seleccionar proveedor",
+      "pricePerMeter": "Ej: 20000",
       "rollCode": "Ej: R-001",
       "initialLength": "Ej: 25",
+      "location": "Primer estante",
       "notes": "Notas del rollo"
     },
     "messages": {

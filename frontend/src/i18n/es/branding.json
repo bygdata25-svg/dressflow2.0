@@ -1,0 +1,35 @@
+{
+  "eyebrow": "Identidad visual",
+  "title": "Branding",
+  "subtitle": "Personalizá la identidad visual de tu empresa dentro de DressFlow.",
+
+  "logo": {
+    "title": "Logo",
+    "upload": "Subir logo",
+    "noLogo": "Sin logo",
+    "recommended": "Recomendado: PNG con fondo transparente.",
+    "uploading": "Subiendo logo...",
+    "updated": "Logo actualizado correctamente.",
+    "uploadError": "No se pudo subir el logo.",
+    "selectFile": "Seleccionar archivo",
+    "noFileSelected": "Ningún archivo seleccionado"
+  },
+
+  "color": {
+    "title": "Color principal",
+    "autosave": "Autosave activado",
+    "saving": "Guardando...",
+    "saved": "Color guardado automáticamente.",
+    "saveError": "No se pudo guardar el color."
+  },
+
+  "preview": {
+    "label": "Vista previa",
+    "title": "Preview de marca",
+    "description": "Así se verán botones, acentos y elementos principales de la interfaz."
+  },
+
+  "loadError": "No se pudo cargar el branding.",
+  
+  "alt": "Logo de la empresa"
+}

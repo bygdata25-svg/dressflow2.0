@@ -15,7 +15,9 @@
     "minStock": "Minimum stock",
     "supplier": "Supplier",
     "unitCost": "Unit cost",
-    "notes": "Notes"
+    "notes": "Notes",
+    "photo": "Photo",
+    "image": "Image"
   },
   "filters": {
     "search": "Search",
@@ -23,6 +25,8 @@
   },
   "form": {
     "title": "Create trim",
+    "selectFile": "Select file",
+    "noFileSelected": "No file selected",
     "placeholders": {
       "code": "Ex: ZIPPER-001",
       "name": "Ex: Black invisible zipper",
@@ -36,6 +40,29 @@
     },
     "messages": {
       "error": "Could not create the trim."
+    },
+    "validation": {
+      "required": "Code and name are required."
     }
+  },
+  "actions": {
+    "new": "New trim",
+    "selectFile": "Select file"
+  },
+  "status": {
+  "noFileSelected": "No file selected"
+  },
+  "images": {
+    "noImage": "No photo",
+    "preview": "Preview",
+    "noFileSelected": "No file selected"
+  },
+  "modal": {
+    "new": "New trim",
+    "edit": "Edit trim"
+  },
+  "delete": {
+    "confirm": "Delete trim?",
+    "error": "Could not delete the trim."
   }
 }

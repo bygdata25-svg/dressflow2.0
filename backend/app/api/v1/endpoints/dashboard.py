@@ -1,4 +1,4 @@
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, func, desc, text
@@ -177,9 +177,9 @@ def get_stock_predictions(db: Session, tenant_id):
                     "type": "STOCK_PREDICTION",
                     "category": "stock",
                     "level": "high" if days_left <= 7 else "medium",
-                    "title": f"Stock proyectado bajo: {fabric_label}",
+                    "title": "📦 Riesgo de stock",
                     "message": (
-                        f"Stock actual {current_stock:.2f} m. "
+                        f"{fabric_label}: stock actual {current_stock:.2f} m. "
                         f"Al ritmo actual se agotaría en {max(0, int(round(days_left)))} día(s)."
                     ),
                     "action": {"label": "Ver rollos", "url": "/fabric-rolls"},
@@ -199,7 +199,7 @@ def get_stock_predictions(db: Session, tenant_id):
             {
                 "type": "STOCK_FORECAST",
                 "title": "Riesgo de stock",
-                "value": most_urgent["title"].replace("Stock proyectado bajo: ", ""),
+                "value": "Reposición sugerida",
                 "description": most_urgent["message"],
                 "tone": "danger" if most_urgent["level"] == "high" else "warning",
             }
@@ -266,9 +266,9 @@ def get_production_smart_alerts(db: Session, tenant_id):
                     "type": "PRODUCTION_OVERDUE",
                     "category": "production",
                     "level": "high",
-                    "title": f"Orden atrasada {order_code}",
-                    "message": f"La orden está vencida hace {days_late} día(s).",
-                    "action": {"label": "Ver orden", "url": order_url},
+                    "title": "⚠️ Producción en riesgo",
+                    "message": f"La orden {order_code} está atrasada {days_late} día(s). Puede afectar entregas y disponibilidad.",
+                    "action": {"label": "Ver producción", "url": order_url},
                     "meta": {"order_id": str(row["id"]), "days_late": days_late},
                 }
             )
@@ -279,12 +279,14 @@ def get_production_smart_alerts(db: Session, tenant_id):
                     "type": "PRODUCTION_DUE_SOON",
                     "category": "production",
                     "level": "medium",
-                    "title": f"Orden por vencer {order_code}",
-                    "message": f"Tiene fecha de entrega en {days_to_due} día(s).",
+                    "title": "⏳ Entrega próxima",
+                    "message": f"La orden {order_code} vence en {days_to_due} día(s). Conviene revisar avance y materiales.",
                     "action": {"label": "Ver orden", "url": order_url},
                     "meta": {"order_id": str(row["id"]), "days_to_due": days_to_due},
                 }
             )
+        if updated_at and updated_at.tzinfo is not None:
+            updated_at = updated_at.replace(tzinfo=None)
 
         if updated_at and updated_at <= stale_limit and status in {"DRAFT", "APPROVED", "MATERIALS_RESERVED", "IN_PRODUCTION"}:
             stale_count += 1
@@ -293,8 +295,8 @@ def get_production_smart_alerts(db: Session, tenant_id):
                     "type": "PRODUCTION_STALE",
                     "category": "production",
                     "level": "medium",
-                    "title": f"Orden sin avance {order_code}",
-                    "message": "No registra actualización en los últimos 7 días.",
+                    "title": "🧊 Producción detenida",
+                    "message": f"La orden {order_code} no registra actividad hace más de 7 días.",
                     "action": {"label": "Revisar orden", "url": order_url},
                     "meta": {"order_id": str(row["id"]), "status": row["status"]},
                 }
@@ -308,8 +310,8 @@ def get_production_smart_alerts(db: Session, tenant_id):
                     "type": "PRODUCTION_PENDING_MATERIALS",
                     "category": "production",
                     "level": "medium",
-                    "title": f"Material pendiente {order_code}",
-                    "message": f"Tiene {pending_materials} material(es) con entrega incompleta.",
+                    "title": "🧵 Material incompleto",
+                    "message": f"La orden {order_code} tiene {pending_materials} material(es) pendiente(s). Riesgo de demora.",
                     "action": {"label": "Ver materiales", "url": order_url},
                     "meta": {"order_id": str(row["id"]), "pending_materials": pending_materials},
                 }
@@ -325,8 +327,8 @@ def get_production_smart_alerts(db: Session, tenant_id):
                     "type": "PRODUCTION_COST_OVERRUN",
                     "category": "financial",
                     "level": "high" if overrun_pct >= 40 else "medium",
-                    "title": f"Costo desviado {order_code}",
-                    "message": f"El costo real supera al estimado en {overrun_pct:.1f}%.",
+                    "title": "💸 Margen en riesgo",
+                    "message": f"La orden {order_code} superó el costo estimado en {overrun_pct:.1f}%.",
                     "action": {"label": "Ver costos", "url": order_url},
                     "meta": {
                         "order_id": str(row["id"]),
@@ -351,9 +353,9 @@ def get_production_smart_alerts(db: Session, tenant_id):
         insights.append(
             {
                 "type": "PRODUCTION_STALE",
-                "title": "Órdenes sin avance",
+                "title": "Producción detenida",
                 "value": stale_count,
-                "description": "Orden(es) abiertas sin actualización reciente.",
+                "description": "Órdenes abiertas sin actualización reciente. Conviene revisar cuellos de botella.",
                 "tone": "warning",
             }
         )
@@ -362,9 +364,9 @@ def get_production_smart_alerts(db: Session, tenant_id):
         insights.append(
             {
                 "type": "MATERIALS_PENDING",
-                "title": "Materiales pendientes",
+                "title": "Cuellos de botella",
                 "value": material_pending_count,
-                "description": "Orden(es) con materiales aún no entregados completamente.",
+                "description": "Órdenes con materiales incompletos que pueden frenar producción.",
                 "tone": "warning",
             }
         )
@@ -373,11 +375,24 @@ def get_production_smart_alerts(db: Session, tenant_id):
         insights.append(
             {
                 "type": "COST_OVERRUNS",
-                "title": "Desvíos de costo",
+                "title": "Margen en riesgo",
                 "value": cost_overrun_count,
-                "description": "Orden(es) con costo real por encima del estimado.",
+                "description": "Órdenes con sobrecosto detectado frente al estimado.",
                 "tone": "danger",
             }
+        )
+
+    attention_count = delayed_count + stale_count + material_pending_count + cost_overrun_count
+    if attention_count > 0:
+        insights.insert(
+            0,
+            {
+                "type": "PRODUCTION_HEALTH",
+                "title": "Estado de producción",
+                "value": attention_count,
+                "description": "Órdenes que requieren atención ejecutiva para evitar demoras o pérdida de margen.",
+                "tone": "danger" if attention_count >= 4 else "warning",
+            },
         )
 
     return alerts, insights
@@ -730,8 +745,8 @@ def dashboard_summary(
                 "type": "OVERDUE_LOANS",
                 "category": "loans",
                 "level": "high",
-                "title": "Préstamos vencidos",
-                "message": f"{loans_overdue} préstamo(s) requieren acción inmediata.",
+                "title": "🚨 Préstamos vencidos",
+                "message": f"{loans_overdue} préstamo(s) requieren seguimiento inmediato.",
                 "action": {"label": "Ver préstamos", "url": "/loans"},
             }
         )
@@ -742,8 +757,8 @@ def dashboard_summary(
                 "type": "LOANS_DUE_SOON",
                 "category": "loans",
                 "level": "medium",
-                "title": "Devoluciones próximas",
-                "message": f"{loans_due_soon} devolución(es) en los próximos días.",
+                "title": "⏳ Devoluciones próximas",
+                "message": f"{loans_due_soon} devolución(es) vencen en los próximos días.",
                 "action": {"label": "Ver agenda", "url": "/loans"},
             }
         )
@@ -754,8 +769,8 @@ def dashboard_summary(
                 "type": "FABRIC_ROLLS_DEPLETED",
                 "category": "stock",
                 "level": "low",
-                "title": "Rollos agotados",
-                "message": f"{rolls_depleted} rollo(s) sin stock.",
+                "title": "📦 Rollos agotados",
+                "message": f"{rolls_depleted} rollo(s) sin stock disponible.",
                 "action": {"label": "Ver rollos", "url": "/fabric-rolls"},
             }
         )
@@ -766,8 +781,8 @@ def dashboard_summary(
                 "type": "IDLE_DRESSES",
                 "category": "inventory",
                 "level": "low",
-                "title": "Vestidos sin movimiento",
-                "message": f"{len(idle_dresses)} vestido(s) sin uso en 60+ días.",
+                "title": "👗 Inventario sin rotación",
+                "message": f"{len(idle_dresses)} vestido(s) sin movimiento en más de 60 días.",
                 "action": {"label": "Ver vestidos", "url": "/dresses"},
             }
         )
@@ -778,7 +793,7 @@ def dashboard_summary(
                 "type": "DRESSES_CLEANING_DELAYED",
                 "category": "inventory",
                 "level": "medium",
-                "title": "Vestidos en limpieza",
+                "title": "🧼 Limpieza demorada",
                 "message": f"{cleaning_delayed} vestido(s) llevan más de 48 hs en limpieza.",
                 "action": {"label": "Ver vestidos", "url": "/dresses"},
             }
@@ -790,7 +805,7 @@ def dashboard_summary(
                 "type": "DRESSES_MAINTENANCE_DELAYED",
                 "category": "inventory",
                 "level": "high",
-                "title": "Vestidos en mantenimiento",
+                "title": "🛠️ Mantenimiento demorado",
                 "message": f"{maintenance_delayed} vestido(s) llevan varios días en reparación.",
                 "action": {"label": "Ver vestidos", "url": "/dresses"},
             }
@@ -799,6 +814,24 @@ def dashboard_summary(
     stock_prediction_alerts, stock_prediction_insights = get_stock_predictions(db, tenant_id)
     production_smart_alerts, production_smart_insights = get_production_smart_alerts(db, tenant_id)
     profitability_insights = get_profitability_insights(db, tenant_id)
+
+    delayed_production_alerts = [
+        alert for alert in production_smart_alerts
+        if alert.get("type") == "PRODUCTION_OVERDUE"
+    ]
+
+    if delayed_production_alerts:
+        alerts.insert(
+            0,
+            {
+                "type": "CRITICAL_PRODUCTION",
+                "category": "production",
+                "level": "high",
+                "title": "🚨 Atención inmediata requerida",
+                "message": f"{len(delayed_production_alerts)} orden(es) de producción están atrasadas.",
+                "action": {"label": "Ver producción", "url": "/production-orders"},
+            },
+        )
 
     alerts.extend(stock_prediction_alerts)
     alerts.extend(production_smart_alerts)
@@ -812,7 +845,7 @@ def dashboard_summary(
                 "type": "AVG_TICKET",
                 "title": "Ticket promedio",
                 "value": round(avg_ticket, 2),
-                "description": "Valor promedio histórico por vestido vendido.",
+                "description": "Valor promedio histórico por vestido vendido. Útil para analizar pricing.",
                 "tone": "neutral",
             }
         )
@@ -821,9 +854,9 @@ def dashboard_summary(
         insights.append(
             {
                 "type": "TOP_DRESS",
-                "title": "Vestido más demandado",
+                "title": "Oportunidad comercial",
                 "value": top_dresses[0]["name"],
-                "description": f"{top_dresses[0]['loan_count']} préstamo(s). Evaluá cápsulas similares o reposición.",
+                "description": f"{top_dresses[0]['loan_count']} préstamo(s). Puede justificar reposición o una cápsula similar.",
                 "tone": "success",
             }
         )
@@ -834,7 +867,7 @@ def dashboard_summary(
                 "type": "IDLE_INVENTORY",
                 "title": "Inventario inmovilizado",
                 "value": len(idle_dresses),
-                "description": "Vestidos sin rotación. Revisá fotos, precio o estrategia comercial.",
+                "description": "Vestidos sin rotación. Revisá fotos, precio, disponibilidad o estrategia comercial.",
                 "tone": "warning",
             }
         )

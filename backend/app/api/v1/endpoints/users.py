@@ -3,6 +3,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Literal
+from app.api.deps import get_current_user
 
 from app.api.deps import require_roles, get_current_membership
 from app.core.database import get_db
@@ -14,6 +17,8 @@ from app.services.audit_service import create_audit_log
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+class UserPreferencesUpdate(BaseModel):
+    preferred_language: Literal["es", "en"] | None = None
 
 @router.get("", response_model=list[UserResponse])
 def list_users(
@@ -168,4 +173,20 @@ def reset_user_password(
     return {
         "message": "Password reset",
         "temporary_password": temporary_password,
+    }
+
+@router.patch("/me/preferences")
+def update_my_preferences(
+    payload: UserPreferencesUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.preferred_language = payload.preferred_language
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "ok": True,
+        "preferred_language": current_user.preferred_language,
     }

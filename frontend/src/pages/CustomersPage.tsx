@@ -459,12 +459,13 @@ export default function CustomersPage() {
         }
         width="min(960px, 100%)"
       >
-        <form className="gf-form" onSubmit={saveCustomer}>
-          <DynamicForm
-            fields={fc.fields}
-            values={dynamicFormValues}
-            isEditing={Boolean(editingCustomer)}
-            onChange={(field, value) => {
+        <form className="gf-form" onSubmit={saveCustomer} noValidate>
+           <DynamicForm<CustomerFormState>
+             fields={fc.fields}
+             values={dynamicFormValues}
+             isEditing={Boolean(editingCustomer)}
+             i18nNamespace="customers"
+             onChange={(field, value) => {
               if (field === "tax_id") {
                 setForm((prev) => ({
                   ...prev,

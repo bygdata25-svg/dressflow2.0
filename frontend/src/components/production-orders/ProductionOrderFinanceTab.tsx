@@ -55,6 +55,14 @@ type Props = {
   ) => number;
 };
 
+
+type TranslateFn = ((key: string, fallback?: string, options?: Record<string, unknown>) => string) | null | undefined;
+
+function tr(t: TranslateFn, key: string, fallback: string, options?: Record<string, unknown>) {
+  if (typeof t !== "function") return fallback;
+  return t(key, fallback, options);
+}
+
 function toNumber(value?: string | number | null) {
   const n = Number(value ?? 0);
   return Number.isFinite(n) ? n : 0;
@@ -70,6 +78,7 @@ function formatCurrency(value?: string | number | null, currency = "USD") {
 }
 
 export default function ProductionOrderFinanceTab({
+  t,
   order,
   costSummary,
   costForm,
@@ -145,15 +154,15 @@ export default function ProductionOrderFinanceTab({
     <div className="po-fin-shell">
       <section className="po-fin-hero">
         <div className="po-fin-hero__highlight">
-          <span className="po-fin-hero__label">Precio sugerido por unidad</span>
+          <span className="po-fin-hero__label">{tr(t, "production-orders:finance.suggestedUnitPrice", "Precio sugerido por unidad")}</span>
 
           <strong className="po-fin-hero__value">
             {formatCurrency(suggestedARS, "ARS")}
           </strong>
 
           <small className="po-fin-hero__hint">
-            Equivalente aprox. {formatCurrency(suggestedUSD, "USD")} · basado en costo unitario{" "}
-            {actualMaterialCost > 0 ? "real" : "estimado"} × multiplicador
+            {tr(t, "production-orders:finance.approxEquivalent", "Equivalente aprox.")} {formatCurrency(suggestedUSD, "USD")} · {tr(t, "production-orders:finance.basedOnUnitCost", "basado en costo unitario")}{" "}
+            {actualMaterialCost > 0 ? tr(t, "production-orders:finance.real", "real") : tr(t, "production-orders:finance.estimated", "estimado")} × {tr(t, "production-orders:finance.multiplierLower", "multiplicador")}
           </small>
 
           <div
@@ -168,29 +177,29 @@ export default function ProductionOrderFinanceTab({
               border: "1px solid rgba(255,255,255,0.16)",
             }}
           >
-            <span style={{ fontSize: 12, opacity: 0.78 }}>Margen estimado</span>
+            <span style={{ fontSize: 12, opacity: 0.78 }}>{tr(t, "production-orders:finance.estimatedMargin", "Margen estimado")}</span>
             <strong style={{ fontSize: 18, lineHeight: 1.15 }}>
-              {marginIcon} {marginLabel} · {formatCurrency(estimatedMargin, effectiveCurrency)}
+              {marginIcon} {tr(t, `production-orders:finance.margin.${marginTone}`, marginLabel)} · {formatCurrency(estimatedMargin, effectiveCurrency)}
             </strong>
             <small style={{ opacity: 0.78 }}>
-              {estimatedMarginPercent.toFixed(1)}% sobre costo total estimado/real disponible
+              {estimatedMarginPercent.toFixed(1)}% {tr(t, "production-orders:finance.marginOverCost", "sobre costo total estimado/real disponible")}
             </small>
           </div>
         </div>
 
         <div className="po-fin-kpis">
           <div className="po-fin-kpi">
-            <span>Costo material</span>
+            <span>{tr(t, "production-orders:finance.materialCost", "Costo material")}</span>
             <strong>{formatCurrency(visibleMaterialCost, effectiveCurrency)}</strong>
           </div>
 
           <div className="po-fin-kpi">
-            <span>Mano de obra / otros</span>
+            <span>{tr(t, "production-orders:finance.laborAndOthers", "Mano de obra / otros")}</span>
             <strong>{formatCurrency(laborAndOtherCosts, effectiveCurrency)}</strong>
           </div>
 
           <div className="po-fin-kpi">
-            <span>Total estimado</span>
+            <span>{tr(t, "production-orders:finance.estimatedTotal", "Total estimado")}</span>
             <strong>{formatCurrency(visibleTotalEstimated, effectiveCurrency)}</strong>
           </div>
         </div>
@@ -199,14 +208,14 @@ export default function ProductionOrderFinanceTab({
       <div className="po-fin-layout">
         <section className="po-section-card">
           <div className="po-section-head">
-            <h3>Actualizar costos</h3>
-            <p>Mano de obra, costos adicionales, moneda y parámetros comerciales.</p>
+            <h3>{tr(t, "production-orders:finance.updateCosts", "Actualizar costos")}</h3>
+            <p>{tr(t, "production-orders:finance.updateCostsHint", "Mano de obra, costos adicionales, moneda y parámetros comerciales.")}</p>
           </div>
 
           <form onSubmit={saveCosts} className="po-fin-form">
             <div className="po-fin-form__grid">
               <div>
-                <label className="df-pro-label">Mano de obra</label>
+                <label className="df-pro-label">{tr(t, "production-orders:costs.laborCost", "Mano de obra")}</label>
                 <input
                   className="df-pro-input"
                   type="number"
@@ -220,7 +229,7 @@ export default function ProductionOrderFinanceTab({
               </div>
 
               <div>
-                <label className="df-pro-label">Costos adicionales</label>
+                <label className="df-pro-label">{tr(t, "production-orders:costs.additionalCost", "Costos adicionales")}</label>
                 <input
                   className="df-pro-input"
                   type="number"
@@ -234,7 +243,7 @@ export default function ProductionOrderFinanceTab({
               </div>
 
               <div>
-                <label className="df-pro-label">Moneda de costos</label>
+                <label className="df-pro-label">{tr(t, "production-orders:finance.costCurrency", "Moneda de costos")}</label>
                 <select
                   className="df-pro-select"
                   value={costForm.currency}
@@ -248,7 +257,7 @@ export default function ProductionOrderFinanceTab({
               </div>
 
               <div>
-                <label className="df-pro-label">Tipo de cambio</label>
+                <label className="df-pro-label">{tr(t, "production-orders:finance.exchangeRate", "Tipo de cambio")}</label>
                 <input
                   className="df-pro-input"
                   type="number"
@@ -258,12 +267,12 @@ export default function ProductionOrderFinanceTab({
                   onChange={(e) =>
                     setCostForm((prev) => ({ ...prev, exchange_rate: e.target.value }))
                   }
-                  placeholder="Ej. 1000"
+                  placeholder={tr(t, "production-orders:finance.exchangeRatePlaceholder", "Ej. 1000")}
                 />
               </div>
 
               <div>
-                <label className="df-pro-label">Multiplicador</label>
+                <label className="df-pro-label">{tr(t, "production-orders:finance.multiplier", "Multiplicador")}</label>
                 <input
                   className="df-pro-input"
                   type="number"
@@ -279,7 +288,7 @@ export default function ProductionOrderFinanceTab({
 
             <div className="po-fin-form__actions">
               <button type="submit" className="po-primary-btn">
-                Guardar costos
+                {tr(t, "production-orders:actions.saveCosts", "Guardar costos")}
               </button>
             </div>
           </form>
@@ -287,75 +296,75 @@ export default function ProductionOrderFinanceTab({
 
         <section className="po-section-card">
           <div className="po-section-head">
-            <h3>Resumen económico</h3>
-            <p>Lectura rápida del costo comercial de la orden.</p>
+            <h3>{tr(t, "production-orders:finance.economicSummary", "Resumen económico")}</h3>
+            <p>{tr(t, "production-orders:finance.economicSummaryHint", "Lectura rápida del costo comercial de la orden.")}</p>
           </div>
 
           <div className="po-fin-summary">
             <div className="po-fin-summary__item">
-              <span>Orden</span>
+              <span>{tr(t, "production-orders:fields.orderNumber", "Orden")}</span>
               <strong>{order.order_number}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Vestido</span>
+              <span>{tr(t, "production-orders:operation.design.dress", "Vestido")}</span>
               <strong>{order.target_dress_name}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Taller</span>
+              <span>{tr(t, "production-orders:fields.workshop", "Taller")}</span>
               <strong>{order.workshop_supplier_name || "-"}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Planificado</span>
+              <span>{tr(t, "production-orders:fields.planned", "Planificado")}</span>
               <strong>{order.planned_quantity}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Producido</span>
+              <span>{tr(t, "production-orders:fields.produced", "Producido")}</span>
               <strong>{order.produced_quantity}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Moneda</span>
+              <span>{tr(t, "production-orders:costs.currency", "Moneda")}</span>
               <strong>{effectiveCurrency}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Costo material</span>
+              <span>{tr(t, "production-orders:finance.materialCost", "Costo material")}</span>
               <strong>{formatCurrency(visibleMaterialCost, effectiveCurrency)}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Mano de obra / otros</span>
+              <span>{tr(t, "production-orders:finance.laborAndOthers", "Mano de obra / otros")}</span>
               <strong>{formatCurrency(laborAndOtherCosts, effectiveCurrency)}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Total estimado</span>
+              <span>{tr(t, "production-orders:finance.estimatedTotal", "Total estimado")}</span>
               <strong>{formatCurrency(visibleTotalEstimated, effectiveCurrency)}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Margen estimado</span>
+              <span>{tr(t, "production-orders:finance.estimatedMargin", "Margen estimado")}</span>
               <strong>
                 {marginIcon} {formatCurrency(estimatedMargin, effectiveCurrency)}
               </strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Rentabilidad estimada</span>
+              <span>{tr(t, "production-orders:finance.estimatedProfitability", "Rentabilidad estimada")}</span>
               <strong>{estimatedMarginPercent.toFixed(1)}%</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Precio sugerido ARS</span>
+              <span>{tr(t, "production-orders:finance.suggestedPriceARS", "Precio sugerido ARS")}</span>
               <strong>{formatCurrency(suggestedARS, "ARS")}</strong>
             </div>
 
             <div className="po-fin-summary__item">
-              <span>Precio sugerido USD</span>
+              <span>{tr(t, "production-orders:finance.suggestedPriceUSD", "Precio sugerido USD")}</span>
               <strong>{formatCurrency(suggestedUSD, "USD")}</strong>
             </div>
           </div>

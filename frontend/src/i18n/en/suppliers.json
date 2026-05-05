@@ -1,45 +1,87 @@
 {
   "title": "Suppliers",
   "hero": {
-    "eyebrow": "Partners & Sourcing",
-    "subtitle": "Keep your supplier network organized for fabrics, rolls and purchasing operations."
+    "eyebrow": "Sourcing",
+    "subtitle": "Manage fabric suppliers, workshops and operational contacts."
   },
-  "empty": "There are no suppliers yet.",
+
+  "actions": {
+    "new": "New supplier"
+  },
+
+  "empty": "There are no suppliers to display.",
+
+  "states": {
+    "loading": "Loading suppliers..."
+  },
+
+  "messages": {
+    "loadError": "Error loading suppliers"
+  },
+
   "fields": {
     "name": "Name",
     "email": "Email",
     "phone": "Phone",
+    "origin": "Origin",
     "notes": "Notes",
-    "supplierType": "Type"
+    "supplierType": "Type",
+    "noCode": "No code"
   },
+
   "types": {
     "FABRIC_SUPPLIER": "Fabric supplier",
-    "WORKSHOP": "Workshop / Seamstress",
+    "WORKSHOP": "Workshop",
     "BOTH": "Both"
   },
+
   "filters": {
     "search": "Search",
-    "searchPlaceholder": "Search by name, email, phone or type"
+    "searchPlaceholder": "Name, email, phone..."
   },
+
   "delete": {
-    "confirm": "Do you want to delete this supplier?",
+    "confirm": "Delete supplier?",
     "error": "Could not delete the supplier."
   },
+
+  "modal": {
+    "createTitle": "New supplier",
+    "editTitle": "Edit supplier"
+  },
+
   "form": {
-    "title": "Create supplier",
+    "fields": {
+      "name": "Name",
+      "supplierCode": "Code",
+      "origin": "Origin",
+      "email": "Email",
+      "phone": "Phone",
+      "notes": "Notes",
+      "supplierType": "Type"
+    },
     "placeholders": {
       "name": "Ex: South Textiles",
+      "supplierCode": "Ex: SUP-001",
+      "origin": "Ex: Argentina",
       "email": "Ex: contact@supplier.com",
       "phone": "Ex: +54 11 1234 5678",
-      "notes": "Supplier notes",
-      "supplierType": "Select type"
+      "notes": "Supplier notes"
     },
     "validation": {
-      "required": "Name is required."
+      "nameRequired": "Name is required.",
+      "typeRequired": "Type is required."
     },
     "messages": {
-      "created": "Supplier created successfully.",
-      "error": "Could not create the supplier."
+      "createError": "Could not create supplier.",
+      "updateError": "Could not update supplier.",
+      "saveError": "Could not save supplier."
+    },
+    "actions": {
+      "create": "Create supplier",
+      "update": "Save changes",
+      "cancel": "Cancel",
+      "saving": "Saving..."
     }
   }
 }

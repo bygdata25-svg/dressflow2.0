@@ -50,27 +50,190 @@ def _apply_header_style(ws, headers: list[str]) -> None:
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def _movement_type_label(value: str | None) -> str:
-    raw = (value or "").upper()
-    if raw == "IN":
-        return "Entrada"
-    if raw == "OUT":
-        return "Salida"
-    if raw == "ADJUST":
-        return "Ajuste"
-    return value or ""
+
+# =========================================================
+# I18N HELPERS FOR EXCEL EXPORTS
+# =========================================================
+
+REPORTS_I18N = {
+    "es": {
+        "stock_valuation": {
+            "sheet": "Stock valorizado",
+            "filename": "stock_valorizado.xlsx",
+            "headers": [
+                "Tela", "Color", "Stock disponible (mts)", "Precio promedio x metro", "Valor total",
+            ],
+            "total": "TOTAL",
+        },
+        "fabric_movements": {
+            "sheet": "Movimientos tela",
+            "filename": "movimientos_tela.xlsx",
+            "headers": [
+                "Fecha", "Tipo", "Tela", "Color", "Rollo", "Cantidad", "Referencia", "Motivo", "Notas",
+            ],
+            "types": {"IN": "Entrada", "OUT": "Salida", "ADJUST": "Ajuste", "ADJUSTMENT": "Ajuste"},
+            "reasons": {
+                "PRODUCTION_ISSUE": "Orden de producción",
+                "PRODUCTION_RETURN": "Devolución de producción",
+            },
+        },
+        "loans": {
+            "sheet": "Préstamos y alquileres",
+            "filename": "prestamos_alquileres.xlsx",
+            "headers": [
+                "Tipo", "Fecha inicio", "Fecha vencimiento", "Fecha devolución", "Estado",
+                "Código vestido", "Nombre vestido", "Cliente", "Valor", "Notas",
+            ],
+            "types": {"LOAN": "Préstamo", "RENTAL": "Alquiler"},
+            "status": {"ACTIVE": "Activo", "LATE": "Vencido", "RETURNED": "Devuelto"},
+        },
+        "production_costs": {
+            "sheet": "Costos producción",
+            "filename": "costos_produccion.xlsx",
+            "headers": [
+                "Orden", "Vestido", "Taller", "Estado", "Prioridad", "Entrega", "Planificado", "Producido",
+                "Materiales est.", "Materiales real", "Mano de obra", "Adicional", "Total est.",
+                "Total real", "Unitario est.", "Unitario real", "Moneda",
+            ],
+            "status": {
+                "DRAFT": "Borrador", "PLANNED": "Planificada", "IN_PROGRESS": "En proceso",
+                "DONE": "Finalizada", "CANCELLED": "Cancelada", "COMPLETED": "Completada",
+            },
+            "priority": {"LOW": "Baja", "NORMAL": "Normal", "MEDIUM": "Media", "HIGH": "Alta", "URGENT": "Urgente"},
+        },
+        "sales": {
+            "sheet": "Ventas",
+            "filename": "ventas.xlsx",
+            "headers": [
+                "N° Venta", "Fecha", "Código vestido", "Vestido", "Cliente", "Precio", "Moneda",
+                "Método de pago", "Estado", "Notas",
+            ],
+            "total": "TOTAL",
+        },
+        "accessory_sales": {
+            "sheet": "Ventas accesorios",
+            "filename": "ventas_accesorios.xlsx",
+            "headers": [
+                "N° Venta", "Fecha", "Código accesorio", "Accesorio", "Cliente", "Cantidad",
+                "Precio unitario", "Total", "Moneda", "Método de pago", "Estado", "Notas",
+            ],
+            "total": "TOTAL",
+        },
+        "sales_unified": {
+            "sheet": "Ventas unificadas",
+            "filename": "ventas_unificadas.xlsx",
+            "headers": [
+                "N° Venta", "Fecha", "Cliente", "Moneda cabecera", "Estado", "Total ítems ARS",
+                "Total ítems USD", "Pagado ARS", "Pagado USD", "Ítems", "Pagos", "Notas",
+            ],
+            "total": "TOTALES",
+            "item_types": {"DRESS": "Vestido", "ACCESSORY": "Accesorio", "TRIM": "Avío"},
+            "item_fallback": "Ítem",
+        },
+        "sale_status": {"COMPLETED": "Completada", "CANCELLED": "Cancelada", "DRAFT": "Borrador", "PAID": "Pagada", "PARTIAL": "Parcial", "PENDING": "Pendiente"},
+        "payment_methods": {"CASH": "EFECTIVO", "TRANSFER": "TRANSFERENCIA", "CARD": "TARJETA DE CRÉDITO", "MERCADOPAGO": "MERCADO PAGO"},
+    },
+    "en": {
+        "stock_valuation": {
+            "sheet": "Stock valuation",
+            "filename": "stock_valuation.xlsx",
+            "headers": [
+                "Fabric", "Color", "Available stock (m)", "Average price per meter", "Total value",
+            ],
+            "total": "TOTAL",
+        },
+        "fabric_movements": {
+            "sheet": "Fabric movements",
+            "filename": "fabric_movements.xlsx",
+            "headers": [
+                "Date", "Type", "Fabric", "Color", "Roll", "Quantity", "Reference", "Reason", "Notes",
+            ],
+            "types": {"IN": "In", "OUT": "Out", "ADJUST": "Adjustment", "ADJUSTMENT": "Adjustment"},
+            "reasons": {
+                "PRODUCTION_ISSUE": "Production order",
+                "PRODUCTION_RETURN": "Production return",
+            },
+        },
+        "loans": {
+            "sheet": "Loans and rentals",
+            "filename": "loans_rentals.xlsx",
+            "headers": [
+                "Type", "Start date", "Due date", "Return date", "Status",
+                "Dress code", "Dress name", "Customer", "Amount", "Notes",
+            ],
+            "types": {"LOAN": "Loan", "RENTAL": "Rental"},
+            "status": {"ACTIVE": "Active", "LATE": "Late", "RETURNED": "Returned"},
+        },
+        "production_costs": {
+            "sheet": "Production costs",
+            "filename": "production_costs.xlsx",
+            "headers": [
+                "Order", "Dress", "Workshop", "Status", "Priority", "Due date", "Planned", "Produced",
+                "Est. materials", "Actual materials", "Labor", "Additional", "Est. total",
+                "Actual total", "Est. unit", "Actual unit", "Currency",
+            ],
+            "status": {
+                "DRAFT": "Draft", "PLANNED": "Planned", "IN_PROGRESS": "In progress",
+                "DONE": "Done", "CANCELLED": "Cancelled", "COMPLETED": "Completed",
+            },
+            "priority": {"LOW": "Low", "NORMAL": "Normal", "MEDIUM": "Medium", "HIGH": "High", "URGENT": "Urgent"},
+        },
+        "sales": {
+            "sheet": "Sales",
+            "filename": "sales.xlsx",
+            "headers": [
+                "Sale #", "Date", "Dress code", "Dress", "Customer", "Price", "Currency",
+                "Payment method", "Status", "Notes",
+            ],
+            "total": "TOTAL",
+        },
+        "accessory_sales": {
+            "sheet": "Accessory sales",
+            "filename": "accessory_sales.xlsx",
+            "headers": [
+                "Sale #", "Date", "Accessory code", "Accessory", "Customer", "Quantity",
+                "Unit price", "Total", "Currency", "Payment method", "Status", "Notes",
+            ],
+            "total": "TOTAL",
+        },
+        "sales_unified": {
+            "sheet": "Unified sales",
+            "filename": "unified_sales.xlsx",
+            "headers": [
+                "Sale #", "Date", "Customer", "Header currency", "Status", "Items total ARS",
+                "Items total USD", "Paid ARS", "Paid USD", "Items", "Payments", "Notes",
+            ],
+            "total": "TOTALS",
+            "item_types": {"DRESS": "Dress", "ACCESSORY": "Accessory", "TRIM": "Trim"},
+            "item_fallback": "Item",
+        },
+        "sale_status": {"COMPLETED": "Completed", "CANCELLED": "Cancelled", "DRAFT": "Draft", "PAID": "Paid", "PARTIAL": "Partial", "PENDING": "Pending"},
+        "payment_methods": {"CASH": "CASH", "TRANSFER": "TRANSFER", "CARD": "CREDIT CARD", "MERCADOPAGO": "MERCADO PAGO"},
+    },
+}
 
 
-def _loan_status_label(value: str | None) -> str:
-    raw = (value or "").upper()
-    if raw == "ACTIVE":
-        return "Activo"
-    if raw == "LATE":
-        return "Vencido"
-    if raw == "RETURNED":
-        return "Devuelto"
-    return value or ""
+def _lang(lang: str | None) -> str:
+    return "en" if str(lang or "es").lower().startswith("en") else "es"
 
+
+def _tx(section: str, lang: str | None) -> dict:
+    return REPORTS_I18N[_lang(lang)][section]
+
+
+def _label(section: str, group: str, value: str | None, lang: str | None, fallback: str = "") -> str:
+    raw = (value or "").upper().strip()
+    if not raw:
+        return fallback
+    return REPORTS_I18N[_lang(lang)].get(section, {}).get(group, {}).get(raw, value or fallback)
+
+
+def _movement_type_label(value: str | None, lang: str | None = "es") -> str:
+    return _tx("fabric_movements", lang)["types"].get((value or "").upper(), value or "")
+
+
+def _loan_status_label(value: str | None, lang: str | None = "es") -> str:
+    return _tx("loans", lang)["status"].get((value or "").upper(), value or "")
 
 def _loan_status_fill(value: str | None) -> PatternFill:
     raw = (value or "").upper()
@@ -94,60 +257,57 @@ def _loan_status_font(value: str | None) -> Font:
     return Font(color="000000")
 
 
-def _sale_status_label(value: str | None) -> str:
-    raw = (value or "").upper()
-    if raw == "COMPLETED":
-        return "Completada"
-    if raw == "CANCELLED":
-        return "Cancelada"
-    return value or ""
+
+def _sale_status_label(value: str | None, lang: str | None = "es") -> str:
+    return REPORTS_I18N[_lang(lang)]["sale_status"].get((value or "").upper().strip(), value or "")
 
 
 def _sale_status_fill(value: str | None) -> PatternFill:
     raw = (value or "").upper()
-    if raw == "COMPLETED":
+    if raw in ("COMPLETED", "PAID"):
         return PatternFill("solid", fgColor="ECFDF3")
     if raw == "CANCELLED":
         return PatternFill("solid", fgColor="F4F4F5")
+    if raw in ("PARTIAL", "PENDING"):
+        return PatternFill("solid", fgColor="FEF3C7")
     return PatternFill("solid", fgColor="FFFFFF")
 
 
 def _sale_status_font(value: str | None) -> Font:
     raw = (value or "").upper()
-    if raw == "COMPLETED":
+    if raw in ("COMPLETED", "PAID"):
         return Font(color="027A48", bold=True)
     if raw == "CANCELLED":
         return Font(color="52525B", bold=True)
+    if raw in ("PARTIAL", "PENDING"):
+        return Font(color="92400E", bold=True)
     return Font(color="000000")
 
-def _payment_method_label(value: str | None) -> str:
+
+def _payment_method_label(value: str | None, lang: str | None = "es") -> str:
     raw = (value or "").upper().strip()
-    if raw == "CASH":
-        return "EFECTIVO"
-    if raw == "TRANSFER":
-        return "TRANSFERENCIA"
-    if raw == "CARD":
-        return "TARJETA DE CREDITO"
-    if raw == "MERCADOPAGO":
-        return "MERCADO PAGO"
-    return value or ""
+    return REPORTS_I18N[_lang(lang)]["payment_methods"].get(raw, value or "")
 
 
-def _fabric_movement_note(row) -> str | None:
+
+def _fabric_movement_note(row, lang: str | None = "es") -> str | None:
     """
     Devuelve una nota legible para reportes de movimientos de tela.
     En salidas por producción, prioriza la orden de producción por sobre el texto técnico.
     """
     movement_reason = (row["movement_reason"] or "").upper()
     reference = row["reference"]
+    t = _tx("fabric_movements", lang)
 
     if movement_reason == "PRODUCTION_ISSUE" and reference:
         ref = str(reference).replace("Production Order", "").strip()
-        return f"Orden de producción {ref}" if ref else "Orden de producción"
+        label = t["reasons"].get("PRODUCTION_ISSUE", "Orden de producción")
+        return f"{label} {ref}" if ref else label
 
     if movement_reason == "PRODUCTION_RETURN" and reference:
         ref = str(reference).replace("Production Order", "").strip()
-        return f"Devolución de producción {ref}" if ref else "Devolución de producción"
+        label = t["reasons"].get("PRODUCTION_RETURN", "Devolución de producción")
+        return f"{label} {ref}" if ref else label
 
     return row["notes"]
 
@@ -247,6 +407,7 @@ def export_stock_valuation_report(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager", "staff")),
     search: str | None = Query(default=None),
+    lang: str = Query(default="es"),
 ):
     sql, extra_params = _build_stock_valuation_query(search=search)
 
@@ -255,18 +416,13 @@ def export_stock_valuation_report(
         {"tenant_id": membership.tenant_id, **extra_params},
     ).mappings().all()
 
+    tr = _tx("stock_valuation", lang)
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Stock valorizado"
+    ws.title = tr["sheet"]
 
-    headers = [
-        "Tela",
-        "Color",
-        "Stock disponible (mts)",
-        "Precio promedio x metro",
-        "Valor total",
-    ]
-    _apply_header_style(ws, headers)
+    _apply_header_style(ws, tr["headers"])
 
     grand_total = Decimal("0")
 
@@ -292,8 +448,9 @@ def export_stock_valuation_report(
         )
 
     total_row_idx = ws.max_row + 2
-    ws.cell(row=total_row_idx, column=4, value="TOTAL")
+    ws.cell(row=total_row_idx, column=4, value=tr["total"])
     ws.cell(row=total_row_idx, column=4).font = Font(bold=True)
+    ws.cell(row=total_row_idx, column=4).alignment = Alignment(horizontal="right", vertical="center")
     ws.cell(row=total_row_idx, column=5, value=float(grand_total))
     ws.cell(row=total_row_idx, column=5).font = Font(bold=True)
 
@@ -304,10 +461,13 @@ def export_stock_valuation_report(
     ws.column_dimensions["A"].width = 30
     ws.column_dimensions["B"].width = 18
     ws.column_dimensions["C"].width = 22
-    ws.column_dimensions["D"].width = 22
+    ws.column_dimensions["D"].width = 24
     ws.column_dimensions["E"].width = 18
 
-    return _excel_response(wb, "stock_valorizado.xlsx")
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:E{ws.max_row}"
+
+    return _excel_response(wb, tr["filename"])
 
 
 # =========================================================
@@ -425,6 +585,7 @@ def export_fabric_movements_report(
     movement_type: str | None = Query(default=None),
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    lang: str = Query(default="es"),
 ):
     sql, extra_params = _build_fabric_movements_query(
         search=search,
@@ -438,35 +599,26 @@ def export_fabric_movements_report(
         {"tenant_id": membership.tenant_id, **extra_params},
     ).mappings().all()
 
+    tr = _tx("fabric_movements", lang)
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Movimientos tela"
+    ws.title = tr["sheet"]
 
-    headers = [
-        "Fecha",
-        "Tipo",
-        "Tela",
-        "Color",
-        "Rollo",
-        "Cantidad",
-        "Referencia",
-        "Motivo",
-        "Notas",
-    ]
-    _apply_header_style(ws, headers)
+    _apply_header_style(ws, tr["headers"])
 
     for row in rows:
         ws.append(
             [
                 row["created_at"].strftime("%Y-%m-%d %H:%M") if row["created_at"] else "",
-                _movement_type_label(row["type"]),
+                _movement_type_label(row["type"], lang),
                 row["fabric_name"],
                 row["fabric_color"],
                 row["roll_code"],
                 float(row["quantity"] or 0),
                 row["reference"],
                 row["movement_reason"],
-                _fabric_movement_note(row),
+                _fabric_movement_note(row, lang),
             ]
         )
 
@@ -484,18 +636,21 @@ def export_fabric_movements_report(
     ws.column_dimensions["H"].width = 20
     ws.column_dimensions["I"].width = 30
 
-    return _excel_response(wb, "movimientos_tela.xlsx")
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:I{ws.max_row}"
+
+    return _excel_response(wb, tr["filename"])
 
 
 # =========================================================
+# PRESTAMOS / ALQUILERES# =========================================================
 # PRESTAMOS / ALQUILERES
 # =========================================================
 
-def _loan_type_label(value: str | None) -> str:
-    raw = (value or "").upper()
-    if raw == "RENTAL":
-        return "Alquiler"
-    return "Préstamo"
+
+def _loan_type_label(value: str | None, lang: str | None = "es") -> str:
+    raw = (value or "LOAN").upper()
+    return _tx("loans", lang)["types"].get(raw, value or "")
 
 
 def _build_loans_query(
@@ -652,6 +807,7 @@ def export_loans_report(
     loan_type: str | None = Query(default=None),
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    lang: str = Query(default="es"),
 ):
     sql, extra_params = _build_loans_query(
         search=search,
@@ -666,23 +822,13 @@ def export_loans_report(
         {"tenant_id": membership.tenant_id, **extra_params},
     ).mappings().all()
 
+    tr = _tx("loans", lang)
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Prestamos y alquileres"
+    ws.title = tr["sheet"]
 
-    headers = [
-        "Tipo",
-        "Fecha inicio",
-        "Fecha vencimiento",
-        "Fecha devolucion",
-        "Estado",
-        "Vestido codigo",
-        "Vestido nombre",
-        "Cliente",
-        "Valor",
-        "Notas",
-    ]
-    _apply_header_style(ws, headers)
+    _apply_header_style(ws, tr["headers"])
 
     today = date.today()
 
@@ -700,11 +846,11 @@ def export_loans_report(
 
         ws.append(
             [
-                _loan_type_label(row["loan_type"]),
+                _loan_type_label(row["loan_type"], lang),
                 row["start_date"].strftime("%Y-%m-%d") if row["start_date"] else "",
                 expected_return_date.strftime("%Y-%m-%d") if expected_return_date else "",
                 actual_return_date.strftime("%Y-%m-%d") if actual_return_date else "",
-                _loan_status_label(effective_status),
+                _loan_status_label(effective_status, lang),
                 row["dress_code"],
                 row["dress_name"],
                 customer_name,
@@ -734,10 +880,14 @@ def export_loans_report(
     ws.column_dimensions["I"].width = 16
     ws.column_dimensions["J"].width = 32
 
-    return _excel_response(wb, "prestamos_alquileres.xlsx")
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:J{ws.max_row}"
+
+    return _excel_response(wb, tr["filename"])
 
 
 # =========================================================
+# COSTOS DE PRODUCCION# =========================================================
 # COSTOS DE PRODUCCION
 # =========================================================
 
@@ -911,6 +1061,7 @@ def export_production_costs_report(
     status: str | None = Query(default=None),
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    lang: str = Query(default="es"),
 ):
     sql, extra_params = _build_production_costs_query(
         search=search,
@@ -924,30 +1075,13 @@ def export_production_costs_report(
         {"tenant_id": membership.tenant_id, **extra_params},
     ).mappings().all()
 
+    tr = _tx("production_costs", lang)
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Costos producción"
+    ws.title = tr["sheet"]
 
-    headers = [
-        "Orden",
-        "Vestido",
-        "Taller",
-        "Estado",
-        "Prioridad",
-        "Entrega",
-        "Planificado",
-        "Producido",
-        "Materiales est.",
-        "Materiales real",
-        "Mano de obra",
-        "Adicional",
-        "Total est.",
-        "Total real",
-        "Unitario est.",
-        "Unitario real",
-        "Moneda",
-    ]
-    _apply_header_style(ws, headers)
+    _apply_header_style(ws, tr["headers"])
 
     for row in rows:
         estimated_material = Decimal(str(row["estimated_material_cost"] or 0))
@@ -964,13 +1098,16 @@ def export_production_costs_report(
         unit_estimated = float(total_estimated / planned) if planned > 0 else None
         unit_actual = float(total_actual / produced) if produced > 0 else None
 
+        raw_status = (row["status"] or "").upper()
+        raw_priority = (row["priority"] or "").upper()
+
         ws.append(
             [
                 row["order_number"],
                 row["target_dress_name"],
                 row["workshop_supplier_name"],
-                row["status"],
-                row["priority"],
+                tr["status"].get(raw_status, row["status"]),
+                tr["priority"].get(raw_priority, row["priority"]),
                 row["due_date"].strftime("%Y-%m-%d") if row["due_date"] else "",
                 float(planned),
                 float(produced),
@@ -1009,10 +1146,14 @@ def export_production_costs_report(
     ws.column_dimensions["P"].width = 16
     ws.column_dimensions["Q"].width = 12
 
-    return _excel_response(wb, "costos_produccion.xlsx")
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:Q{ws.max_row}"
+
+    return _excel_response(wb, tr["filename"])
 
 
 # =========================================================
+# VENTAS DE VESTIDOS# =========================================================
 # VENTAS DE VESTIDOS
 # =========================================================
 
@@ -1090,6 +1231,7 @@ def export_sales_report(
     status_filter: str | None = Query(default=None, alias="status"),
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
+    lang: str = Query(default="es"),
     membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
@@ -1123,23 +1265,13 @@ def export_sales_report(
 
     rows = db.execute(stmt.order_by(desc(DressSale.sale_date))).all()
 
+    tr = _tx("sales", lang)
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Ventas"
+    ws.title = tr["sheet"]
 
-    headers = [
-        "N° Venta",
-        "Fecha",
-        "Código vestido",
-        "Vestido",
-        "Cliente",
-        "Precio",
-        "Moneda",
-        "Método de pago",
-        "Estado",
-        "Notas",
-    ]
-    _apply_header_style(ws, headers)
+    _apply_header_style(ws, tr["headers"])
 
     total_amount = Decimal("0")
 
@@ -1161,48 +1293,48 @@ def export_sales_report(
                 customer_name,
                 float(sale_price),
                 sale.currency or "USD",
-                _payment_method_label(sale.payment_method),
-                _sale_status_label(sale.status),
+                _payment_method_label(sale.payment_method, lang),
+                _sale_status_label(sale.status, lang),
                 sale.notes or "",
             ]
         )
 
         current_row = ws.max_row
 
-        price_cell = ws.cell(row=current_row, column=5)
+        price_cell = ws.cell(row=current_row, column=6)
         price_cell.number_format = "#,##0.00"
         price_cell.alignment = Alignment(horizontal="right", vertical="center")
 
-        currency_cell = ws.cell(row=current_row, column=6)
+        currency_cell = ws.cell(row=current_row, column=7)
         currency_cell.alignment = Alignment(horizontal="center", vertical="center")
 
-        payment_cell = ws.cell(row=current_row, column=7)
+        payment_cell = ws.cell(row=current_row, column=8)
         payment_cell.alignment = Alignment(horizontal="center", vertical="center")
 
-        status_cell = ws.cell(row=current_row, column=8)
+        status_cell = ws.cell(row=current_row, column=9)
         status_cell.fill = _sale_status_fill(sale.status)
         status_cell.font = _sale_status_font(sale.status)
         status_cell.alignment = Alignment(horizontal="center", vertical="center")
 
-        notes_cell = ws.cell(row=current_row, column=9)
+        notes_cell = ws.cell(row=current_row, column=10)
         notes_cell.alignment = Alignment(wrap_text=True, vertical="top")
 
     total_row_idx = ws.max_row + 2
-    ws.cell(row=total_row_idx, column=7, value="TOTAL")
-    ws.cell(row=total_row_idx, column=7).font = Font(bold=True)
-    ws.cell(row=total_row_idx, column=7).alignment = Alignment(horizontal="right", vertical="center")
+    ws.cell(row=total_row_idx, column=8, value=tr["total"])
+    ws.cell(row=total_row_idx, column=8).font = Font(bold=True)
+    ws.cell(row=total_row_idx, column=8).alignment = Alignment(horizontal="right", vertical="center")
 
-    total_value_cell = ws.cell(row=total_row_idx, column=8, value=float(total_amount))
+    total_value_cell = ws.cell(row=total_row_idx, column=9, value=float(total_amount))
     total_value_cell.font = Font(bold=True)
     total_value_cell.number_format = "#,##0.00"
     total_value_cell.alignment = Alignment(horizontal="right", vertical="center")
 
     total_label_fill = PatternFill("solid", fgColor="F4F1F5")
-    ws.cell(row=total_row_idx, column=7).fill = total_label_fill
     ws.cell(row=total_row_idx, column=8).fill = total_label_fill
+    ws.cell(row=total_row_idx, column=9).fill = total_label_fill
 
     ws.freeze_panes = "A2"
-    ws.auto_filter.ref = f"A1:I{ws.max_row}"
+    ws.auto_filter.ref = f"A1:J{ws.max_row}"
 
     ws.column_dimensions["A"].width = 16
     ws.column_dimensions["B"].width = 20
@@ -1214,10 +1346,11 @@ def export_sales_report(
     ws.column_dimensions["H"].width = 22
     ws.column_dimensions["I"].width = 14
     ws.column_dimensions["J"].width = 40
-    
-    return _excel_response(wb, "ventas.xlsx")
+
+    return _excel_response(wb, tr["filename"])
 
 # =========================================================
+# VENTAS DE ACCESORIOS# =========================================================
 # VENTAS DE ACCESORIOS
 # =========================================================
 
@@ -1308,6 +1441,7 @@ def export_accessory_sales_report(
     status_filter: str | None = Query(default=None, alias="status"),
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
+    lang: str = Query(default="es"),
     membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
@@ -1348,25 +1482,13 @@ def export_accessory_sales_report(
 
     rows = db.execute(stmt.order_by(desc(AccessorySale.sale_date))).all()
 
+    tr = _tx("accessory_sales", lang)
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Ventas accesorios"
+    ws.title = tr["sheet"]
 
-    headers = [
-        "N° Venta",
-        "Fecha",
-        "Código accesorio",
-        "Accesorio",
-        "Cliente",
-        "Cantidad",
-        "Precio unitario",
-        "Total",
-        "Moneda",
-        "Método de pago",
-        "Estado",
-        "Notas",
-    ]
-    _apply_header_style(ws, headers)
+    _apply_header_style(ws, tr["headers"])
 
     total_amount = Decimal("0")
 
@@ -1390,8 +1512,8 @@ def export_accessory_sales_report(
                 float(sale.unit_price or 0),
                 float(total_price),
                 sale.currency or "ARS",
-                _payment_method_label(sale.payment_method),
-                _sale_status_label(sale.status),
+                _payment_method_label(sale.payment_method, lang),
+                _sale_status_label(sale.status, lang),
                 sale.notes or "",
             ]
         )
@@ -1425,7 +1547,7 @@ def export_accessory_sales_report(
 
     total_row_idx = ws.max_row + 2
 
-    ws.cell(row=total_row_idx, column=10, value="TOTAL")
+    ws.cell(row=total_row_idx, column=10, value=tr["total"])
     ws.cell(row=total_row_idx, column=10).font = Font(bold=True)
     ws.cell(row=total_row_idx, column=10).alignment = Alignment(horizontal="right", vertical="center")
 
@@ -1454,11 +1576,11 @@ def export_accessory_sales_report(
     ws.column_dimensions["K"].width = 14
     ws.column_dimensions["L"].width = 40
 
-    return _excel_response(wb, "ventas_accesorios.xlsx")
-
+    return _excel_response(wb, tr["filename"])
 
 
 # =========================================================
+# VENTAS UNIFICADAS# =========================================================
 # VENTAS UNIFICADAS
 # =========================================================
 
@@ -1975,6 +2097,7 @@ def export_sales_unified_report(
     currency: str | None = Query(default=None),
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    lang: str = Query(default="es"),
 ):
     sql, extra_params = _build_sales_unified_query(
         search=q,
@@ -1989,25 +2112,13 @@ def export_sales_unified_report(
         {"tenant_id": membership.tenant_id, **extra_params},
     ).mappings().all()
 
+    tr = _tx("sales_unified", lang)
+
     wb = Workbook()
     ws = wb.active
-    ws.title = "Ventas unificadas"
+    ws.title = tr["sheet"]
 
-    headers = [
-        "N° Venta",
-        "Fecha",
-        "Cliente",
-        "Moneda cabecera",
-        "Estado",
-        "Total ítems ARS",
-        "Total ítems USD",
-        "Pagado ARS",
-        "Pagado USD",
-        "Ítems",
-        "Pagos",
-        "Notas",
-    ]
-    _apply_header_style(ws, headers)
+    _apply_header_style(ws, tr["headers"])
 
     total_items_ars = Decimal("0")
     total_items_usd = Decimal("0")
@@ -2065,9 +2176,10 @@ def export_sales_unified_report(
             else:
                 items_total_ars += line_total
 
-            item_type_label = "Vestido" if str(item["item_type"] or "").upper() == "DRESS" else "Accesorio"
+            raw_item_type = str(item["item_type"] or "").upper()
+            item_type_label = tr["item_types"].get(raw_item_type, tr["item_fallback"])
             item_parts.append(
-                f"{item_type_label}: {item['description_snapshot'] or 'Ítem'} · "
+                f"{item_type_label}: {item['description_snapshot'] or tr['item_fallback']} · "
                 f"x{int(item['quantity'] or 0)} · {currency_value} {float(line_total):,.2f}"
             )
 
@@ -2083,7 +2195,7 @@ def export_sales_unified_report(
 
             reference_text = f" · {payment['reference']}" if payment["reference"] else ""
             payment_parts.append(
-                f"{_payment_method_label(payment['payment_method'])}: "
+                f"{_payment_method_label(payment['payment_method'], lang)}: "
                 f"{currency_value} {float(amount):,.2f}{reference_text}"
             )
 
@@ -2098,7 +2210,7 @@ def export_sales_unified_report(
                 row["sale_date"].strftime("%Y-%m-%d %H:%M") if row["sale_date"] else "",
                 row["customer_full_name"] or "",
                 row["currency"] or "ARS",
-                _sale_status_label(row["status"]),
+                _sale_status_label(row["status"], lang),
                 float(items_total_ars),
                 float(items_total_usd),
                 float(paid_total_ars),
@@ -2127,7 +2239,7 @@ def export_sales_unified_report(
 
     total_row_idx = ws.max_row + 2
 
-    ws.cell(row=total_row_idx, column=5, value="TOTALES")
+    ws.cell(row=total_row_idx, column=5, value=tr["total"])
     ws.cell(row=total_row_idx, column=5).font = Font(bold=True)
     ws.cell(row=total_row_idx, column=5).alignment = Alignment(horizontal="right", vertical="center")
 
@@ -2162,4 +2274,4 @@ def export_sales_unified_report(
     ws.column_dimensions["K"].width = 42
     ws.column_dimensions["L"].width = 30
 
-    return _excel_response(wb, "ventas_unificadas.xlsx")
+    return _excel_response(wb, tr["filename"])

@@ -1,0 +1,30 @@
+{
+  "title": "Stock valuation",
+  "hero": {
+    "eyebrow": "Reports",
+    "subtitle": "View current fabric stock valued by price per meter."
+  },
+  "fields": {
+    "fabric": "Fabric",
+    "color": "Color",
+    "stockMeters": "Stock (m)",
+    "averagePricePerMeter": "Price per meter",
+    "totalValue": "Total value"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Fabric or color"
+  },
+  "summary": {
+    "records": "Records",
+    "totalValuation": "Total valuation"
+  },
+  "messages": {
+    "loading": "Loading report..."
+  },
+  "errors": {
+    "load": "Could not load report.",
+    "export": "Could not export report."
+  },
+  "empty": "No data to display."
+}

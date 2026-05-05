@@ -4,18 +4,24 @@
     "eyebrow": "Personas y relaciones",
     "subtitle": "Mantené tu base de clientes con contactos limpios y acceso operativo rápido."
   },
+  "actions": {
+    "create": "Nuevo cliente",
+    "edit": "Editar cliente"
+  },
   "empty": "No hay clientes cargados todavía.",
   "fields": {
-    "firstName": "Nombre",
-    "lastName": "Apellido",
-    "fullName": "Nombre completo",
+    "code": "Código",
+    "first_name": "Nombre",
+    "last_name": "Apellido",
+    "full_name": "Nombre completo",
     "email": "Email",
     "phone": "Teléfono",
-    "notes": "Notas"
+    "notes": "Notas",
+    "tax_id": "DNI / CUIT / CUIL"
   },
   "filters": {
     "search": "Buscar",
-    "searchPlaceholder": "Buscar por nombre, email o teléfono"
+    "searchPlaceholder": "Buscar por nombre, email, teléfono o documento"
   },
   "delete": {
     "confirm": "¿Querés eliminar este cliente?",
@@ -23,19 +29,44 @@
   },
   "form": {
     "title": "Crear cliente",
+    "fields": {
+      "code": "Código",
+      "first_name": "Nombre",
+      "last_name": "Apellido",
+      "full_name": "Nombre completo",
+      "email": "Email",
+      "phone": "Teléfono",
+      "notes": "Notas",
+      "tax_id": "DNI / CUIT / CUIL"
+    },
     "placeholders": {
-      "firstName": "Ej: Ana",
-      "lastName": "Ej: Pérez",
+      "code": "Ej: CUS-0001",
+      "first_name": "Ej: Ana",
+      "last_name": "Ej: Pérez",
       "email": "Ej: ana@email.com",
       "phone": "Ej: 11 1234 5678",
-      "notes": "Notas del cliente"
+      "notes": "Notas del cliente",
+      "tax_id": "Ej: 20-12345678-9"
+    },
+    "help": {
+      "full_name": "Campo virtual: Nombre + Apellido"
     },
     "validation": {
-      "required": "Nombre y apellido son obligatorios."
+      "required": "Nombre y apellido son obligatorios.",
+      "firstNameRequired": "El nombre es obligatorio.",
+      "lastNameRequired": "El apellido es obligatorio.",
+      "invalidTaxId": "El documento debe ser un DNI de 7 u 8 números, o un CUIT/CUIL válido."
     },
     "messages": {
       "created": "Cliente creado correctamente.",
-      "error": "No se pudo crear el cliente."
+      "error": "No se pudo guardar el cliente.",
+      "createError": "No se pudo crear el cliente.",
+      "updateError": "No se pudo actualizar el cliente."
+    },
+    "taxId": {
+      "detected": "Documento detectado",
+      "valid": "✔ válido",
+      "invalid": "✖ inválido"
     }
   }
 }

@@ -1,0 +1,60 @@
+{
+  "title": "Financial dashboard",
+
+  "hero": {
+    "eyebrow": "Analytics",
+    "subtitle": "Revenue, average ticket and sales evolution by currency."
+  },
+
+  "headline": {
+    "mixedTotal": "Mixed total",
+    "usdTotal": "Total USD",
+    "arsTotal": "Total ARS",
+    "mixedSubtitle": "Revenue by currency",
+    "usdSubtitle": "Revenue in USD",
+    "arsSubtitle": "Revenue in local currency"
+  },
+
+  "kpis": {
+    "salesARS": "Sales ARS",
+    "salesUSD": "Sales USD",
+    "sales": "Sales",
+    "avgTicketARS": "Avg ticket ARS",
+    "avgTicketUSD": "Avg ticket USD",
+
+    "salesARSSubtitle": "{{count}} operations in ARS",
+    "salesUSDSubtitle": "{{count}} operations in USD",
+    "salesSubtitle": "Total operations",
+    "avgTicketARSSubtitle": "Local currency average",
+    "avgTicketUSDSubtitle": "USD average"
+  },
+
+  "sections": {
+    "evolution": "Sales evolution",
+    "evolutionSubtitle": "Monthly trend in ARS and USD",
+    "paymentMethods": "Payment methods",
+    "paymentMethodsSubtitle": "Share by operations"
+  },
+
+  "labels": {
+    "operations": "{{count}} operation",
+    "operations_plural": "{{count}} operations"
+  },
+
+  "messages": {
+    "loading": "Loading financial dashboard..."
+  },
+
+  "errors": {
+    "load": "Could not load financial dashboard"
+  },
+
+  "payments": {
+    "CASH": "Cash",
+    "TRANSFER": "Transfer",
+    "DEBIT": "Debit",
+    "CREDIT": "Credit",
+    "MERCADOPAGO": "Mercado Pago",
+    "OTHER": "Other"
+  }
+}

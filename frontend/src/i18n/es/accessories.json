@@ -1,0 +1,82 @@
+{
+  "title": "Accesorios",
+  "hero": {
+    "eyebrow": "Inventario",
+    "subtitle": "Gestioná catálogo, stock y precios de accesorios."
+  },
+  "empty": "No hay accesorios para mostrar.",
+  "actions": {
+    "new": "Nuevo accesorio",
+    "create": "Crear accesorio",
+    "selectFile": "Seleccionar archivo"
+  },
+  "kpis": {
+    "visible": "Total visibles",
+    "lowStock": "Stock bajo",
+    "noStock": "Sin stock"
+  },
+  "fields": {
+    "photo": "Foto",
+    "image": "Imagen",
+    "code": "Código",
+    "name": "Nombre",
+    "accessory": "Accesorio",
+    "description": "Descripción",
+    "category": "Categoría",
+    "color": "Color",
+    "size": "Tamaño",
+    "stock": "Stock actual",
+    "minStock": "Stock mínimo",
+    "unitCost": "Costo unitario",
+    "salePrice": "Precio de venta",
+    "status": "Estado",
+    "notes": "Notas"
+  },
+  "status": {
+    "ACTIVE": "Activo",
+    "INACTIVE": "Inactivo"
+  },
+  "stock": {
+    "available": "Disponible",
+    "lowStock": "Stock bajo",
+    "noStock": "Sin stock"
+  },
+  "images": {
+    "noImage": "Sin foto",
+    "preview": "Vista previa"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Código, nombre, categoría, color...",
+    "status": "Estado",
+    "category": "Categoría",
+    "allStatuses": "Todos los estados",
+    "allCategories": "Todas las categorías"
+  },
+  "modal": {
+    "new": "Nuevo accesorio",
+    "edit": "Editar accesorio"
+  },
+  "form": {
+    "placeholders": {
+      "code": "Ej: ACC-001",
+      "name": "Nombre del accesorio",
+      "category": "Ej: Cinto, Cartera, Collar",
+      "color": "Color",
+      "size": "Talle / tamaño",
+      "description": "Descripción del accesorio",
+      "notes": "Observaciones internas"
+    }
+  },
+  "validation": {
+    "nameRequired": "El nombre es obligatorio."
+  },
+  "messages": {
+    "loadError": "No se pudieron cargar los accesorios.",
+    "saveError": "No se pudo guardar el accesorio."
+  },
+  "delete": {
+    "confirm": "¿Querés eliminar este accesorio?",
+    "error": "No se pudo eliminar el accesorio."
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "title": "Accessory movements",
+  "eyebrow": "Inventory",
+  "modal": {
+    "stock": "Stock"
+  },
+  "subtitle": "Track entries, exits and adjustments to keep stock always up to date.",
+  "new": "New movement",
+
+  "kpis": {
+    "in": "Visible entries",
+    "out": "Visible exits",
+    "adjust": "Visible adjustments"
+  },
+
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Code, accessory, reference...",
+    "type": "Type",
+    "searchButton": "Search",
+    "clear": "Clear"
+  },
+
+  "table": {
+    "date": "Date",
+    "type": "Type",
+    "accessory": "Accessory",
+    "quantity": "Quantity",
+    "reference": "Reference",
+    "notes": "Notes"
+  },
+
+  "types": {
+    "all": "All types",
+    "in": "Entry",
+    "out": "Exit",
+    "adjust": "Adjustment"
+  },
+
+  "messages": {
+    "loading": "Loading movements...",
+    "empty": "No accessory movements to display.",
+    "errorLoad": "Could not load accessory movements.",
+    "errorSave": "Could not save movement.",
+    "selectAccessory": "Select an accessory.",
+    "invalidQuantity": "Enter a quantity greater than zero."
+  },
+
+  "pagination": {
+    "showing": "Showing {{count}} / {{total}}",
+    "page": "Page {{page}} of {{totalPages}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+
+  "modal": {
+    "title": "New accessory movement",
+    "accessory": "Accessory",
+    "selectAccessory": "Select accessory",
+    "type": "Type",
+    "quantity": "Quantity",
+    "newStock": "New stock",
+    "reference": "Reference",
+    "notes": "Notes",
+    "notesPlaceholder": "Movement notes",
+    "referencePlaceholder": "Example: purchase, sale, count...",
+    "quantityPlaceholder": "Example: 3",
+    "adjustPlaceholder": "Example: 15"
+  },
+
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Create movement",
+    "saving": "Saving..."
+  }
+}

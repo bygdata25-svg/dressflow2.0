@@ -1,0 +1,42 @@
+{
+  "title": "Fabric movements",
+  "hero": {
+    "eyebrow": "Reports",
+    "subtitle": "Review roll inputs, outputs and adjustments, with Excel export."
+  },
+  "fields": {
+    "date": "Date",
+    "type": "Type",
+    "fabric": "Fabric",
+    "color": "Color",
+    "roll": "Roll",
+    "quantity": "Quantity",
+    "reference": "Reference",
+    "notes": "Notes"
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Fabric, color, roll or note",
+    "type": "Type",
+    "from": "From",
+    "to": "To",
+    "all": "All"
+  },
+  "types": {
+    "IN": "In",
+    "OUT": "Out",
+    "ADJUST": "Adjustment",
+    "ADJUSTMENT": "Adjustment"
+  },
+  "summary": {
+    "records": "Records"
+  },
+  "messages": {
+    "loading": "Loading report..."
+  },
+  "errors": {
+    "load": "Could not load report.",
+    "export": "Could not export report."
+  },
+  "empty": "No data to display."
+}

@@ -1039,7 +1039,6 @@ def return_material(
     db.commit()
     return {"message": "Material return recorded successfully"}
 
-
 @router.post("/{order_id}/receive", response_model=ProductionOrderResponse)
 def receive_production_order(
     order_id: UUIDType,
@@ -1059,6 +1058,66 @@ def receive_production_order(
     sync_order_totals(db, order)
 
     if payload.status == "COMPLETED" and payload.produced_quantity > 0:
+        totals = calculate_order_costs(db, order)
+        unit_cost = totals["actual_unit_cost"] or totals["estimated_unit_cost"]
+        suggested_sale_price = unit_cost * Decimal("2.5") if unit_cost else None
+
+        first_dress_id = None
+
+        for index in range(payload.produced_quantity):
+            if order.target_dress_code:
+                dress_code = (
+                    order.target_dress_code
+                    if payload.produced_quantity == 1
+                    else f"{order.target_dress_code}-{index + 1}"
+                )
+            else:
+               base_code = order.order_number or f"OP-{str(order.id)[:8]}"
+               dress_code = (
+                   base_code
+                   if payload.produced_quantity == 1
+                   else f"{base_code}-{index + 1}"
+               )
+            existing_dress = db.execute(
+                select(Dress).where(
+                    Dress.tenant_id == membership.tenant_id,
+                    Dress.code == dress_code,
+                    Dress.deleted_at.is_(None),
+                )
+            ).scalar_one_or_none()
+
+            if existing_dress:
+                if first_dress_id is None:
+                    first_dress_id = existing_dress.id
+
+                if existing_dress.status != "SOLD":
+                    existing_dress.status = "AVAILABLE"
+
+                if not existing_dress.sale_price:
+                    existing_dress.sale_price = suggested_sale_price
+
+                if not existing_dress.photo_url and order.design_photo_url:
+                    existing_dress.photo_url = order.design_photo_url
+
+                continue
+
+            dress = Dress(
+                tenant_id=membership.tenant_id,
+                code=dress_code,
+                name=order.target_dress_name,
+                size=order.target_size,
+                color=order.target_color,
+                status="AVAILABLE",
+                photo_url=order.design_photo_url,
+                sale_price=suggested_sale_price,
+                rental_price=None,
+            )
+            db.add(dress)
+            db.flush()
+
+            if first_dress_id is None:
+                first_dress_id = dress.id
+
         existing_output = db.execute(
             select(ProductionOrderOutput).where(
                 ProductionOrderOutput.production_order_id == order.id,
@@ -1066,52 +1125,7 @@ def receive_production_order(
             )
         ).scalar_one_or_none()
 
-        # Evita duplicar outputs/vestidos si se vuelve a guardar la recepción.
         if not existing_output:
-            totals = calculate_order_costs(db, order)
-            unit_cost = totals["actual_unit_cost"] or totals["estimated_unit_cost"]
-            first_dress_id = None
-
-            for index in range(payload.produced_quantity):
-                if order.target_dress_code:
-                    dress_code = (
-                        order.target_dress_code
-                        if payload.produced_quantity == 1
-                        else f"{order.target_dress_code}-{index + 1}"
-                    )
-                else:
-                    dress_code = get_next_code(db, membership.tenant_id, "dress")
-
-                duplicate_dress = db.execute(
-                    select(Dress).where(
-                        Dress.tenant_id == membership.tenant_id,
-                        Dress.code == dress_code,
-                        Dress.deleted_at.is_(None),
-                    )
-                ).scalar_one_or_none()
-
-                if duplicate_dress:
-                    continue
-
-                suggested_sale_price = unit_cost * Decimal("2.5") if unit_cost else None
-
-                dress = Dress(
-                    tenant_id=membership.tenant_id,
-                    code=dress_code,
-                    name=order.target_dress_name,
-                    size=order.target_size,
-                    color=order.target_color,
-                    status="AVAILABLE",
-                    photo_url=order.design_photo_url,
-                    sale_price=suggested_sale_price,
-                    rental_price=None,
-                )
-                db.add(dress)
-                db.flush()
-
-                if first_dress_id is None:
-                    first_dress_id = dress.id
-
             output = ProductionOrderOutput(
                 tenant_id=membership.tenant_id,
                 production_order_id=order.id,
@@ -1125,6 +1139,16 @@ def receive_production_order(
                 notes="Generado automáticamente al completar la orden",
             )
             db.add(output)
+        else:
+            if first_dress_id and not existing_output.dress_id:
+                existing_output.dress_id = first_dress_id
+
+            existing_output.name = order.target_dress_name
+            existing_output.code = order.target_dress_code
+            existing_output.size = order.target_size
+            existing_output.color = order.target_color
+            existing_output.quantity = payload.produced_quantity
+            existing_output.unit_cost = unit_cost
 
     create_order_event(
         db=db,
@@ -1175,18 +1199,42 @@ def create_output(
 
     dress_id = None
 
-    if payload.create_dress_records:
-        suggested_sale_price = (payload.unit_cost * Decimal("2.5")) if payload.unit_cost else None
+    # Output de producción = producto terminado vendible.
+    # Por eso siempre creamos o vinculamos un vestido disponible.
+    suggested_sale_price = (payload.unit_cost * Decimal("2.5")) if payload.unit_cost else None
 
+    dress_code = payload.code or order.target_dress_code or f"{order.order_number or 'OP'}-{str(order_id)[:8]}"
+
+    existing_dress = db.execute(
+        select(Dress).where(
+            Dress.tenant_id == membership.tenant_id,
+            Dress.code == dress_code,
+            Dress.deleted_at.is_(None),
+        )
+    ).scalar_one_or_none()
+
+    if existing_dress:
+        dress_id = existing_dress.id
+
+        if existing_dress.status != "SOLD":
+            existing_dress.status = "AVAILABLE"
+
+        if not existing_dress.sale_price:
+            existing_dress.sale_price = suggested_sale_price
+
+        if not existing_dress.photo_url and order.design_photo_url:
+            existing_dress.photo_url = order.design_photo_url
+    else:
         dress = Dress(
             tenant_id=membership.tenant_id,
-            code=payload.code or f"PO-{str(order_id)[:8]}",
-            name=payload.name,
-            size=payload.size,
-            color=payload.color,
+            code=dress_code,
+            name=payload.name or order.target_dress_name,
+            size=payload.size or order.target_size,
+            color=payload.color or order.target_color,
             status="AVAILABLE",
             photo_url=order.design_photo_url,
             sale_price=suggested_sale_price,
+            rental_price=None,
         )
         db.add(dress)
         db.flush()

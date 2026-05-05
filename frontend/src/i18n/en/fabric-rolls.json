@@ -1,47 +1,78 @@
 {
-  "title": "Rollos",
+  "title": "Rolls",
+
   "hero": {
-    "eyebrow": "Estructura de stock",
-    "subtitle": "Seguí cada rollo con metraje preciso, disponibilidad e información de la tela de origen."
+    "eyebrow": "Stock structure",
+    "subtitle": "Track each roll with precise length, availability and source fabric information."
   },
-  "empty": "No hay rollos cargados todavía.",
-  "fields": {
-    "rollCode": "Código de rollo",
-    "fabric": "Tela",
-    "initialLength": "Metraje inicial",
-    "currentLength": "Metraje actual",
-    "unit": "Unidad",
-    "status": "Estado",
-    "notes": "Notas"
+
+  "actions": {
+    "new": "New roll"
   },
-  "status": {
-    "AVAILABLE": "Disponible",
-    "DEPLETED": "Agotado"
-  },
+
   "filters": {
-    "search": "Buscar",
-    "searchPlaceholder": "Buscar por código o tela",
-    "status": "Estado",
-    "allStatuses": "Todos los estados"
+    "search": "Search",
+    "searchPlaceholder": "Search by code or fabric",
+    "status": "Status",
+    "allStatuses": "All statuses"
   },
+
+  "empty": "No rolls found.",
+
+  "fields": {
+    "rollCode": "Roll code",
+    "fabric": "Fabric",
+    "supplier": "Supplier",
+    "initialLength": "Initial length",
+    "currentLength": "Current length",
+    "reservedLength": "Reserved meters",
+    "unit": "Unit",
+    "status": "Status",
+    "location": "Location",
+    "pricePerMeter": "Price / meter",
+    "purchaseDate": "Purchase date",
+    "notes": "Notes"
+  },
+
+  "status": {
+    "AVAILABLE": "Available",
+    "RESERVED": "Reserved",
+    "USED": "Used",
+    "EMPTY": "Empty",
+    "DEPLETED": "Depleted"
+  },
+
+  "units": {
+    "meters": "Meters",
+    "yards": "Yards"
+  },
+
   "form": {
-    "title": "Crear rollo",
+    "createTitle": "New roll",
+    "editTitle": "Edit roll",
+    "estimatedValue": "Estimated value",
+    "readOnlyOnCreate": "Only editable on creation.",
+
     "placeholders": {
-      "fabric": "Seleccionar tela",
-      "rollCode": "Ej: R-001",
-      "initialLength": "Ej: 25",
-      "notes": "Notas del rollo"
+      "fabric": "Select fabric",
+      "rollCode": "Ex: R-001",
+      "initialLength": "Ex: 25",
+      "pricePerMeter": "Ex: 18.00",
+      "location": "Warehouse A / Shelf 3",
+      "notes": "Roll notes",
+      "noSupplier": "No supplier"
     },
+
     "messages": {
-      "error": "No se pudo crear el rollo."
+      "error": "Could not save roll.",
+      "fabricRequired": "Fabric is required.",
+      "rollCodeRequired": "Roll code is required.",
+      "initialLengthRequired": "Initial length is required."
     }
   },
+
   "delete": {
-    "confirm": "¿Querés eliminar este rollo?",
-    "error": "No se pudo eliminar el rollo."
-  },
-  "units": {
-    "meters": "metros",
-    "yards": "yardas"
+    "confirm": "Are you sure you want to delete this roll?",
+    "error": "Could not delete roll."
   }
 }

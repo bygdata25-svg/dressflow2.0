@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import "./DressesPage.css";
@@ -34,39 +35,6 @@ function toNumber(value?: number | string | null) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function money(value?: number | string | null) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(toNumber(value));
-}
-
-function number(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value || 0);
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(date);
-}
-
-function statusLabel(value?: string | null) {
-  const raw = String(value || "").toUpperCase();
-  if (raw === "DRAFT") return "Borrador";
-  if (raw === "MATERIALS_RESERVED") return "Materiales reservados";
-  if (raw === "IN_PRODUCTION") return "En producción";
-  if (raw === "COMPLETED") return "Completada";
-  if (raw === "CANCELLED") return "Cancelada";
-  return value || "—";
-}
-
 function visibleMaterialCost(row: ProductionCostsRow) {
   const actual = toNumber(row.actual_material_cost);
   const estimated = toNumber(row.estimated_material_cost);
@@ -82,6 +50,11 @@ function estimatedTotal(row: ProductionCostsRow) {
 }
 
 export default function ProductionCostsReportPage() {
+  const { t, i18n } = useTranslation("production-costs-report");
+  const { t: tc } = useTranslation("common");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [rows, setRows] = useState<ProductionCostsRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -99,6 +72,34 @@ export default function ProductionCostsReportPage() {
 
   const [exporting, setExporting] = useState(false);
 
+  function money(value?: number | string | null) {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(toNumber(value));
+  }
+
+  function number(value: number) {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value || 0);
+  }
+
+  function formatDate(value?: string | null) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
+  }
+
+  function statusLabel(value?: string | null) {
+    const raw = String(value || "").toUpperCase();
+    return t(`status.${raw}`, { defaultValue: value || "—" });
+  }
+
   const loadReport = async () => {
     try {
       setLoading(true);
@@ -113,12 +114,12 @@ export default function ProductionCostsReportPage() {
         },
       });
 
-      setRows(response.data.items || []);
+      setRows(Array.isArray(response.data.items) ? response.data.items : []);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo cargar el reporte.");
+      else setError(t("errors.load"));
     } finally {
       setLoading(false);
     }
@@ -152,12 +153,15 @@ export default function ProductionCostsReportPage() {
       setExporting(true);
       setError("");
 
+      const lang = i18n.language?.startsWith("en") ? "en" : "es";
+
       const response = await api.get("/reports/production-costs/export", {
         params: {
           search: search || undefined,
           status: status || undefined,
           date_from: dateFrom || undefined,
           date_to: dateTo || undefined,
+          lang,
         },
         responseType: "blob",
       });
@@ -169,7 +173,7 @@ export default function ProductionCostsReportPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "costos_produccion.xlsx";
+      link.download = lang === "en" ? "production_costs.xlsx" : "costos_produccion.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -178,7 +182,7 @@ export default function ProductionCostsReportPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo exportar el reporte.");
+      else setError(t("errors.export"));
     } finally {
       setExporting(false);
     }
@@ -202,58 +206,56 @@ export default function ProductionCostsReportPage() {
     return [
       {
         key: "order_number",
-        label: "Orden",
+        label: t("fields.order"),
         render: (row: ProductionCostsRow) => <strong>{row.order_number}</strong>,
       },
       {
         key: "dress",
-        label: "Vestido",
+        label: t("fields.dress"),
         render: (row: ProductionCostsRow) => row.dress,
       },
       {
         key: "workshop",
-        label: "Taller",
+        label: t("fields.workshop"),
         render: (row: ProductionCostsRow) => row.workshop || "—",
       },
       {
         key: "status",
-        label: "Estado",
+        label: t("fields.status"),
         render: (row: ProductionCostsRow) => statusLabel(row.status),
       },
       {
         key: "due_date",
-        label: "Entrega",
+        label: t("fields.dueDate"),
         render: (row: ProductionCostsRow) => formatDate(row.due_date),
       },
       {
         key: "planned_quantity",
-        label: "Planificado",
+        label: t("fields.planned"),
         render: (row: ProductionCostsRow) => number(row.planned_quantity),
       },
       {
         key: "produced_quantity",
-        label: "Producido",
+        label: t("fields.produced"),
         render: (row: ProductionCostsRow) => number(row.produced_quantity),
       },
       {
         key: "material_cost",
-        label: "Material",
+        label: t("fields.material"),
         render: (row: ProductionCostsRow) => money(visibleMaterialCost(row)),
       },
       {
         key: "labor_other",
-        label: "Mano de obra / otros",
+        label: t("fields.laborOther"),
         render: (row: ProductionCostsRow) => money(laborAndOtherCost(row)),
       },
       {
         key: "total_estimated",
-        label: "Total estimado",
-        render: (row: ProductionCostsRow) => (
-          <strong>{money(estimatedTotal(row))}</strong>
-        ),
+        label: t("fields.totalEstimated"),
+        render: (row: ProductionCostsRow) => <strong>{money(estimatedTotal(row))}</strong>,
       },
     ];
-  }, []);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -269,11 +271,9 @@ export default function ProductionCostsReportPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Reportes</p>
-          <h1 className="df-pro-page__title">Costos de producción</h1>
-          <p className="df-pro-page__subtitle">
-            Resumen económico alineado con la pantalla de costos de cada orden.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
 
         <button
@@ -281,40 +281,40 @@ export default function ProductionCostsReportPage() {
           onClick={handleExport}
           disabled={exporting}
         >
-          {exporting ? "Exportando..." : "Exportar a Excel"}
+          {exporting ? tc("status.exporting") : tc("actions.exportExcel")}
         </button>
       </header>
 
       <section className="df-pro-card">
         <form onSubmit={handleSearchSubmit} className="df-pro-filter-grid df-pro-filter-grid--4">
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Orden, vestido o taller"
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
           <div>
-            <label className="df-pro-label">Estado</label>
+            <label className="df-pro-label">{t("filters.status")}</label>
             <select
               className="df-pro-input"
               value={statusInput}
               onChange={(e) => setStatusInput(e.target.value)}
             >
-              <option value="">Todos</option>
-              <option value="DRAFT">Borrador</option>
-              <option value="MATERIALS_RESERVED">Materiales reservados</option>
-              <option value="IN_PRODUCTION">En producción</option>
-              <option value="COMPLETED">Completada</option>
-              <option value="CANCELLED">Cancelada</option>
+              <option value="">{t("filters.all")}</option>
+              <option value="DRAFT">{t("status.DRAFT")}</option>
+              <option value="MATERIALS_RESERVED">{t("status.MATERIALS_RESERVED")}</option>
+              <option value="IN_PRODUCTION">{t("status.IN_PRODUCTION")}</option>
+              <option value="COMPLETED">{t("status.COMPLETED")}</option>
+              <option value="CANCELLED">{t("status.CANCELLED")}</option>
             </select>
           </div>
 
           <div>
-            <label className="df-pro-label">Desde</label>
+            <label className="df-pro-label">{t("filters.from")}</label>
             <input
               type="date"
               className="df-pro-input"
@@ -324,7 +324,7 @@ export default function ProductionCostsReportPage() {
           </div>
 
           <div>
-            <label className="df-pro-label">Hasta</label>
+            <label className="df-pro-label">{t("filters.to")}</label>
             <input
               type="date"
               className="df-pro-input"
@@ -333,9 +333,9 @@ export default function ProductionCostsReportPage() {
             />
           </div>
 
-          <button type="submit">Buscar</button>
+          <button type="submit">{tc("actions.search")}</button>
           <button type="button" onClick={handleClear}>
-            Limpiar
+            {tc("actions.clear")}
           </button>
         </form>
       </section>
@@ -364,28 +364,28 @@ export default function ProductionCostsReportPage() {
         }}
       >
         <div className="df-pro-card">
-          <div className="df-pro-label">Órdenes</div>
+          <div className="df-pro-label">{t("kpis.orders")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {totals.totalOrders}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Costo material</div>
+          <div className="df-pro-label">{t("kpis.material")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {money(totals.totalMaterial)}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Mano de obra / otros</div>
+          <div className="df-pro-label">{t("kpis.labor")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {money(totals.totalLaborAndOther)}
           </div>
         </div>
 
         <div className="df-pro-card">
-          <div className="df-pro-label">Total estimado</div>
+          <div className="df-pro-label">{t("kpis.total")}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3d3648" }}>
             {money(totals.totalEstimated)}
           </div>
@@ -404,7 +404,7 @@ export default function ProductionCostsReportPage() {
           }}
         >
           <div style={{ color: "#8a7f78", fontSize: 14 }}>
-            Registros: <strong>{rows.length}</strong>
+            {t("summary.records")}: <strong>{rows.length}</strong>
           </div>
 
           <div
@@ -416,14 +416,14 @@ export default function ProductionCostsReportPage() {
               fontSize: 14,
             }}
           >
-            Vista simplificada: <strong>Material + Mano de obra / otros + Total estimado</strong>
+            {t("summary.simplifiedView")}: <strong>{t("summary.simplifiedViewDetail")}</strong>
           </div>
         </div>
 
         {loading ? (
-          <p>Cargando reporte...</p>
+          <p>{t("messages.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay datos para mostrar.</p>
+          <p>{t("empty")}</p>
         ) : (
           <DataGrid
             rows={rows}

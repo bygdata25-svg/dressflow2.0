@@ -1,0 +1,42 @@
+{
+  "title": "Movimientos de tela",
+  "hero": {
+    "eyebrow": "Reportes",
+    "subtitle": "Consultá entradas, salidas y ajustes de rollos, con exportación a Excel."
+  },
+  "fields": {
+    "date": "Fecha",
+    "type": "Tipo",
+    "fabric": "Tela",
+    "color": "Color",
+    "roll": "Rollo",
+    "quantity": "Cantidad",
+    "reference": "Referencia",
+    "notes": "Notas"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Tela, color, rollo o nota",
+    "type": "Tipo",
+    "from": "Desde",
+    "to": "Hasta",
+    "all": "Todos"
+  },
+  "types": {
+    "IN": "Entrada",
+    "OUT": "Salida",
+    "ADJUST": "Ajuste",
+    "ADJUSTMENT": "Ajuste"
+  },
+  "summary": {
+    "records": "Registros"
+  },
+  "messages": {
+    "loading": "Cargando reporte..."
+  },
+  "errors": {
+    "load": "No se pudo cargar el reporte.",
+    "export": "No se pudo exportar el reporte."
+  },
+  "empty": "No hay datos para mostrar."
+}

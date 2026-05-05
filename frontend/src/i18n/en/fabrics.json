@@ -1,36 +1,83 @@
 {
-  "title": "Telas",
+  "title": "Fabrics",
+
   "hero": {
-    "eyebrow": "Biblioteca de materiales",
-    "subtitle": "Estructurá tu catálogo de telas por tipo, color y proveedor con una vista operativa refinada."
+    "eyebrow": "Textile inventory",
+    "subtitle": "Consolidated view by fabric with expandable roll details."
   },
-  "empty": "No hay telas cargadas todavía.",
+
+  "actions": {
+    "new": "New fabric",
+    "import": "Import spreadsheet",
+    "refresh": "Refresh",
+    "edit": "Edit",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "expandRolls": "Expand rolls",
+    "collapseRolls": "Collapse rolls"
+  },
+
+  "search": {
+    "placeholder": "Search by name, type or color..."
+  },
+
+  "stats": {
+    "count": "{{count}} fabric",
+    "count_plural": "{{count}} fabrics"
+  },
+
+  "messages": {
+    "loading": "Loading fabrics...",
+    "empty": "No fabrics to display.",
+    "error": "Could not load fabrics.",
+    "noRolls": "This fabric has no rolls.",
+    "loadingRolls": "Loading rolls..."
+  },
+
   "fields": {
-    "name": "Nombre",
-    "fabricType": "Tipo",
+    "name": "Fabric",
+    "fabricType": "Fabric type",
     "color": "Color",
-    "supplier": "Proveedor",
-    "notes": "Notas"
+    "totalStock": "Total stock",
+    "rolls": "Rolls",
+    "largestRoll": "Largest roll",
+    "notes": "Notes"
   },
-  "filters": {
-    "search": "Buscar",
-    "searchPlaceholder": "Buscar por nombre, tipo o color"
-  },
-  "form": {
-    "title": "Crear tela",
-    "placeholders": {
-      "name": "Ej: Satén premium",
-      "fabricType": "Ej: Satén",
-      "color": "Ej: Negro",
-      "supplier": "Seleccionar proveedor",
-      "notes": "Notas de la tela"
-    },
-    "messages": {
-      "error": "No se pudo crear la tela."
+
+  "rolls": {
+    "title": "Rolls of {{name}}",
+    "totalAvailable": "Total available:",
+    "columns": {
+      "code": "Roll",
+      "current": "Current meters",
+      "initial": "Initial meters",
+      "status": "Status"
     }
   },
-  "delete": {
-    "confirm": "¿Querés eliminar esta tela?",
-    "error": "No se pudo eliminar la tela."
+
+  "rollStatus": {
+    "AVAILABLE": "Available",
+    "RESERVED": "Reserved",
+    "USED": "Used",
+    "EMPTY": "Empty",
+    "DEPLETED": "Depleted"
+  },
+
+  "form": {
+    "create": "New fabric",
+    "edit": "Edit fabric",
+    "image": "Image",
+    "preview": "Preview",
+    "previewAlt": "Fabric preview",
+    "notes": "Notes",
+    "save": "Create fabric",
+    "update": "Update fabric",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "error": "Could not save fabric.",
+    "requiredName": "Name is required.",
+    "readOnlyOnCreate": "Only editable on creation.",
+    "selectFile": "Select file",
+    "noFileSelected": "No file selected"
   }
 }

@@ -154,7 +154,7 @@ export default function DressesPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudieron cargar los vestidos.");
+      else setError(t("dresses:edit.loadError"));
       setRows([]);
       setTotal(0);
     } finally {
@@ -173,7 +173,7 @@ export default function DressesPage() {
 
       setCustomers(Array.isArray(response.data.items) ? response.data.items : []);
     } catch (err) {
-      console.error("No se pudieron cargar los clientes", err);
+      console.error("Could not load customers", err);
       setCustomers([]);
     }
   };
@@ -209,7 +209,7 @@ export default function DressesPage() {
   };
 
   const handleDeleteDress = async (id: string) => {
-    const confirmed = window.confirm("¿Eliminar vestido?");
+    const confirmed = window.confirm(t("dresses:delete.confirm"));
     if (!confirmed) return;
 
     try {
@@ -219,7 +219,7 @@ export default function DressesPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo eliminar el vestido.");
+      else setError(t("dresses:delete.error"));
     }
   };
  
@@ -254,11 +254,11 @@ export default function DressesPage() {
       setError(detail.message);
     } else {
       if (status === "AVAILABLE") {
-        setError("No se pudo marcar el vestido como disponible.");
+        setError(t("dresses:errors.available"));
       } else if (status === "CLEANING") {
-        setError("No se pudo enviar el vestido a limpieza.");
+        setError(t("dresses:errors.cleaning"));
       } else {
-        setError("No se pudo enviar el vestido a reparación.");
+        setError(t("dresses:errors.maintenance"));
       }
     }
   }
@@ -317,17 +317,17 @@ export default function DressesPage() {
     };
 
     if (!payload.code) {
-      setError("El código del cliente es obligatorio.");
+      setError(t("dresses:customer.validation.codeRequired"));
       return;
     }
 
     if (!payload.first_name) {
-      setError("El nombre es obligatorio.");
+      setError(t("dresses:customer.validation.firstNameRequired"));
       return;
     }
 
     if (!payload.last_name) {
-      setError("El apellido es obligatorio.");
+      setError(t("dresses:customer.validation.lastNameRequired"));
       return;
     }
 
@@ -375,7 +375,7 @@ export default function DressesPage() {
       } else if (detail?.message) {
         setError(detail.message);
       } else {
-        setError("No se pudo crear el cliente.");
+        setError(t("dresses:customer.messages.createError"));
       }
     } finally {
       setCreatingCustomer(false);
@@ -388,12 +388,12 @@ export default function DressesPage() {
     if (!selectedDress || !operationMode) return;
 
     if (!operationForm.customer_id) {
-      setError("Seleccioná un cliente.");
+      setError(t("dresses:operations.validation.customerRequired"));
       return;
     }
 
     if (!operationForm.start_date) {
-      setError("Ingresá la fecha de salida.");
+      setError(t("dresses:operations.validation.startDateRequired"));
       return;
     }
 
@@ -423,8 +423,8 @@ export default function DressesPage() {
       else {
         setError(
           operationMode === "rental"
-            ? "No se pudo registrar el alquiler."
-            : "No se pudo registrar el préstamo."
+            ? t("dresses:operations.messages.rentalError")
+            : t("dresses:operations.messages.loanError")
         );
       }
     } finally {
@@ -433,10 +433,10 @@ export default function DressesPage() {
   };
 
   const operationTitle = useMemo(() => {
-    if (operationMode === "loan") return "Prestar vestido";
-    if (operationMode === "rental") return "Alquilar vestido";
+    if (operationMode === "loan") return t("dresses:operations.loanTitle");
+    if (operationMode === "rental") return t("dresses:operations.rentalTitle");
     return "";
-  }, [operationMode]);
+  }, [operationMode, t]);
 
   const operationSubtitle = useMemo(() => {
     if (!selectedDress) return "";
@@ -489,7 +489,7 @@ export default function DressesPage() {
       },
       {
         key: "capsule_name",
-        label: "Cápsula",
+        label: t("dresses:fields.capsule"),
         render: (row) => row.capsule_name || "—",
       },
       {
@@ -525,8 +525,8 @@ export default function DressesPage() {
           <>
             <button
               type="button"
-              title="Prestar vestido"
-              aria-label="Prestar vestido"
+              title={t("dresses:actions.loan")}
+              aria-label={t("dresses:actions.loan")}
               onClick={(e) => {
                 e.stopPropagation();
                 handleLoan(row);
@@ -538,8 +538,8 @@ export default function DressesPage() {
 
             <button
               type="button"
-              title="Alquilar vestido"
-              aria-label="Alquilar vestido"
+              title={t("dresses:actions.rent")}
+              aria-label={t("dresses:actions.rent")}
               onClick={(e) => {
                 e.stopPropagation();
                 handleRent(row);
@@ -551,8 +551,8 @@ export default function DressesPage() {
 
             <button
               type="button"
-              title="Enviar a limpieza"
-              aria-label="Enviar a limpieza"
+              title={t("dresses:actions.cleaning")}
+              aria-label={t("dresses:actions.cleaning")}
               onClick={(e) => {
                 e.stopPropagation();
                 void handleSendToCleaning(row);
@@ -564,8 +564,8 @@ export default function DressesPage() {
 
             <button
               type="button"
-              title="Enviar a reparación"
-              aria-label="Enviar a reparación"
+              title={t("dresses:actions.maintenance")}
+              aria-label={t("dresses:actions.maintenance")}
               onClick={(e) => {
                 e.stopPropagation();
                 void handleSendToMaintenance(row);
@@ -580,8 +580,8 @@ export default function DressesPage() {
         {isInCare && (
           <button
             type="button"
-            title="Marcar como disponible"
-            aria-label="Marcar como disponible"
+            title={t("dresses:actions.available")}
+            aria-label={t("dresses:actions.available")}
             onClick={(e) => {
               e.stopPropagation();
               void handleBackToAvailable(row);
@@ -784,10 +784,10 @@ export default function DressesPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Inventario</p>
-          <h1 className="df-pro-page__title">Vestidos</h1>
+          <p className="df-pro-page__eyebrow">{t("dresses:sections.inventory")}</p>
+          <h1 className="df-pro-page__title">{t("dresses:title")}</h1>
           <p className="df-pro-page__subtitle">
-            Gestioná todos los vestidos disponibles en tu catálogo.
+            {t("dresses:hero.catalogSubtitle")}
           </p>
         </div>
 
@@ -798,7 +798,7 @@ export default function DressesPage() {
           }}
           style={{ flexShrink: 0 }}
         >
-          Nuevo vestido
+          {t("dresses:actions.new")}
         </PrimaryButton>
       </header>
 
@@ -874,9 +874,9 @@ export default function DressesPage() {
 
       <section className="df-pro-card">
         {loading ? (
-          <p>Cargando vestidos...</p>
+          <p>{t("dresses:states.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay vestidos cargados.</p>
+          <p>{t("dresses:states.empty")}</p>
         ) : (
           <DataGrid
             rows={rows}
@@ -917,7 +917,7 @@ export default function DressesPage() {
           setShowModal(false);
           setEditingDress(null);
         }}
-        title={editingDress ? "Editar vestido" : "Nuevo vestido"}
+        title={editingDress ? t("dresses:edit.title") : t("dresses:actions.new")}
         width="min(1100px, 100%)"
       >
         <DressForm
@@ -974,20 +974,20 @@ export default function DressesPage() {
         <form onSubmit={submitLoanLikeOperation} style={{ display: "grid", gap: 14 }}>
           <div className="df-operation-box">
             <span className="df-operation-box__eyebrow">
-              {operationMode === "rental" ? "Alquiler" : "Préstamo"}
+              {operationMode === "rental" ? t("dresses:operations.rental") : t("dresses:operations.loan")}
             </span>
             <div className="df-operation-box__title">{selectedDress?.name || "—"}</div>
             <div className="df-operation-box__meta">
               {operationSubtitle}
               {operationMode === "rental" && selectedDress?.rental_price
-                ? ` · Valor sugerido: ${money(selectedDress.rental_price)}`
+                ? ` · ${t("dresses:operations.suggestedValue")}: ${money(selectedDress.rental_price)}`
                 : ""}
             </div>
           </div>
 
           <div className="df-inline-form-grid">
             <div className="df-inline-form-field">
-              <label>Cliente</label>
+              <label>{t("dresses:operations.customer")}</label>
               <select
                 value={operationForm.customer_id}
                 onChange={(e) =>
@@ -995,7 +995,7 @@ export default function DressesPage() {
                 }
                 required
               >
-                <option value="">Seleccionar cliente</option>
+                <option value="">{t("dresses:operations.selectCustomer")}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.code} · {customer.first_name} {customer.last_name}
@@ -1023,12 +1023,12 @@ export default function DressesPage() {
                   }
                 }}
               >
-                {showCustomerInlineForm ? "Ocultar alta de cliente" : "Nuevo cliente"}
+                {showCustomerInlineForm ? t("dresses:customer.hideInlineCreate") : t("dresses:customer.newCustomer")}
               </button>
             </div>
 
             <div className="df-inline-form-field">
-              <label>Fecha de salida</label>
+              <label>{t("dresses:operations.startDate")}</label>
               <input
                 type="date"
                 value={operationForm.start_date}
@@ -1040,7 +1040,7 @@ export default function DressesPage() {
             </div>
 
             <div className="df-inline-form-field">
-              <label>Fecha de devolución</label>
+              <label>{t("dresses:operations.returnDate")}</label>
               <input
                 type="date"
                 value={operationForm.expected_return_date}
@@ -1055,7 +1055,7 @@ export default function DressesPage() {
 
             {operationMode === "rental" && (
               <div className="df-inline-form-field">
-                <label>Valor del alquiler</label>
+                <label>{t("dresses:operations.rentalValue")}</label>
                 <input
                   type="number"
                   min="0"
@@ -1067,13 +1067,13 @@ export default function DressesPage() {
                       rental_value: e.target.value,
                     }))
                   }
-                  placeholder="Ej: 150.00"
+                  placeholder={t("dresses:operations.rentalValuePlaceholder")}
                 />
               </div>
             )}
 
             <div className="df-inline-form-field df-inline-form-field--full">
-              <label>Notas</label>
+              <label>{t("dresses:operations.notes")}</label>
               <textarea
                 value={operationForm.notes}
                 onChange={(e) =>
@@ -1081,8 +1081,8 @@ export default function DressesPage() {
                 }
                 placeholder={
                   operationMode === "rental"
-                    ? "Ej: reserva para evento, condiciones, observaciones..."
-                    : "Notas internas del préstamo"
+                    ? t("dresses:operations.rentalNotesPlaceholder")
+                    : t("dresses:operations.loanNotesPlaceholder")
                 }
               />
             </div>
@@ -1092,7 +1092,7 @@ export default function DressesPage() {
                 <div className="df-inline-customer-card">
                   <div className="df-inline-form-grid">
                     <div className="df-inline-form-field">
-                      <label>Código</label>
+                      <label>{t("dresses:customer.fields.code")}</label>
                       <input
                         value={customerForm.code}
                         onChange={(e) =>
@@ -1101,12 +1101,12 @@ export default function DressesPage() {
                             code: e.target.value,
                           }))
                         }
-                        placeholder="CLI-001"
+                        placeholder={t("dresses:customer.placeholders.code")}
                       />
                     </div>
 
                     <div className="df-inline-form-field">
-                      <label>Nombre</label>
+                      <label>{t("dresses:customer.fields.firstName")}</label>
                       <input
                         value={customerForm.first_name}
                         onChange={(e) =>
@@ -1119,7 +1119,7 @@ export default function DressesPage() {
                     </div>
 
                     <div className="df-inline-form-field">
-                      <label>Apellido</label>
+                      <label>{t("dresses:customer.fields.lastName")}</label>
                       <input
                         value={customerForm.last_name}
                         onChange={(e) =>
@@ -1132,7 +1132,7 @@ export default function DressesPage() {
                     </div>
 
                     <div className="df-inline-form-field">
-                      <label>Email</label>
+                      <label>{t("dresses:customer.fields.email")}</label>
                       <input
                         type="email"
                         value={customerForm.email}
@@ -1146,7 +1146,7 @@ export default function DressesPage() {
                     </div>
 
                     <div className="df-inline-form-field">
-                      <label>Teléfono</label>
+                      <label>{t("dresses:customer.fields.phone")}</label>
                       <input
                         value={customerForm.phone}
                         onChange={(e) =>
@@ -1159,7 +1159,7 @@ export default function DressesPage() {
                     </div>
 
                     <div className="df-inline-form-field df-inline-form-field--full">
-                      <label>Notas</label>
+                      <label>{t("dresses:operations.notes")}</label>
                       <textarea
                         value={customerForm.notes}
                         onChange={(e) =>
@@ -1168,14 +1168,14 @@ export default function DressesPage() {
                             notes: e.target.value,
                           }))
                         }
-                        placeholder="Observaciones del cliente"
+                        placeholder={t("dresses:customer.placeholders.notes")}
                       />
                     </div>
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                     <button type="button" onClick={() => setShowCustomerInlineForm(false)}>
-                      Cancelar
+                      {t("common:actions.cancel")}
                     </button>
 
                     <PrimaryButton
@@ -1183,7 +1183,7 @@ export default function DressesPage() {
                       onClick={submitCreateCustomer}
                       disabled={creatingCustomer}
                     >
-                      {creatingCustomer ? "Creando..." : "Crear cliente"}
+                      {creatingCustomer ? t("dresses:customer.actions.creating") : t("dresses:customer.actions.create")}
                     </PrimaryButton>
                   </div>
                 </div>
@@ -1193,16 +1193,16 @@ export default function DressesPage() {
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button type="button" onClick={resetOperationModal}>
-              Cancelar
+              {t("common:actions.cancel")}
             </button>
             <PrimaryButton type="submit" disabled={submittingOperation}>
               {submittingOperation
                 ? operationMode === "rental"
-                  ? "Registrando alquiler..."
-                  : "Registrando préstamo..."
+                  ? t("dresses:operations.registeringRental")
+                  : t("dresses:operations.registeringLoan")
                 : operationMode === "rental"
-                  ? "Confirmar alquiler"
-                  : "Confirmar préstamo"}
+                  ? t("dresses:operations.confirmRental")
+                  : t("dresses:operations.confirmLoan")}
             </PrimaryButton>
           </div>
         </form>

@@ -1,58 +1,205 @@
 {
-  "eyebrow": "Editorial Tech Fashion",
-  "title": "Bienvenido a DressFlow",
-  "subtitle": "Una plataforma de operaciones de moda con la precisión de un ERP y el lenguaje visual de una marca premium.",
-  "today": "Hoy",
-  "heroValueSuffix": "operaciones activas",
-  "heroMeta": "Préstamos, actualizaciones de stock y actividad del atelier en un solo lugar.",
-  "stats": {
-    "availableDresses": "Vestidos disponibles",
-    "activeLoans": "Préstamos activos",
-    "availableRolls": "Rollos disponibles",
-    "soldDresses": "Vestidos vendidos"
+  "hero": {
+    "title": "Tu operación en una sola vista",
+    "subtitle": "Producción, stock, préstamos y alertas para decidir más rápido.",
+    "lastUpdate": "Última actualización",
+    "autoUpdate": "Actualización automática"
   },
-  "collection": {
-    "eyebrow": "Colección",
-    "title": "Descubrí nuestra colección",
-    "noImage": "Sin imagen"
+  "states": {
+    "loading": "Cargando dashboard...",
+    "loadError": "No se pudo cargar la información"
   },
-  "stock": {
-    "eyebrow": "Stock",
-    "title": "Movimientos de rollos",
-    "empty": "No hay movimientos recientes"
+  "sections": {
+    "operations": {
+      "eyebrow": "Operaciones",
+      "title": "Producción en foco"
+    },
+    "inventory": {
+      "eyebrow": "Inventario",
+      "title": "Base operativa"
+    }
   },
-  "operations": {
-    "eyebrow": "Operaciones",
-    "title": "Actividad de préstamos",
-    "empty": "No hay préstamos recientes"
+  "kpis": {
+    "activeOrders": {
+      "label": "Órdenes activas",
+      "meta": "En producción"
+    },
+    "delayed": {
+      "label": "Atrasadas",
+      "meta": "Fuera de fecha"
+    },
+    "dueSoon": {
+      "label": "Por vencer",
+      "meta": "Próximas fechas"
+    },
+    "workshops": {
+      "label": "Talleres",
+      "meta": "Activos"
+    },
+    "availableDresses": {
+      "label": "Vestidos disponibles",
+      "meta": "{{count}} en préstamo"
+    },
+    "availableRolls": {
+      "label": "Rollos disponibles",
+      "meta": "{{count}} agotados"
+    },
+    "criticalAccessories": {
+      "label": "Avíos críticos",
+      "meta": "Stock bajo"
+    },
+    "activeAlerts": {
+      "label": "Alertas",
+      "meta": "Activas"
+    }
   },
-  "summary": {
-    "activeLoans": "Préstamos activos",
-    "overdue": "Vencidos",
-    "dueSoon": "Próximos a vencer"
+  "executive": {
+    "delayedProduction": {
+      "title": "Producción atrasada",
+      "subtitle": "órdenes fuera de fecha"
+    },
+    "criticalSupplies": {
+      "title": "Insumos críticos",
+      "subtitle": "requieren reposición"
+    },
+    "overdueLoans": {
+      "title": "Préstamos vencidos",
+      "subtitle": "pendientes de devolución"
+    }
   },
   "alerts": {
-    "overdueTitle": "Préstamos vencidos",
-    "overdueMessage": "Hay {{count}} préstamo(s) vencido(s).",
-    "dueSoonTitle": "Préstamos próximos a vencer",
-    "dueSoonMessage": "Hay {{count}} préstamo(s) con devolución próxima.",
-    "depletedRollsTitle": "Rollos agotados",
-    "depletedRollsMessage": "Hay {{count}} rollo(s) agotado(s)."
+    "title": "Alertas críticas",
+    "today": "Hoy",
+    "empty": "Sin alertas activas",
+    "categories": {
+      "production": "Producción",
+      "stock": "Stock",
+      "loans": "Préstamos",
+      "inventory": "Inventario",
+      "financial": "Financiero",
+      "general": "General"
+    },
+    "actions": {
+      "viewDetail": "Ver detalle",
+      "viewAccessories": "Ver accesorios",
+      "viewTrims": "Ver avíos"
+    },
+    "generated": {
+      "accessoriesLow": {
+        "title": "Stock bajo de accesorios",
+        "message": "{{count}} accesorios con stock crítico"
+      },
+      "trimsLow": {
+        "title": "Stock bajo de avíos",
+        "message": "{{count}} avíos con stock crítico"
+      }
+    }
   },
-  "statuses": {
-    "AVAILABLE": "Disponible",
-    "LOANED": "Prestado",
-    "MAINTENANCE": "En mantenimiento",
-    "SOLD": "Vendido",
-    "RETIRED": "Retirado",
-    "ACTIVE": "Activo",
-    "RETURNED": "Devuelto",
-    "LATE": "Atrasado",
-    "IN": "Entrada",
+  "orders": {
+    "title": "Órdenes de producción",
+    "empty": "No hay órdenes activas",
+    "noWorkshop": "Sin taller",
+    "noProduct": "Sin producto",
+    "noDate": "Sin fecha",
+    "dueDate": "Entrega: {{date}}",
+    "daysLate": "{{count}} días tarde",
+    "dueStates": {
+      "normal": "En término",
+      "dueSoon": "Por vencer",
+      "delayed": "Atrasado"
+    },
+    "statuses": {
+      "DRAFT": "Borrador",
+      "MATERIALS_RESERVED": "Materiales reservados",
+      "APPROVED": "Aprobada",
+      "IN_PRODUCTION": "En producción",
+      "COMPLETED": "Completada",
+      "CANCELLED": "Cancelada"
+    },
+    "priorities": {
+      "LOW": "Baja",
+      "NORMAL": "Normal",
+      "HIGH": "Alta",
+      "URGENT": "Urgente"
+    }
+  },
+  "charts": {
+    "dresses": {
+      "title": "Estado de vestidos",
+      "subtitle": "Distribución actual",
+      "labels": {
+        "available": "Disponibles",
+        "loaned": "Prestados",
+        "maintenance": "Taller",
+        "sold": "Vendidos"
+      }
+    },
+    "loans": {
+      "title": "Estado de préstamos",
+      "subtitle": "Situación actual",
+      "labels": {
+        "active": "Activos",
+        "overdue": "Vencidos",
+        "dueSoon": "Por vencer"
+      }
+    },
+    "workshops": {
+      "title": "Carga de talleres",
+      "subtitle": "Órdenes activas",
+      "empty": "Sin talleres activos",
+      "activeOrders": "{{count}} órdenes activas"
+    }
+  },
+  "lists": {
+    "topDresses": {
+      "title": "Top vestidos",
+      "empty": "Sin datos",
+      "loans": "{{count}} préstamos"
+    },
+    "idleDresses": {
+      "title": "Vestidos sin movimiento",
+      "empty": "Sin datos",
+      "daysWithoutMovement": "{{count}} días sin movimiento"
+    },
+    "recentLoans": {
+      "title": "Préstamos recientes",
+      "empty": "Sin datos",
+      "noDress": "Sin vestido",
+      "noCustomer": "Sin cliente",
+      "returns": "Devuelve: {{date}}"
+    },
+    "recentMovements": {
+      "title": "Movimientos recientes",
+      "empty": "Sin datos",
+      "noRollCode": "Sin código",
+      "fabricFallback": "Tela"
+    }
+  },
+  "insights": {
+    "eyebrow": "Insights",
+    "title": "Insights inteligentes",
+    "fallback": {
+      "topDress": {
+        "title": "Vestido más solicitado",
+        "description": "{{count}} préstamos"
+      },
+      "idleDresses": {
+        "title": "Vestidos inactivos",
+        "description": "Revisar rotación"
+      },
+      "productionDelay": {
+        "title": "Producción atrasada",
+        "description": "Revisar planificación"
+      },
+      "workshopLoad": {
+        "title": "Taller más cargado",
+        "description": "{{count}} órdenes activas"
+      }
+    }
+  },
+  "movementTypes": {
+    "IN": "Ingreso",
     "OUT": "Salida",
     "ADJUSTMENT": "Ajuste"
-  },
-  "meta": {
-    "returns": "Devuelve {{date}}"
   }
 }

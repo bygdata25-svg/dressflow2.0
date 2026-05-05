@@ -1,0 +1,111 @@
+{
+  "title": "Unified sales",
+
+  "hero": {
+    "eyebrow": "Reports",
+    "subtitle": "Dresses, accessories and multi-payments in one dashboard."
+  },
+
+  "headline": {
+    "total": "Total",
+    "mixedTotal": "Mixed total",
+    "arsSubtitle": "Total in ARS",
+    "usdSubtitle": "Total in USD",
+    "mixedSubtitle": "{{count}} {{operationLabel}} with multiple currencies",
+    "operationSingular": "operation",
+    "operationPlural": "operations"
+  },
+
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Sale number, customer, notes",
+    "status": "Status",
+    "currency": "Currency",
+    "from": "From",
+    "to": "To",
+    "all": "All",
+    "allStatuses": "All statuses",
+    "allCurrencies": "All currencies"
+  },
+
+  "kpis": {
+    "sales": "Sales",
+    "salesSubtitle": "Number of sales",
+    "totalARS": "Total ARS",
+    "totalARSSubtitle": "Total billed in ARS",
+    "totalUSD": "Total USD",
+    "totalUSDSubtitle": "Total billed in USD",
+    "mixed": "Mixed operations",
+    "mixedSubtitle": "Multi-currency sales"
+  },
+
+  "summary": {
+    "records": "Records",
+    "totals": "Totals"
+  },
+
+  "fields": {
+    "sale": "Sale #",
+    "date": "Date",
+    "customer": "Customer",
+    "currency": "Currency",
+    "total": "Total",
+    "payments": "Payments",
+    "status": "Status",
+    "detail": "Detail"
+  },
+
+  "sections": {
+    "items": "Items",
+    "payments": "Payments",
+    "summary": "Summary"
+  },
+
+  "labels": {
+    "mixedSale": "MIXED TOTAL"
+  },
+
+  "status": {
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
+    "PAID": "Paid",
+    "PARTIAL": "Partial",
+    "PENDING": "Pending"
+  },
+
+  "payments": {
+    "CASH": "Cash",
+    "TRANSFER": "Transfer",
+    "DEBIT": "Debit",
+    "CREDIT": "Credit",
+    "MERCADOPAGO": "Mercado Pago",
+    "OTHER": "Other"
+  },
+
+  "itemTypes": {
+    "DRESS": "Dress",
+    "ACCESSORY": "Accessory",
+    "ITEM": "Item"
+  },
+
+  "messages": {
+    "loading": "Loading sales..."
+  },
+
+  "errors": {
+    "load": "Could not load report.",
+    "export": "Could not export."
+  },
+
+  "empty": "No sales.",
+
+  "actions": {
+    "viewDetail": "View detail"
+  },
+  
+  "currency": {
+    "USD": "USD",
+    "ARS": "ARS",
+    "MIXED": "Mixed"
+  }
+}

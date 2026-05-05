@@ -1,0 +1,173 @@
+{
+  "title": "Sales",
+  "hero": {
+    "eyebrow": "Operations",
+    "subtitle": "Manage unified sales of dresses and accessories"
+  },
+  "modal": {
+    "eyebrow": "Commercial operation",
+    "title": "New sale",
+    "subtitle": "Create a unified sale with a clean and efficient experience."
+  },
+  "actions": {
+    "new": "New sale",
+    "create": "Create sale",
+    "cancel": "Cancel",
+    "newCustomer": "New customer",
+    "saving": "Saving...",
+    "confirming": "Confirming...",
+    "confirmSale": "Confirm sale",
+    "addPayment": "Add payment",
+    "removePayment": "Remove payment",
+    "removeItem": "Remove item",
+    "saveCustomer": "Save customer"
+  },
+  "sections": {
+    "list": "Sales list",
+    "listSubtitle": "Review registered operations and their summary.",
+    "customer": "Customer",
+    "customerSubtitle": "Search or create a customer without leaving the flow.",
+    "items": "Add items",
+    "itemsSubtitle": "Add dresses and accessories with quick search.",
+    "payments": "Payments"
+  },
+  "fields": {
+    "searchCustomer": "Search customer",
+    "selectedCustomer": "Selected customer",
+    "dress": "Dress",
+    "accessory": "Accessory",
+    "notes": "Notes",
+    "amount": "Amount",
+    "quantity": "Quantity",
+    "qtyShort": "Qty.",
+    "price": "Price",
+    "total": "Total"
+  },
+  "customer": {
+    "unselected": "Unselected",
+    "unnamed": "Unnamed customer"
+  },
+  "placeholders": {
+    "searchCustomer": "Type customer name",
+    "searchDress": "Search dress by code or name",
+    "searchAccessory": "Search accessory by code or name",
+    "loadingCustomers": "Loading customers...",
+    "loadingDresses": "Loading dresses...",
+    "loadingAccessories": "Loading accessories...",
+    "notes": "Sale notes...",
+    "exchangeRate": "Ex: 1200",
+    "paymentAmount": "Amount",
+    "paymentReference": "Reference (optional)"
+  },
+  "messages": {
+    "loading": "Loading sales...",
+    "refreshing": "Refreshing...",
+    "recordsCount": "{{count}} record",
+    "recordsCount_plural": "{{count}} records",
+    "loadingHint": "Fetching the latest information.",
+    "emptySales": "No sales yet.",
+    "emptySalesHint": "Start a new operation to begin.",
+    "emptyItems": "Add dresses or accessories to start the sale.",
+    "noCustomers": "No customers found.",
+    "noAccessories": "No accessories found.",
+    "noDresses": "No dresses available.",
+    "saleSuccess": "Sale saved successfully",
+    "saleSuccessWithNumber": "Sale {{number}} saved successfully",
+    "saleError": "Could not save sale.",
+    "customerRequired": "Customer is required.",
+    "itemsRequired": "Add at least one item.",
+    "paymentRequired": "Add at least one payment method.",
+    "invalidPaymentAmount": "Enter a payment amount greater than 0.",
+    "invalidQuantity": "All item quantities must be greater than 0.",
+    "invalidItems": "There are invalid or incomplete items.",
+    "invalidPayments": "There are invalid or incomplete payments.",
+    "exchangeRateRequired": "Enter a valid exchange rate.",
+    "customerNameRequired": "Customer name is required.",
+    "customerCreated": "Customer created successfully.",
+    "customerCreateError": "Could not create customer."
+  },
+  "items": {
+    "dress": "Dress",
+    "accessory": "Accessory",
+    "free": "Free",
+    "perUnit": "per unit",
+    "item": "Item"
+  },
+  "payments": {
+    "title": "Payment methods",
+    "empty": "No payments added yet.",
+    "emptyShort": "No payments.",
+    "detail": "Payment detail",
+    "totalArs": "Total payments ARS",
+    "totalUsd": "Total payments USD",
+    "balanceArs": "Balance ARS",
+    "balanceUsd": "Balance USD",
+    "differenceEquivalentArs": "Equivalent difference ARS",
+    "methods": {
+      "cash": "Cash",
+      "transfer": "Bank transfer",
+      "debit": "Debit",
+      "credit": "Credit",
+      "mercadopago": "Mercado Pago",
+      "other": "Other"
+    }
+  },
+  "status": {
+    "PAID": "Paid",
+    "PARTIAL": "Partial payment",
+    "PENDING": "Pending",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "summary": {
+    "total": "TOTAL",
+    "mixed": "MIXED TOTAL",
+    "emptyHint": "Add items to see summary",
+    "usdHint": "Sale expressed in USD",
+    "arsHint": "Sale expressed in ARS",
+    "exchangeRateHint": "Set exchange rate to see consolidated value",
+    "customer": "Customer",
+    "paymentStatus": "Payment status",
+    "items": "Items",
+    "units": "Units",
+    "itemsUsd": "Total items USD",
+    "itemsArs": "Total items ARS",
+    "equivalentArs": "Total equivalent ARS",
+    "defineExchangeRate": "Set FX",
+    "paidUsd": "Paid USD",
+    "paidArs": "Paid ARS",
+    "paidEquivalentArs": "Paid equivalent ARS",
+    "exchangeRate": "Exchange rate USD → ARS",
+    "exchangeRateWarning": "Enter the exchange rate only if you want to consolidate a mixed operation.",
+    "usdItemsEquivalent": "USD items equivalent in ARS:",
+    "arsItemsEquivalent": "Items equivalent in ARS:"
+  },
+  "table": {
+    "number": "Number",
+    "date": "Date",
+    "customer": "Customer",
+    "currency": "Currency",
+    "items": "Items",
+    "payments": "Payments",
+    "total": "Total",
+    "status": "Status"
+  },
+  "customerModal": {
+    "eyebrow": "Quick create",
+    "title": "New customer",
+    "subtitle": "Create the customer from the sale and continue without leaving the modal.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "firstNamePlaceholder": "First name",
+    "lastNamePlaceholder": "Last name",
+    "emailPlaceholder": "customer@email.com",
+    "phonePlaceholder": "Phone"
+  },
+  "currency": {
+    "USD": "USD",
+    "ARS": "ARS",
+    "MIXED": "Mixed"
+  }
+}

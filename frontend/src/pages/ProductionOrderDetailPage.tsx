@@ -176,40 +176,23 @@ function normalizeEnum(value?: string | null) {
   return String(value || "").trim().toUpperCase();
 }
 
-function translateOrderStatus(value?: string | null) {
-  const key = normalizeEnum(value);
-
-  const labels: Record<string, string> = {
-    DRAFT: "Borrador",
-    APPROVED: "Aprobada",
-    MATERIALS_RESERVED: "Materiales reservados",
-    IN_PROGRESS: "En producción",
-    IN_PRODUCTION: "En producción",
-    PARTIALLY_RECEIVED: "Recepción parcial",
-    COMPLETED: "Completada",
-    CANCELLED: "Cancelada",
-  };
-
-  return labels[key] || value || "—";
+function tr(t: any, key: string, fallback: string, options?: Record<string, unknown>) {
+  if (typeof t !== "function") return fallback;
+  return t(key, {
+    defaultValue: fallback,
+    ...(options || {}),
+  });
 }
 
-function translatePriority(value?: string | null) {
-  const key = normalizeEnum(value);
 
-  const labels: Record<string, string> = {
-    LOW: "Baja",
-    NORMAL: "Normal",
-    HIGH: "Alta",
-    URGENT: "Urgente",
-  };
-
-  return labels[key] || value || "—";
+function currentLang(t: any) {
+  return String(t?.i18n?.language || "").toLowerCase().startsWith("en") ? "en" : "es";
 }
 
-function translateEventType(value?: string | null) {
-  const key = normalizeEnum(value);
+function eventTypeFallback(t: any, key: string) {
+  const lang = currentLang(t);
 
-  const labels: Record<string, string> = {
+  const es: Record<string, string> = {
     CREATED: "Orden creada",
     FABRIC_ASSIGNED: "Tela asignada",
     TRIM_ASSIGNED: "Avío asignado",
@@ -223,13 +206,27 @@ function translateEventType(value?: string | null) {
     DESIGN_IMAGE_UPDATED: "Imagen de diseño actualizada",
   };
 
-  return labels[key] || value || "Movimiento";
+  const en: Record<string, string> = {
+    CREATED: "Order created",
+    FABRIC_ASSIGNED: "Fabric assigned",
+    TRIM_ASSIGNED: "Trim assigned",
+    MATERIAL_ASSIGNED: "Material assigned",
+    MATERIAL_RESERVED: "Material reserved",
+    MATERIAL_ISSUED: "Material issued",
+    MATERIAL_RETURNED: "Material returned",
+    ORDER_RECEIVED: "Receipt registered",
+    OUTPUT_CREATED: "Production output registered",
+    COSTS_UPDATED: "Costs updated",
+    DESIGN_IMAGE_UPDATED: "Design image updated",
+  };
+
+  return (lang === "en" ? en : es)[key] || key || "Movimiento";
 }
 
-function summarizeProductionEvent(event: EventItem) {
-  const key = normalizeEnum(event.event_type);
+function eventSummaryFallback(t: any, key: string) {
+  const lang = currentLang(t);
 
-  const labels: Record<string, string> = {
+  const es: Record<string, string> = {
     CREATED: "Se creó la orden.",
     FABRIC_ASSIGNED: "Se asignó una tela a la orden.",
     TRIM_ASSIGNED: "Se asignó un avío a la orden.",
@@ -243,65 +240,130 @@ function summarizeProductionEvent(event: EventItem) {
     DESIGN_IMAGE_UPDATED: "Se actualizó la imagen de diseño.",
   };
 
-  return labels[key] || translateEventType(event.event_type);
+  const en: Record<string, string> = {
+    CREATED: "The order was created.",
+    FABRIC_ASSIGNED: "A fabric was assigned to the order.",
+    TRIM_ASSIGNED: "A trim was assigned to the order.",
+    MATERIAL_ASSIGNED: "A material was assigned to the order.",
+    MATERIAL_RESERVED: "Material was reserved for production.",
+    MATERIAL_ISSUED: "Material was issued to the workshop.",
+    MATERIAL_RETURNED: "Material return or waste was recorded.",
+    ORDER_RECEIVED: "Production receipt was registered.",
+    OUTPUT_CREATED: "Production output was registered.",
+    COSTS_UPDATED: "Order costs were updated.",
+    DESIGN_IMAGE_UPDATED: "The design image was updated.",
+  };
+
+  return (lang === "en" ? en : es)[key] || eventTypeFallback(t, key);
 }
 
-function translatePayloadKey(value?: string | null) {
-  const key = String(value || "").trim();
+function payloadKeyFallback(t: any, key: string) {
+  const normalized = key.replace(/[_\s-]/g, "").toLowerCase();
+  const lang = currentLang(t);
 
-  const labels: Record<string, string> = {
-    order_number: "Orden",
-    orderNumber: "Orden",
-    roll_code: "Rollo",
-    rollCode: "Rollo",
-    trim_code: "Avío",
-    trimCode: "Avío",
-    material_id: "Material",
-    materialId: "Material",
-    material_type: "Tipo de material",
-    materialType: "Tipo de material",
-    reserved_quantity: "Cantidad reservada",
-    reservedQuantity: "Cantidad reservada",
-    issued_quantity: "Cantidad entregada",
-    issuedQuantity: "Cantidad entregada",
-    returned_quantity: "Cantidad devuelta",
-    returnedQuantity: "Cantidad devuelta",
-    waste_quantity: "Merma",
-    wasteQuantity: "Merma",
-    consumed_quantity: "Consumido",
-    consumedQuantity: "Consumido",
-    produced_quantity: "Cantidad producida",
-    producedQuantity: "Cantidad producida",
+  const es: Record<string, string> = {
+    ordernumber: "Orden",
+    rollcode: "Rollo",
+    trimcode: "Avío",
+    materialid: "Material",
+    materialtype: "Tipo de material",
+    reservedquantity: "Cantidad reservada",
+    issuedquantity: "Cantidad entregada",
+    returnedquantity: "Cantidad devuelta",
+    wastequantity: "Merma",
+    consumedquantity: "Consumido",
+    producedquantity: "Cantidad producida",
     status: "Estado",
     name: "Nombre",
     quantity: "Cantidad",
-    labor_cost: "Mano de obra",
-    laborCost: "Mano de obra",
-    additional_cost: "Costo adicional",
-    additionalCost: "Costo adicional",
+    laborcost: "Mano de obra",
+    additionalcost: "Costo adicional",
     currency: "Moneda",
-    unit_cost_snapshot: "Costo unitario",
-    unitCostSnapshot: "Costo unitario",
-    design_photo_url: "Imagen de diseño",
-    designPhotoUrl: "Imagen de diseño",
+    unitcostsnapshot: "Costo unitario",
+    designphotourl: "Imagen de diseño",
   };
 
-  return labels[key] || key;
+  const en: Record<string, string> = {
+    ordernumber: "Order",
+    rollcode: "Roll",
+    trimcode: "Trim",
+    materialid: "Material",
+    materialtype: "Material type",
+    reservedquantity: "Reserved quantity",
+    issuedquantity: "Issued quantity",
+    returnedquantity: "Returned quantity",
+    wastequantity: "Waste",
+    consumedquantity: "Consumed",
+    producedquantity: "Produced quantity",
+    status: "Status",
+    name: "Name",
+    quantity: "Quantity",
+    laborcost: "Labor cost",
+    additionalcost: "Additional cost",
+    currency: "Currency",
+    unitcostsnapshot: "Unit cost",
+    designphotourl: "Design image",
+  };
+
+  return (lang === "en" ? en : es)[normalized] || key;
 }
 
-function translatePayloadValue(key: string, value: unknown) {
+function translateOrderStatus(t: any, value?: string | null) {
+  const key = normalizeEnum(value);
+  return tr(t, `production-orders:status.${key}`, value || "—");
+}
+
+function translatePriority(t: any, value?: string | null) {
+  const key = normalizeEnum(value);
+  return tr(t, `production-orders:priority.${key}`, value || "—");
+}
+
+function translateEventType(t: any, value?: string | null) {
+  const key = normalizeEnum(value);
+  return tr(t, `production-orders:events.types.${key}`, eventTypeFallback(t, key));
+}
+
+function summarizeProductionEvent(t: any, event: EventItem) {
+  const key = normalizeEnum(event.event_type);
+  const payload = event.payload || {};
+
+  return tr(
+    t,
+    `production-orders:events.summaries.${key}`,
+    eventSummaryFallback(t, key),
+    payload
+  );
+}
+
+function toCamelPayloadKey(value?: string | null) {
+  const key = String(value || "").trim();
+  return key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
+function translatePayloadKey(t: any, value?: string | null) {
+  const key = String(value || "").trim();
+  const camelKey = toCamelPayloadKey(key);
+
+  return tr(
+    t,
+    `production-orders:events.payload.${camelKey}`,
+    payloadKeyFallback(t, key)
+  );
+}
+
+function translatePayloadValue(t: any, key: string, value: unknown) {
   if (value === null || value === undefined) return "—";
 
   const normalizedKey = String(key || "").trim();
 
   if (normalizedKey === "status") {
-    return translateOrderStatus(String(value));
+    return translateOrderStatus(t, String(value));
   }
 
   if (normalizedKey === "material_type" || normalizedKey === "materialType") {
     const raw = normalizeEnum(String(value));
-    if (raw === "FABRIC_ROLL") return "Tela";
-    if (raw === "TRIM") return "Avío";
+    if (raw === "FABRIC_ROLL") return tr(t, "production-orders:materials.fabric", "Tela");
+    if (raw === "TRIM") return tr(t, "production-orders:materials.trim", "Avío");
   }
 
   return String(value);
@@ -332,8 +394,8 @@ function eventTone(eventType: string) {
   }
 }
 
-function summarizeEvent(_t: any, event: EventItem) {
-  return summarizeProductionEvent(event);
+function summarizeEvent(t: any, event: EventItem) {
+  return summarizeProductionEvent(t, event);
 }
 
 function resolvePhoto(photoUrl?: string | null) {
@@ -349,13 +411,13 @@ function resolvePhoto(photoUrl?: string | null) {
   return `${apiBaseUrl}/${photoUrl.replace(/^\/+/, "")}`;
 }
 
-function payloadEntries(_t: any, payload?: Record<string, unknown> | null) {
+function payloadEntries(t: any, payload?: Record<string, unknown> | null) {
   if (!payload) return [];
   return Object.entries(payload).map(([key, value]) => {
     return {
       key,
-      label: translatePayloadKey(key),
-      value: translatePayloadValue(key, value),
+      label: translatePayloadKey(t, key),
+      value: translatePayloadValue(t, key, value),
     };
   });
 }
@@ -399,13 +461,13 @@ function ProductionOrderEventsTab({
   return (
     <section className="po-section-card">
       <div className="po-section-head">
-        <h3>Movimientos de la orden</h3>
-        <p>Historial completo de acciones operativas y financieras.</p>
+        <h3>{tr(t, "production-orders:events.title", "Movimientos de la orden")}</h3>
+        <p>{tr(t, "production-orders:events.subtitle", "Historial completo de acciones operativas y financieras.")}</p>
       </div>
 
       <div className="po-events-list">
         {latestEvents.length === 0 ? (
-          <div className="po-empty-state">Todavía no hay movimientos registrados.</div>
+          <div className="po-empty-state">{tr(t, "production-orders:events.empty", "Todavía no hay movimientos registrados.")}</div>
         ) : (
           latestEvents.map((event) => {
             const entries = payloadEntries(t, event.payload);
@@ -416,7 +478,7 @@ function ProductionOrderEventsTab({
                 <div className="po-event-card__top">
                   <div className="po-event-card__main">
                     <span className={`df-status-badge df-status-badge--${eventTone(event.event_type)}`}>
-                      {translateEventType(event.event_type)}
+                      {translateEventType(t, event.event_type)}
                     </span>
 
                     <strong className="po-event-card__summary">
@@ -442,7 +504,7 @@ function ProductionOrderEventsTab({
                         }))
                       }
                     >
-                      {expanded ? "Ocultar detalle" : "Ver detalle"}
+                      {expanded ? tr(t, "production-orders:events.hideDetails", currentLang(t) === "en" ? "Hide details" : "Ocultar detalle") : tr(t, "production-orders:events.showDetails", currentLang(t) === "en" ? "Show details" : "Ver detalle")}
                     </button>
                   ) : null}
                 </div>
@@ -498,11 +560,6 @@ export default function ProductionOrderDetailPage() {
     notes: "",
   });
 
-  const [receiveForm, setReceiveForm] = useState({
-    produced_quantity: "",
-    status: "PARTIALLY_RECEIVED",
-    received_notes: "",
-  });
 
   const [costForm, setCostForm] = useState({
     labor_cost: "0",
@@ -520,7 +577,7 @@ export default function ProductionOrderDetailPage() {
     quantity: "1",
     unit_cost: "",
     notes: "",
-    create_dress_records: false,
+    create_dress_records: true,
   });
 
   const [fabrics, setFabrics] = useState<Fabric[]>([]);
@@ -595,13 +652,6 @@ export default function ProductionOrderDetailPage() {
       setRolls(Array.isArray(rollsRes.data?.items) ? rollsRes.data.items : []);
       setTrims(Array.isArray(trimsRes.data?.items) ? trimsRes.data.items : []);
       setOutputs(Array.isArray(outputsRes.data) ? outputsRes.data : []);
-
-      setReceiveForm({
-        produced_quantity: String(orderRes.data.produced_quantity ?? ""),
-        status: orderRes.data.status === "COMPLETED" ? "COMPLETED" : "PARTIALLY_RECEIVED",
-        received_notes: orderRes.data.received_notes || "",
-      });
-      
       setCostForm({
         labor_cost: String(orderRes.data.labor_cost ?? "0"),
         additional_cost: String(orderRes.data.additional_cost ?? "0"),
@@ -643,7 +693,7 @@ export default function ProductionOrderDetailPage() {
       setFabricAvailability(res.data);
     } catch (err: any) {
       setFabricAvailability(null);
-      setError(String(err?.response?.data?.detail || "No se pudo validar disponibilidad"));
+      setError(String(err?.response?.data?.detail || tr(t, "production-orders:materials.availabilityError", "No se pudo validar disponibilidad")));
     } finally {
       setCheckingAvailability(false);
     }
@@ -681,7 +731,7 @@ export default function ProductionOrderDetailPage() {
       setError("");
 
       if (!fabricForm.fabric_roll_id) {
-        setError("Seleccioná un rollo");
+        setError(tr(t, "production-orders:materials.selectRollRequired", "Seleccioná un rollo"));
         return;
       }
 
@@ -752,7 +802,7 @@ export default function ProductionOrderDetailPage() {
       await api.delete(`/production-orders/${id}/materials/${materialId}`);
       await loadAll();
     } catch (err: any) {
-      setError(String(err?.response?.data?.detail || "No se pudo eliminar el material."));
+      setError(String(err?.response?.data?.detail || tr(t, "production-orders:materials.removeError", "No se pudo eliminar el material.")));
     }
   };
 
@@ -762,18 +812,18 @@ export default function ProductionOrderDetailPage() {
       await api.post(`/production-orders/${id}/materials/${materialId}/issue`);
       await loadAll();
     } catch (err: any) {
-      setError(String(err?.response?.data?.detail || "No se pudo entregar el material."));
+      setError(String(err?.response?.data?.detail || tr(t, "production-orders:materials.issueError", "No se pudo entregar el material.")));
     }
   };
 
   const issueAllMaterials = async () => {
     const pending = materialCards.filter((m) => m.canIssue);
     if (pending.length === 0) {
-      setError("No hay materiales reservados listos para entregar.");
+      setError(tr(t, "production-orders:operation.quickActions.noneReady", "No hay materiales reservados listos para entregar."));
       return;
     }
 
-    const confirmed = window.confirm("¿Entregar todos los materiales reservados al taller?");
+    const confirmed = window.confirm(tr(t, "production-orders:confirm.issueAll", "¿Entregar todos los materiales reservados al taller?"));
     if (!confirmed) return;
 
     try {
@@ -787,27 +837,13 @@ export default function ProductionOrderDetailPage() {
       await loadAll();
     } catch (err: any) {
       setError(
-        String(err?.response?.data?.detail || "No se pudieron entregar todos los materiales.")
+        String(err?.response?.data?.detail || tr(t, "production-orders:materials.issueAllError", "No se pudieron entregar todos los materiales."))
       );
     } finally {
       setIssuingAll(false);
     }
   };
 
-  const receiveOrder = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
-      setError("");
-      await api.post(`/production-orders/${id}/receive`, {
-        produced_quantity: Number(receiveForm.produced_quantity || 0),
-        status: receiveForm.status,
-        received_notes: receiveForm.received_notes || null,
-      });
-      await loadAll();
-    } catch (err: any) {
-      setError(String(err?.response?.data?.detail || t("production-orders:receive.error")));
-    }
-  };
 
   const uploadDesignImage = async (file: File) => {
     if (!order) return;
@@ -830,27 +866,29 @@ export default function ProductionOrderDetailPage() {
       setDesignImageError(
         err?.response?.data?.detail?.message ||
           err?.response?.data?.detail ||
-          "No se pudo subir la imagen."
+          tr(t, "production-orders:operation.design.uploadError", "No se pudo subir la imagen.")
       );
     } finally {
       setUploadingDesignImage(false);
     }
   };
-
+  
   const createOutput = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!order) return;
+
     try {
       setError("");
-      await api.post(`/production-orders/${id}/outputs`, {
-        name: outputForm.name,
-        code: outputForm.code || null,
-        size: outputForm.size || null,
-        color: outputForm.color || null,
-        quantity: Number(outputForm.quantity || 1),
-        unit_cost: outputForm.unit_cost ? Number(outputForm.unit_cost) : null,
-        notes: outputForm.notes || null,
-        create_dress_records: outputForm.create_dress_records,
+
+      const quantity = Number(outputForm.quantity || 1);
+
+      await api.post(`/production-orders/${id}/receive`, {
+        produced_quantity: quantity,
+        status: "COMPLETED",
+        received_notes: outputForm.notes || null,
       });
+
       setOutputForm({
         name: "",
         code: "",
@@ -859,11 +897,25 @@ export default function ProductionOrderDetailPage() {
         quantity: "1",
         unit_cost: "",
         notes: "",
-        create_dress_records: false,
+        create_dress_records: true,
       });
+
       await loadAll();
+
+      setError(
+        `✔ Se registró la producción y se generaron ${quantity} vestido${quantity === 1 ? "" : "s"} disponibles para la venta.`
+      );
     } catch (err: any) {
-      setError(String(err?.response?.data?.detail || "No se pudo crear el output."));
+      const detail = err?.response?.data?.detail;
+
+      const message =
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((item: any) => item.msg).join(" · ")
+            : tr(t, "production-orders:output.createError", "No se pudo registrar la producción.");
+
+      setError(message);
     }
   };
 
@@ -946,7 +998,7 @@ export default function ProductionOrderDetailPage() {
   if (loading) {
     return (
       <section className="df-pro-page">
-        <div className="po-loading-state">Cargando orden...</div>
+        <div className="po-loading-state">{tr(t, "production-orders:messages.loading", "Cargando orden...")}</div>
       </section>
     );
   }
@@ -963,7 +1015,7 @@ export default function ProductionOrderDetailPage() {
     return (
       <section className="df-pro-page">
         <div className="po-empty-state">
-          <h3>Orden no encontrada</h3>
+          <h3>{tr(t, "production-orders:messages.notFound", "Orden no encontrada")}</h3>
         </div>
       </section>
     );
@@ -980,53 +1032,53 @@ export default function ProductionOrderDetailPage() {
               </p>
               <h1 className="po-header-title">{order.order_number}</h1>
               <p className="po-header-subtitle">
-                {order.target_dress_name} · {order.workshop_supplier_name || "Sin taller asignado"}
+                {order.target_dress_name} · {order.workshop_supplier_name || tr(t, "production-orders:fields.noWorkshop", "Sin taller asignado")}
               </p>
             </div>
 
             <div className="po-top-actions">
               <button type="button" className="po-secondary-btn" onClick={() => navigate(-1)}>
-                Volver
+                {tr(t, "common:actions.back", "Volver")}
               </button>
               <button
                 type="button"
                 className="po-primary-btn"
                 onClick={() => window.open(`/production-orders/${order.id}/print`, "_blank")}
               >
-                Print
+                {tr(t, "common:actions.print", "Imprimir")}
               </button>
             </div>
           </div>
 
           <div className="po-header-meta">
             <div className="po-meta-card">
-              <span className="po-meta-card__label">Estado</span>
+              <span className="po-meta-card__label">{tr(t, "production-orders:fields.status", "Estado")}</span>
               <span className={`df-status-badge df-status-badge--${eventTone(order.status)}`}>
-                {translateOrderStatus(order.status)}
+                {translateOrderStatus(t, order.status)}
               </span>
             </div>
 
             <div className="po-meta-card">
-              <span className="po-meta-card__label">Prioridad</span>
+              <span className="po-meta-card__label">{tr(t, "production-orders:fields.priority", "Prioridad")}</span>
               <span className="po-meta-card__value">
-                {translatePriority(order.priority)}
+                {translatePriority(t, order.priority)}
               </span>
             </div>
 
             <div className="po-meta-card">
-              <span className="po-meta-card__label">Entrega</span>
+              <span className="po-meta-card__label">{tr(t, "production-orders:fields.dueDate", "Entrega")}</span>
               <span className="po-meta-card__value">
                 {formatDate(order.due_date, i18n.language === "en" ? "en-US" : "es-AR")}
               </span>
             </div>
 
             <div className="po-meta-card">
-              <span className="po-meta-card__label">Cantidad</span>
+              <span className="po-meta-card__label">{tr(t, "production-orders:fields.quantity", "Cantidad")}</span>
               <span className="po-meta-card__value">{order.planned_quantity}</span>
             </div>
 
             <div className="po-meta-card">
-              <span className="po-meta-card__label">Producido</span>
+              <span className="po-meta-card__label">{tr(t, "production-orders:fields.producedQuantity", "Producido")}</span>
               <span className="po-meta-card__value">{order.produced_quantity}</span>
             </div>
           </div>
@@ -1037,7 +1089,7 @@ export default function ProductionOrderDetailPage() {
               className={`po-detail-tab ${activeTab === "operation" ? "po-detail-tab--active" : ""}`}
               onClick={() => changeTab("operation")}
             >
-              Operación
+              {tr(t, "production-orders:tabs.operation", "Operación")}
             </button>
 
             <button
@@ -1045,7 +1097,7 @@ export default function ProductionOrderDetailPage() {
               className={`po-detail-tab ${activeTab === "finance" ? "po-detail-tab--active" : ""}`}
               onClick={() => changeTab("finance")}
             >
-              Costos
+              {tr(t, "production-orders:tabs.finance", "Costos")}
             </button>
 
             <button
@@ -1053,7 +1105,7 @@ export default function ProductionOrderDetailPage() {
               className={`po-detail-tab ${activeTab === "events" ? "po-detail-tab--active" : ""}`}
               onClick={() => changeTab("events")}
             >
-              Movimientos
+              {tr(t, "production-orders:tabs.events", "Movimientos")}
             </button>
           </div>
         </section>
@@ -1077,8 +1129,6 @@ export default function ProductionOrderDetailPage() {
               setTrimForm={setTrimForm}
               outputForm={outputForm}
               setOutputForm={setOutputForm}
-              receiveForm={receiveForm}
-              setReceiveForm={setReceiveForm}
               fabricAvailability={fabricAvailability}
               checkingAvailability={checkingAvailability}
               availableRollOptions={availableRollOptions}
@@ -1094,7 +1144,6 @@ export default function ProductionOrderDetailPage() {
               issueAllMaterials={issueAllMaterials}
               issuingAll={issuingAll}
               createOutput={createOutput}
-              receiveOrder={receiveOrder}
               formatMoney={formatMoney}
               materialStatusClass={materialStatusClass}
             />

@@ -1,0 +1,50 @@
+{
+  "title": "Stock valorizado de vestidos",
+  "hero": {
+    "eyebrow": "Reportes",
+    "subtitle": "Valor del inventario disponible para venta y alquiler.",
+    "saleValuation": "Valorización de venta",
+    "saleValuationSubtitle": "Valor potencial del inventario disponible para venta."
+  },
+  "fields": {
+    "code": "Código",
+    "name": "Vestido",
+    "capsule": "Cápsula",
+    "size": "Talle",
+    "color": "Color",
+    "status": "Estado",
+    "salePrice": "Precio venta",
+    "rentalPrice": "Precio alquiler"
+  },
+  "summary": {
+    "records": "Registros",
+    "currency": "Moneda"
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Código, vestido, cápsula o color"
+  },
+  "kpis": {
+    "total": "Total vestidos",
+    "available": "Disponibles",
+    "saleValue": "Valor venta",
+    "rentalValue": "Valor alquiler"
+  },
+  "status": {
+    "AVAILABLE": "Disponible",
+    "LOANED": "Prestado",
+    "RENTED": "Alquilado",
+    "CLEANING": "Limpieza",
+    "MAINTENANCE": "Reparación",
+    "SOLD": "Vendido",
+    "RETIRED": "Retirado"
+  },
+  "messages": {
+    "loading": "Cargando reporte..."
+  },
+  "errors": {
+    "load": "No se pudo cargar el reporte.",
+    "export": "No se pudo exportar."
+  },
+  "empty": "No hay datos para mostrar."
+}

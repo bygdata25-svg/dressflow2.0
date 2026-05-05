@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 
 type PreviewRow = {
@@ -46,6 +47,8 @@ type Props = {
 };
 
 export default function FabricImportModal({ open, onClose, onImported }: Props) {
+  const { t } = useTranslation(["imports", "common"]);
+
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<ImportResponse | null>(null);
   const [executeData, setExecuteData] = useState<ImportResponse | null>(null);
@@ -76,7 +79,7 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
 
   async function doPreview() {
     if (!file) {
-      setErrorMsg("Seleccioná un archivo antes de generar el preview.");
+      setErrorMsg(t("imports:modal.errors.noFilePreview"));
       return;
     }
 
@@ -100,7 +103,7 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
       setErrorMsg(
         err?.response?.data?.detail?.message ||
           err?.response?.data?.detail ||
-          "No se pudo generar el preview."
+          t("imports:modal.errors.preview")
       );
     } finally {
       setLoadingPreview(false);
@@ -109,7 +112,7 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
 
   async function doExecute() {
     if (!file) {
-      setErrorMsg("Seleccioná un archivo antes de importar.");
+      setErrorMsg(t("imports:modal.errors.noFileExecute"));
       return;
     }
 
@@ -137,7 +140,7 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
       setErrorMsg(
         err?.response?.data?.detail?.message ||
           err?.response?.data?.detail ||
-          "La importación falló."
+          t("imports:modal.errors.execute")
       );
     } finally {
       setLoadingExecute(false);
@@ -158,9 +161,9 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
       >
         <div className="df-modal-header">
           <div>
-            <h2>Importar planilla de telas</h2>
+            <h2>{t("imports:modal.title")}</h2>
             <p className="df-modal-subtitle">
-              Subí una planilla, revisá el preview y confirmá la importación.
+              {t("imports:modal.subtitle")}
             </p>
           </div>
 
@@ -173,20 +176,54 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
           <div className="df-import-card">
             <div className="df-import-upload-row">
               <div className="df-import-filebox">
-                <label className="df-import-label">Archivo</label>
-                <input
-                  type="file"
-                  accept=".xlsx,.csv,.ods"
-                  onChange={(e) => {
-                    const selected = e.target.files?.[0] || null;
-                    setFile(selected);
-                    setPreviewData(null);
-                    setExecuteData(null);
-                    setErrorMsg(null);
+                <label className="df-import-label">
+                  {t("imports:modal.file.label")}
+                </label>
+
+                <div
+                  className="df-file-upload"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
                   }}
-                />
+                >
+                  <input
+                    id="fabric-import-file"
+                    type="file"
+                    accept=".xlsx,.csv,.ods"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const selected = e.target.files?.[0] || null;
+                      setFile(selected);
+                      setPreviewData(null);
+                      setExecuteData(null);
+                      setErrorMsg(null);
+                    }}
+                  />
+
+                  <label
+                    htmlFor="fabric-import-file"
+                    className="gf-btn gf-btn-secondary"
+                    style={{ cursor: "pointer" }}
+                  >
+                    {t("imports:modal.file.select")}
+                  </label>
+
+                  <span
+                    className="df-file-name"
+                    style={{
+                      fontSize: 13,
+                      color: "#667085",
+                    }}
+                  >
+                    {file ? file.name : t("imports:modal.file.empty")}
+                  </span>
+                </div>
+
                 <small className="df-import-help">
-                  Formatos soportados: XLSX, CSV, ODS
+                  {t("imports:modal.file.formats")}
                 </small>
               </div>
 
@@ -197,7 +234,9 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
                   onClick={doPreview}
                   disabled={!file || loadingPreview || loadingExecute}
                 >
-                  {loadingPreview ? "Generando preview..." : "Preview"}
+                  {loadingPreview
+                    ? t("imports:modal.actions.previewLoading")
+                    : t("imports:modal.actions.preview")}
                 </button>
 
                 <button
@@ -206,14 +245,16 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
                   onClick={doExecute}
                   disabled={!canExecute}
                 >
-                  {loadingExecute ? "Importando..." : "Confirmar importación"}
+                  {loadingExecute
+                    ? t("imports:modal.actions.importing")
+                    : t("imports:modal.actions.confirm")}
                 </button>
               </div>
             </div>
 
             {file && (
               <div className="df-import-selected-file">
-                <strong>Archivo seleccionado:</strong> {file.name}
+                <strong>{t("imports:modal.file.selected")}:</strong> {file.name}
               </div>
             )}
 
@@ -223,27 +264,27 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
           {stats && (
             <div className="df-import-stats-grid">
               <div className="df-stat-card">
-                <span>Filas</span>
+                <span>{t("imports:modal.stats.rows")}</span>
                 <strong>{stats.total_rows}</strong>
               </div>
               <div className="df-stat-card">
-                <span>Proveedores nuevos</span>
+                <span>{t("imports:modal.stats.newSuppliers")}</span>
                 <strong>{stats.created_suppliers}</strong>
               </div>
               <div className="df-stat-card">
-                <span>Telas nuevas</span>
+                <span>{t("imports:modal.stats.newFabrics")}</span>
                 <strong>{stats.created_fabrics}</strong>
               </div>
               <div className="df-stat-card">
-                <span>Piezas nuevas</span>
+                <span>{t("imports:modal.stats.newRolls")}</span>
                 <strong>{stats.created_rolls}</strong>
               </div>
               <div className="df-stat-card">
-                <span>Rollos omitidos</span>
+                <span>{t("imports:modal.stats.skippedRolls")}</span>
                 <strong>{stats.skipped_rolls}</strong>
               </div>
               <div className="df-stat-card">
-                <span>Errores</span>
+                <span>{t("imports:modal.stats.errors")}</span>
                 <strong>{stats.errors_count}</strong>
               </div>
             </div>
@@ -252,22 +293,22 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
           {previewRows.length > 0 && (
             <div className="df-import-section">
               <div className="df-section-head">
-                <h3>Preview</h3>
-                <span>Primeras filas detectadas</span>
+                <h3>{t("imports:modal.preview.title")}</h3>
+                <span>{t("imports:modal.preview.subtitle")}</span>
               </div>
 
               <div className="df-table-wrap">
                 <table className="df-table">
                   <thead>
                     <tr>
-                      <th>Fila</th>
-                      <th>Código</th>
-                      <th>Tela</th>
-                      <th>Proveedor</th>
-                      <th>Piezas</th>
-                      <th>Prov. nuevo</th>
-                      <th>Tela nueva</th>
-                      <th>Retazos</th>
+                      <th>{t("imports:modal.preview.columns.row")}</th>
+                      <th>{t("imports:modal.preview.columns.code")}</th>
+                      <th>{t("imports:modal.preview.columns.fabric")}</th>
+                      <th>{t("imports:modal.preview.columns.supplier")}</th>
+                      <th>{t("imports:modal.preview.columns.pieces")}</th>
+                      <th>{t("imports:modal.preview.columns.newSupplier")}</th>
+                      <th>{t("imports:modal.preview.columns.newFabric")}</th>
+                      <th>{t("imports:modal.preview.columns.scraps")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -278,9 +319,21 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
                         <td>{row.fabric_name || "-"}</td>
                         <td>{row.supplier_name || "-"}</td>
                         <td>{row.pieces_detected ?? 0}</td>
-                        <td>{row.supplier_created ? "Sí" : "No"}</td>
-                        <td>{row.fabric_created ? "Sí" : "No"}</td>
-                        <td>{row.has_scraps ? "Sí" : "No"}</td>
+                        <td>
+                          {row.supplier_created
+                            ? t("common:yes", { defaultValue: "Yes" })
+                            : t("common:no", { defaultValue: "No" })}
+                        </td>
+                        <td>
+                          {row.fabric_created
+                            ? t("common:yes", { defaultValue: "Yes" })
+                            : t("common:no", { defaultValue: "No" })}
+                        </td>
+                        <td>
+                          {row.has_scraps
+                            ? t("common:yes", { defaultValue: "Yes" })
+                            : t("common:no", { defaultValue: "No" })}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -292,16 +345,16 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
           {errors.length > 0 && (
             <div className="df-import-section">
               <div className="df-section-head">
-                <h3>Errores detectados</h3>
+                <h3>{t("imports:modal.errors.title")}</h3>
               </div>
 
               <div className="df-table-wrap">
                 <table className="df-table">
                   <thead>
                     <tr>
-                      <th>Fila</th>
-                      <th>Código</th>
-                      <th>Error</th>
+                      <th>{t("imports:modal.errors.columns.row")}</th>
+                      <th>{t("imports:modal.errors.columns.code")}</th>
+                      <th>{t("imports:modal.errors.columns.error")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -320,14 +373,14 @@ export default function FabricImportModal({ open, onClose, onImported }: Props) 
 
           {executeData?.ok && (
             <div className="df-import-success">
-              Importación realizada correctamente.
+              {t("imports:modal.success")}
             </div>
           )}
         </div>
 
         <div className="df-modal-footer">
           <button type="button" className="btn btn-ghost" onClick={handleClose}>
-            Cerrar
+            {t("imports:modal.actions.close")}
           </button>
         </div>
       </div>

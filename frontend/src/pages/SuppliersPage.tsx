@@ -35,14 +35,6 @@ function TrashIcon() {
   );
 }
 
-function supplierTypeLabel(value?: string | null) {
-  const raw = String(value || "").toUpperCase();
-  if (raw === "FABRIC_SUPPLIER") return "Proveedor de telas";
-  if (raw === "WORKSHOP") return "Taller";
-  if (raw === "BOTH") return "Ambos";
-  return value || "—";
-}
-
 export default function SuppliersPage() {
   const { t } = useTranslation(["common", "suppliers"]);
 
@@ -61,6 +53,16 @@ export default function SuppliersPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const supplierTypeLabel = (value?: string | null) => {
+    const raw = String(value || "").toUpperCase();
+
+    if (raw === "FABRIC_SUPPLIER") return t("suppliers:types.FABRIC_SUPPLIER");
+    if (raw === "WORKSHOP") return t("suppliers:types.WORKSHOP");
+    if (raw === "BOTH") return t("suppliers:types.BOTH");
+
+    return value || "—";
+  };
+
   const loadSuppliers = async () => {
     try {
       setLoading(true);
@@ -77,7 +79,7 @@ export default function SuppliersPage() {
       setRows(Array.isArray(response.data?.items) ? response.data.items : []);
       setTotal(Number(response.data?.total || 0));
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Error cargando proveedores");
+      setError(err?.response?.data?.detail || t("suppliers:messages.loadError"));
       setRows([]);
       setTotal(0);
     } finally {
@@ -96,13 +98,13 @@ export default function SuppliersPage() {
 
   const handleDelete = async (id?: string) => {
     if (!id) return;
-    if (!window.confirm("¿Eliminar proveedor?")) return;
+    if (!window.confirm(t("suppliers:delete.confirm"))) return;
 
     try {
       await api.delete(`/suppliers/${id}`);
       await loadSuppliers();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "No se pudo eliminar el proveedor.");
+      setError(err?.response?.data?.detail || t("suppliers:delete.error"));
     }
   };
 
@@ -110,19 +112,19 @@ export default function SuppliersPage() {
     return [
       {
         key: "name",
-        label: "Nombre",
+        label: t("suppliers:fields.name"),
         render: (row) => (
           <div style={{ display: "grid", gap: 4 }}>
             <strong style={{ color: "#32273c", fontSize: 14 }}>{row.name}</strong>
             <span style={{ color: "#8b8193", fontSize: 12 }}>
-              {row.supplier_code || "Sin código"}
+              {row.supplier_code || t("suppliers:fields.noCode")}
             </span>
           </div>
         ),
       },
       {
         key: "supplier_type",
-        label: "Tipo",
+        label: t("suppliers:fields.supplierType"),
         render: (row) => (
           <span className="df-status-badge df-status-badge--active">
             {supplierTypeLabel(row.supplier_type)}
@@ -131,17 +133,17 @@ export default function SuppliersPage() {
       },
       {
         key: "origin",
-        label: "Origen",
+        label: t("suppliers:fields.origin"),
         render: (row) => row.origin || "—",
       },
       {
         key: "email",
-        label: "Email",
+        label: t("suppliers:fields.email"),
         render: (row) => row.email || "—",
       },
       {
         key: "phone",
-        label: "Teléfono",
+        label: t("suppliers:fields.phone"),
         render: (row) => row.phone || "—",
       },
       {
@@ -199,10 +201,10 @@ export default function SuppliersPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Abastecimiento</p>
-          <h1 className="df-pro-page__title">Proveedores</h1>
+          <p className="df-pro-page__eyebrow">{t("suppliers:hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("suppliers:title")}</h1>
           <p className="df-pro-page__subtitle">
-            Gestioná proveedores de telas, talleres y contactos operativos.
+            {t("suppliers:hero.subtitle")}
           </p>
         </div>
 
@@ -213,7 +215,7 @@ export default function SuppliersPage() {
           }}
           style={{ flexShrink: 0 }}
         >
-          Nuevo proveedor
+          {t("suppliers:actions.new")}
         </PrimaryButton>
       </header>
 
@@ -227,12 +229,12 @@ export default function SuppliersPage() {
           className="df-pro-filter-grid df-pro-filter-grid--3"
         >
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("suppliers:filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Nombre, email, teléfono..."
+              placeholder={t("suppliers:filters.searchPlaceholder")}
             />
           </div>
 
@@ -267,9 +269,9 @@ export default function SuppliersPage() {
 
       <section className="df-pro-card">
         {loading ? (
-          <p>Cargando proveedores...</p>
+          <p>{t("suppliers:states.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay proveedores para mostrar.</p>
+          <p>{t("suppliers:empty")}</p>
         ) : (
           <DataGrid
             rows={rows}
@@ -307,7 +309,7 @@ export default function SuppliersPage() {
           setShowModal(false);
           setEditingSupplier(null);
         }}
-        title={editingSupplier ? "Editar proveedor" : "Nuevo proveedor"}
+        title={editingSupplier ? t("suppliers:modal.editTitle") : t("suppliers:modal.createTitle")}
         width="min(920px, 100%)"
       >
         <SupplierForm

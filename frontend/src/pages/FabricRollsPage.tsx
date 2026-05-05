@@ -6,7 +6,6 @@ import { Modal } from "../components/common/Modal";
 import { FormActions } from "../components/common/FormActions";
 import { PrimaryButton } from "../components/common/buttons";
 import { useFieldConfig } from "../hooks/useFieldConfig";
-import { buildDynamicColumns } from "../lib/buildDynamicColumns";
 import "../styles/pro-pages.css";
 
 type Fabric = {
@@ -77,6 +76,10 @@ const initialForm: RollFormState = {
   location: "",
 };
 
+function formatMeters(value?: number | null) {
+  return `${Number(value || 0).toFixed(2)} m`;
+}
+
 function TrashIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -126,7 +129,7 @@ export default function FabricRollsPage() {
 
   const readOnlyHint = (
     <small style={{ display: "block", marginTop: 6, color: "#667085" }}>
-      Solo editable al crear.
+      {t("fabric-rolls:form.readOnlyOnCreate")}
     </small>
   );
 
@@ -208,17 +211,17 @@ export default function FabricRollsPage() {
     event.preventDefault();
 
     if (fc.isRequired("fabric_id") && !form.fabric_id) {
-      setError("La tela es obligatoria.");
+      setError(t("fabric-rolls:form.messages.fabricRequired"));
       return;
     }
 
     if (fc.isRequired("roll_code") && !form.roll_code.trim()) {
-      setError("El código de rollo es obligatorio.");
+      setError(t("fabric-rolls:form.messages.rollCodeRequired"));
       return;
     }
 
     if (fc.isRequired("initial_length") && !form.initial_length) {
-      setError("El metraje inicial es obligatorio.");
+      setError(t("fabric-rolls:form.messages.initialLengthRequired"));
       return;
     }
 
@@ -271,33 +274,6 @@ export default function FabricRollsPage() {
     }
   }
 
-  const renderers = useMemo(
-    () => ({
-      roll_code: (row: FabricRoll) => row.roll_code,
-      fabric_id: (row: FabricRoll) => row.fabric_name || "-",
-      fabric_name: (row: FabricRoll) => row.fabric_name || "-",
-      fabric_color: (row: FabricRoll) => row.fabric_color || "-",
-      fabric_code: (row: FabricRoll) => row.fabric_code || "-",
-      supplier_id: (row: FabricRoll) => row.supplier_name || "-",
-      initial_length: (row: FabricRoll) => `${row.initial_length} m`,
-      current_length: (row: FabricRoll) => `${row.current_length} m`,
-      reserved_length: (row: FabricRoll) => `${row.reserved_length} m`,
-      status: (row: FabricRoll) => (
-        <span className={`df-status-badge df-status-badge--${String(row.status).toLowerCase()}`}>
-          {t(`fabric-rolls:status.${row.status}`)}
-        </span>
-      ),
-      price_per_meter: (row: FabricRoll) =>
-        row.price_per_meter != null ? `$ ${Number(row.price_per_meter).toFixed(2)}` : "-",
-      purchase_date: (row: FabricRoll) => row.purchase_date || "-",
-      unit: (row: FabricRoll) => row.unit || "-",
-      location: (row: FabricRoll) => row.location || "-",
-      is_scrap: (row: FabricRoll) => (row.is_scrap ? "Sí" : "No"),
-      notes: (row: FabricRoll) => row.notes || "-",
-    }),
-    [t]
-  );
-
   const actionColumn: DataGridColumn<FabricRoll> = useMemo(
     () => ({
       key: "actions",
@@ -340,13 +316,55 @@ export default function FabricRollsPage() {
     [t]
   );
 
-  const columns = useMemo(() => {
-    return buildDynamicColumns<FabricRoll>({
-      fields: fc.fields,
-      renderers,
-      includeActions: actionColumn,
-    });
-  }, [fc.fields, renderers, actionColumn]);
+  const columns = useMemo<DataGridColumn<FabricRoll>[]>(() => {
+    return [
+      {
+        key: "roll_code",
+        label: t("fabric-rolls:fields.rollCode"),
+        render: (row) => row.roll_code,
+      },
+      {
+        key: "fabric",
+        label: t("fabric-rolls:fields.fabric"),
+        render: (row) => row.fabric_name || "-",
+      },
+      {
+        key: "supplier",
+        label: t("fabric-rolls:fields.supplier"),
+        render: (row) => row.supplier_name || "-",
+      },
+      {
+        key: "initial_length",
+        label: t("fabric-rolls:fields.initialLength"),
+        render: (row) => formatMeters(row.initial_length),
+      },
+      {
+        key: "current_length",
+        label: t("fabric-rolls:fields.currentLength"),
+        render: (row) => formatMeters(row.current_length),
+      },
+      {
+        key: "status",
+        label: t("fabric-rolls:fields.status"),
+        render: (row) => (
+          <span className={`df-status-badge df-status-badge--${String(row.status).toLowerCase()}`}>
+            {t(`fabric-rolls:status.${row.status}`, { defaultValue: row.status })}
+          </span>
+        ),
+      },
+      {
+        key: "location",
+        label: t("fabric-rolls:fields.location"),
+        render: (row) => row.location || "-",
+      },
+      {
+        key: "reserved_length",
+        label: t("fabric-rolls:fields.reservedLength"),
+        render: (row) => formatMeters(row.reserved_length),
+      },
+      actionColumn,
+    ];
+  }, [t, actionColumn]);
 
   const showEstimatedValue =
     fc.isFormVisible("initial_length") || fc.isFormVisible("price_per_meter");
@@ -371,7 +389,7 @@ export default function FabricRollsPage() {
         </div>
 
         <PrimaryButton onClick={handleOpenCreate} style={{ flexShrink: 0 }}>
-          Nuevo rollo
+          {t("fabric-rolls:actions.new")}
         </PrimaryButton>
       </header>
 
@@ -445,13 +463,16 @@ export default function FabricRollsPage() {
         <div>
           {t("common:pagination.showing")} {rows.length} / {total}
         </div>
+
         <div className="df-pro-actions-row">
           <button type="button" onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
             {t("common:pagination.previous")}
           </button>
+
           <span>
             {t("common:pagination.page")} {page} {t("common:pagination.of")} {totalPages}
           </span>
+
           <button
             type="button"
             onClick={() => setPage((prev) => prev + 1)}
@@ -464,7 +485,11 @@ export default function FabricRollsPage() {
 
       <Modal
         open={showModal}
-        title={editingId ? "Editar rollo" : "Nuevo rollo"}
+        title={
+          editingId
+            ? t("fabric-rolls:form.editTitle")
+            : t("fabric-rolls:form.createTitle")
+        }
         onClose={handleCloseModal}
         width="min(980px, 100%)"
       >
@@ -479,9 +504,10 @@ export default function FabricRollsPage() {
           {fc.isFormVisible("fabric_id") && (
             <div style={{ gridColumn: "span 4" }}>
               <label className="df-pro-label">
-                {fc.getLabel("fabric_id", "Tela")}
+                {t("fabric-rolls:fields.fabric")}
                 {fc.isRequired("fabric_id") ? " *" : ""}
               </label>
+
               <select
                 className="df-pro-select"
                 value={form.fabric_id}
@@ -489,33 +515,38 @@ export default function FabricRollsPage() {
                 disabled={isFieldDisabled("fabric_id")}
                 required={fc.isRequired("fabric_id")}
               >
-                <option value="">Seleccionar tela</option>
+                <option value="">{t("fabric-rolls:form.placeholders.fabric")}</option>
                 {fabrics.map((fabric) => (
                   <option key={fabric.id} value={fabric.id}>
                     {fabric.name}
                   </option>
                 ))}
               </select>
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("fabric_id") ? readOnlyHint : null}
             </div>
           )}
 
           {fc.isFormVisible("supplier_id") && (
             <div style={{ gridColumn: "span 4" }}>
-              <label className="df-pro-label">{fc.getLabel("supplier_id", "Proveedor")}</label>
+              <label className="df-pro-label">
+                {t("fabric-rolls:fields.supplier")}
+              </label>
+
               <select
                 className="df-pro-select"
                 value={form.supplier_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, supplier_id: e.target.value }))}
                 disabled={isFieldDisabled("supplier_id")}
               >
-                <option value="">Sin proveedor</option>
+                <option value="">{t("fabric-rolls:form.placeholders.noSupplier")}</option>
                 {suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>
                     {supplier.name}
                   </option>
                 ))}
               </select>
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("supplier_id") ? readOnlyHint : null}
             </div>
           )}
@@ -523,17 +554,19 @@ export default function FabricRollsPage() {
           {fc.isFormVisible("roll_code") && (
             <div style={{ gridColumn: "span 4" }}>
               <label className="df-pro-label">
-                {fc.getLabel("roll_code", "Código de rollo")}
+                {t("fabric-rolls:fields.rollCode")}
                 {fc.isRequired("roll_code") ? " *" : ""}
               </label>
+
               <input
                 className="df-pro-input"
                 value={form.roll_code}
                 onChange={(e) => setForm((prev) => ({ ...prev, roll_code: e.target.value }))}
-                placeholder={fc.getUiProps("roll_code")?.placeholder || "R-001"}
+                placeholder={t("fabric-rolls:form.placeholders.rollCode")}
                 disabled={isFieldDisabled("roll_code")}
                 required={fc.isRequired("roll_code")}
               />
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("roll_code") ? readOnlyHint : null}
             </div>
           )}
@@ -541,9 +574,10 @@ export default function FabricRollsPage() {
           {fc.isFormVisible("initial_length") && (
             <div style={{ gridColumn: "span 3" }}>
               <label className="df-pro-label">
-                {fc.getLabel("initial_length", "Metraje inicial")}
+                {t("fabric-rolls:fields.initialLength")}
                 {fc.isRequired("initial_length") ? " *" : ""}
               </label>
+
               <input
                 className="df-pro-input"
                 type="number"
@@ -552,10 +586,11 @@ export default function FabricRollsPage() {
                 max={fc.getValidationRules("initial_length")?.max_value}
                 value={form.initial_length}
                 onChange={(e) => setForm((prev) => ({ ...prev, initial_length: e.target.value }))}
-                placeholder={fc.getUiProps("initial_length")?.placeholder || "25"}
+                placeholder={t("fabric-rolls:form.placeholders.initialLength")}
                 disabled={isFieldDisabled("initial_length")}
                 required={fc.isRequired("initial_length")}
               />
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("initial_length") ? readOnlyHint : null}
             </div>
           )}
@@ -563,8 +598,9 @@ export default function FabricRollsPage() {
           {fc.isFormVisible("price_per_meter") && (
             <div style={{ gridColumn: "span 3" }}>
               <label className="df-pro-label">
-                {fc.getLabel("price_per_meter", "Precio / metro")}
+                {t("fabric-rolls:fields.pricePerMeter")}
               </label>
+
               <input
                 className="df-pro-input"
                 type="number"
@@ -573,32 +609,38 @@ export default function FabricRollsPage() {
                 max={fc.getValidationRules("price_per_meter")?.max_value}
                 value={form.price_per_meter}
                 onChange={(e) => setForm((prev) => ({ ...prev, price_per_meter: e.target.value }))}
-                placeholder={fc.getUiProps("price_per_meter")?.placeholder || "18.00"}
+                placeholder={t("fabric-rolls:form.placeholders.pricePerMeter")}
                 disabled={isFieldDisabled("price_per_meter")}
               />
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("price_per_meter") ? readOnlyHint : null}
             </div>
           )}
 
           {fc.isFormVisible("unit") && (
             <div style={{ gridColumn: "span 3" }}>
-              <label className="df-pro-label">{fc.getLabel("unit", "Unidad")}</label>
+              <label className="df-pro-label">
+                {t("fabric-rolls:fields.unit")}
+              </label>
+
               <select
                 className="df-pro-select"
                 value={form.unit}
                 onChange={(e) => setForm((prev) => ({ ...prev, unit: e.target.value }))}
                 disabled={isFieldDisabled("unit")}
               >
-                <option value="meters">metros</option>
-                <option value="yards">yards</option>
+                <option value="meters">{t("fabric-rolls:units.meters")}</option>
+                <option value="yards">{t("fabric-rolls:units.yards")}</option>
               </select>
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("unit") ? readOnlyHint : null}
             </div>
           )}
 
           {showEstimatedValue && (
             <div style={{ gridColumn: "span 3" }}>
-              <label className="df-pro-label">Valor estimado</label>
+              <label className="df-pro-label">{t("fabric-rolls:form.estimatedValue")}</label>
+
               <div
                 style={{
                   minHeight: 44,
@@ -625,8 +667,9 @@ export default function FabricRollsPage() {
           {fc.isFormVisible("purchase_date") && (
             <div style={{ gridColumn: "span 4" }}>
               <label className="df-pro-label">
-                {fc.getLabel("purchase_date", "Fecha compra")}
+                {t("fabric-rolls:fields.purchaseDate")}
               </label>
+
               <input
                 className="df-pro-input"
                 type="date"
@@ -634,6 +677,7 @@ export default function FabricRollsPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, purchase_date: e.target.value }))}
                 disabled={isFieldDisabled("purchase_date")}
               />
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("purchase_date") ? readOnlyHint : null}
             </div>
           )}
@@ -641,33 +685,37 @@ export default function FabricRollsPage() {
           {fc.isFormVisible("location") && (
             <div style={{ gridColumn: "span 4" }}>
               <label className="df-pro-label">
-                {fc.getLabel("location", "Ubicación")}
+                {t("fabric-rolls:fields.location")}
                 {fc.isRequired("location") ? " *" : ""}
               </label>
+
               <input
                 className="df-pro-input"
                 value={form.location}
                 onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
-                placeholder={
-                  fc.getUiProps("location")?.placeholder || "Depósito A / Estante 3"
-                }
+                placeholder={t("fabric-rolls:form.placeholders.location")}
                 disabled={isFieldDisabled("location")}
                 required={fc.isRequired("location")}
               />
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("location") ? readOnlyHint : null}
             </div>
           )}
 
           {fc.isFormVisible("notes") && (
             <div style={{ gridColumn: "span 8" }}>
-              <label className="df-pro-label">{fc.getLabel("notes", "Notas")}</label>
+              <label className="df-pro-label">
+                {t("fabric-rolls:fields.notes")}
+              </label>
+
               <input
                 className="df-pro-input"
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder={fc.getUiProps("notes")?.placeholder || "Observaciones"}
+                placeholder={t("fabric-rolls:form.placeholders.notes")}
                 disabled={isFieldDisabled("notes")}
               />
+
               {Boolean(editingId) && isFieldReadOnlyOnEdit("notes") ? readOnlyHint : null}
             </div>
           )}

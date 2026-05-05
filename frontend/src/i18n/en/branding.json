@@ -1,0 +1,35 @@
+{
+  "eyebrow": "Visual identity",
+  "title": "Branding",
+  "subtitle": "Customize your company's visual identity within DressFlow.",
+
+  "logo": {
+    "title": "Logo",
+    "upload": "Upload logo",
+    "noLogo": "No logo",
+    "recommended": "Recommended: PNG with transparent background.",
+    "uploading": "Uploading logo...",
+    "updated": "Logo updated successfully.",
+    "uploadError": "Logo upload failed.",
+    "selectFile": "Select file",
+    "noFileSelected": "No file selected"
+  },
+
+  "color": {
+    "title": "Primary color",
+    "autosave": "Autosave enabled",
+    "saving": "Saving...",
+    "saved": "Color saved automatically.",
+    "saveError": "Could not save color."
+  },
+
+  "preview": {
+    "label": "Preview",
+    "title": "Brand preview",
+    "description": "This is how buttons, accents and main UI elements will look."
+  },
+
+  "loadError": "Failed to load branding.",
+  
+  "alt": "Company logo"
+}

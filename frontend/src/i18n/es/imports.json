@@ -1,0 +1,29 @@
+{
+  "title": "Importaciones",
+  "hero": {
+    "eyebrow": "Ajustes",
+    "subtitle": "Importación masiva de datos del sistema."
+  },
+  "cards": {
+    "fabrics": {
+      "title": "Importar telas",
+      "description": "Importación masiva de telas, proveedores y rollos.",
+      "action": "Importar planilla"
+    }
+  },
+  "modal": {
+  "title": "Importar planilla de telas",
+  "subtitle": "Subí una planilla, revisá el preview y confirmá la importación.",
+  "file": {
+    "label": "Archivo",
+    "select": "Seleccionar archivo",
+    "empty": "Sin archivos seleccionados",
+    "formats": "Formatos soportados: XLSX, CSV, ODS"
+  },
+  "actions": {
+    "preview": "Preview",
+    "confirm": "Confirmar importación",
+    "close": "Cerrar"
+  }
+}
+}

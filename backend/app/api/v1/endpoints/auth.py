@@ -145,6 +145,10 @@ def me(
         )
     ).scalars().all()
 
+    tenant_default_language = getattr(tenant, "default_language", None) or "es"
+    preferred_language = getattr(current_user, "preferred_language", None)
+    effective_language = preferred_language or tenant_default_language or "es"
+
     return {
         "id": str(current_user.id),
         "email": current_user.email,
@@ -154,15 +158,23 @@ def me(
         "is_active": current_user.is_active,
         "is_superuser": current_user.is_superuser,
         "must_change_password": getattr(current_user, "must_change_password", False),
+
         "tenant_id": str(current_membership.tenant_id),
         "tenant_name": tenant.name if tenant else None,
         "tenant_logo_url": tenant.logo_url if tenant else None,
         "tenant_primary_color": tenant.primary_color if tenant else None,
+
+        "tenant_default_language": tenant_default_language,
+        "preferred_language": preferred_language,
+        "effective_language": effective_language,
+
         "membership_id": str(current_membership.id),
         "role": current_membership.role,
         "features": list(features),
+
         "impersonated": bool(token_payload.get("impersonated", False)),
         "impersonated_by": token_payload.get("impersonated_by"),
+        "original_sub": token_payload.get("original_sub"),
         "original_sub": token_payload.get("original_sub"),
         "impersonation_audit_id": token_payload.get("impersonation_audit_id"),
     }

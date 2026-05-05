@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import { Modal } from "../components/common/Modal";
@@ -68,17 +69,18 @@ const initialForm: AccessoryFormState = {
 };
 
 const STATUS_OPTIONS = [
-  { value: "", label: "Todos los estados" },
-  { value: "ACTIVE", label: "Activo" },
-  { value: "INACTIVE", label: "Inactivo" },
+  { value: "", labelKey: "filters.allStatuses" },
+  { value: "ACTIVE", labelKey: "status.ACTIVE" },
+  { value: "INACTIVE", labelKey: "status.INACTIVE" },
 ];
 
 function money(value?: number | string | null) {
   const n = Number(value ?? 0);
   if (Number.isNaN(n)) return "—";
+
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: "USD",
+    currency: "ARS",
     minimumFractionDigits: 2,
   }).format(n);
 }
@@ -101,11 +103,10 @@ function TrashIcon() {
   );
 }
 
-function statusLabel(value?: string | null) {
+function statusLabel(t: any, value?: string | null) {
   const raw = String(value || "").toUpperCase();
-  if (raw === "ACTIVE") return "Activo";
-  if (raw === "INACTIVE") return "Inactivo";
-  return value || "—";
+  if (!raw) return "—";
+  return t(`status.${raw}`, value || "—");
 }
 
 function stockBadgeClass(row: Accessory) {
@@ -114,13 +115,16 @@ function stockBadgeClass(row: Accessory) {
   return "df-status-badge df-status-badge--active";
 }
 
-function stockBadgeLabel(row: Accessory) {
-  if (row.stock <= 0) return "Sin stock";
-  if (row.stock <= row.min_stock) return "Stock bajo";
-  return "Disponible";
+function stockBadgeLabel(t: any, row: Accessory) {
+  if (row.stock <= 0) return t("stock.noStock");
+  if (row.stock <= row.min_stock) return t("stock.lowStock");
+  return t("stock.available");
 }
 
 export default function AccessoriesPage() {
+  const { t } = useTranslation("accessories");
+  const { t: tc } = useTranslation("common");
+
   const [rows, setRows] = useState<Accessory[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -151,7 +155,7 @@ export default function AccessoriesPage() {
     ).sort((a, b) => a.localeCompare(b));
 
     return values;
-  }, [rows]);
+  }, [rows, t, tc]);
 
   const lowStockCount = useMemo(
     () => rows.filter((row) => row.stock > 0 && row.stock <= row.min_stock).length,
@@ -185,7 +189,7 @@ export default function AccessoriesPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudieron cargar los accesorios.");
+      else setError(t("messages.loadError"));
     } finally {
       setLoading(false);
     }
@@ -250,7 +254,7 @@ export default function AccessoriesPage() {
   }
 
   async function handleDeleteAccessory(accessoryId: string) {
-    const confirmed = window.confirm("¿Querés eliminar este accesorio?");
+    const confirmed = window.confirm(t("delete.confirm"));
     if (!confirmed) return;
 
     try {
@@ -266,7 +270,7 @@ export default function AccessoriesPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo eliminar el accesorio.");
+      else setError(t("delete.error"));
     }
   }
 
@@ -274,7 +278,7 @@ export default function AccessoriesPage() {
     event.preventDefault();
 
     if (!form.name.trim()) {
-      setError("El nombre es obligatorio.");
+      setError(t("validation.nameRequired"));
       return;
     }
 
@@ -323,7 +327,7 @@ export default function AccessoriesPage() {
       } else if (detail?.message) {
         setError(detail.message);
       } else {
-        setError("No se pudo guardar el accesorio.");
+        setError(t("messages.saveError"));
       }
     } finally {
       setSaving(false);
@@ -334,7 +338,7 @@ export default function AccessoriesPage() {
     return [
       {
         key: "photo",
-        label: "Foto",
+        label: t("fields.photo"),
         render: (row) =>
           row.photo_url ? (
             <img
@@ -361,18 +365,18 @@ export default function AccessoriesPage() {
                 fontSize: 11,
               }}
             >
-              Sin foto
+              {t("images.noImage")}
             </div>
           ),
       },
       {
         key: "code",
-        label: "Código",
+        label: t("fields.code"),
         render: (row) => row.code || "—",
       },
       {
         key: "name",
-        label: "Accesorio",
+        label: t("fields.accessory"),
         render: (row) => (
           <div style={{ display: "grid", gap: 4 }}>
             <strong style={{ color: "#32273c", fontSize: 14 }}>{row.name}</strong>
@@ -384,32 +388,32 @@ export default function AccessoriesPage() {
       },
       {
         key: "stock",
-        label: "Stock",
+        label: t("fields.stock"),
         render: (row) => (
           <div style={{ display: "grid", gap: 6 }}>
             <strong style={{ color: "#32273c" }}>{row.stock}</strong>
-            <span className={stockBadgeClass(row)}>{stockBadgeLabel(row)}</span>
+            <span className={stockBadgeClass(row)}>{stockBadgeLabel(t, row)}</span>
           </div>
         ),
       },
       {
         key: "min_stock",
-        label: "Stock mínimo",
+        label: t("fields.minStock"),
         render: (row) => row.min_stock,
       },
       {
         key: "unit_cost",
-        label: "Costo",
+        label: t("fields.unitCost"),
         render: (row) => money(row.unit_cost),
       },
       {
         key: "sale_price",
-        label: "Precio venta",
+        label: t("fields.salePrice"),
         render: (row) => money(row.sale_price),
       },
       {
         key: "status",
-        label: "Estado",
+        label: t("fields.status"),
         render: (row) => (
           <span
             className={`df-status-badge ${
@@ -418,7 +422,7 @@ export default function AccessoriesPage() {
                 : "df-status-badge--returned"
             }`}
           >
-            {statusLabel(row.status)}
+            {statusLabel(t, row.status)}
           </span>
         ),
       },
@@ -429,8 +433,8 @@ export default function AccessoriesPage() {
           <div style={{ display: "flex", justifyContent: "center" }}>
             <button
               type="button"
-              title="Eliminar"
-              aria-label="Eliminar"
+              title={tc("actions.delete")}
+              aria-label={tc("actions.delete")}
               onClick={(e) => {
                 e.stopPropagation();
                 void handleDeleteAccessory(row.id);
@@ -461,7 +465,7 @@ export default function AccessoriesPage() {
         ),
       },
     ];
-  }, [rows]);
+  }, [rows, t, tc]);
 
   return (
     <section className="df-pro-page">
@@ -554,29 +558,29 @@ export default function AccessoriesPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Inventario</p>
-          <h1 className="df-pro-page__title">Accesorios</h1>
+          <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
           <p className="df-pro-page__subtitle">
-            Gestioná catálogo, stock y precios de accesorios.
+            {t("hero.subtitle")}
           </p>
         </div>
 
         <PrimaryButton onClick={handleOpenCreate} style={{ flexShrink: 0 }}>
-          Nuevo accesorio
+          {t("actions.new")}
         </PrimaryButton>
       </header>
 
       <section className="df-accessories-hero-kpis">
         <div className="df-accessories-kpi-card">
-          <span>Total visibles</span>
+          <span>{t("kpis.visible")}</span>
           <strong>{rows.length}</strong>
         </div>
         <div className="df-accessories-kpi-card">
-          <span>Stock bajo</span>
+          <span>{t("kpis.lowStock")}</span>
           <strong>{lowStockCount}</strong>
         </div>
         <div className="df-accessories-kpi-card">
-          <span>Sin stock</span>
+          <span>{t("kpis.noStock")}</span>
           <strong>{noStockCount}</strong>
         </div>
       </section>
@@ -584,17 +588,17 @@ export default function AccessoriesPage() {
       <section className="df-pro-card">
         <form onSubmit={handleSearchSubmit} className="df-pro-filter-grid df-pro-filter-grid--4">
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Código, nombre, categoría, color..."
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
           <div>
-            <label className="df-pro-label">Estado</label>
+            <label className="df-pro-label">{t("filters.status")}</label>
             <select
               className="df-pro-select"
               value={statusFilter}
@@ -605,14 +609,14 @@ export default function AccessoriesPage() {
             >
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value || "all"} value={option.value}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="df-pro-label">Categoría</label>
+            <label className="df-pro-label">{t("filters.category")}</label>
             <select
               className="df-pro-select"
               value={categoryFilter}
@@ -621,7 +625,7 @@ export default function AccessoriesPage() {
                 setCategoryFilter(e.target.value);
               }}
             >
-              <option value="">Todas las categorías</option>
+              <option value="">{t("filters.allCategories")}</option>
               {categoryOptions.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -630,9 +634,9 @@ export default function AccessoriesPage() {
             </select>
           </div>
 
-          <button type="submit">Buscar</button>
+          <button type="submit">{tc("actions.search")}</button>
           <button type="button" onClick={handleClearFilters}>
-            Limpiar
+            {tc("actions.clear")}
           </button>
         </form>
       </section>
@@ -654,9 +658,9 @@ export default function AccessoriesPage() {
 
       <section className="df-pro-card">
         {loading ? (
-          <p>Cargando accesorios...</p>
+          <p>{tc("status.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay accesorios para mostrar.</p>
+          <p>{t("empty")}</p>
         ) : (
           <DataGrid
             rows={rows}
@@ -669,22 +673,22 @@ export default function AccessoriesPage() {
 
       <footer className="df-pro-pagination">
         <div>
-          Mostrando {rows.length} / {total}
+          {tc("pagination.showing")} {rows.length} / {total}
         </div>
 
         <div className="df-pro-actions-row">
           <button type="button" onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
-            Anterior
+            {tc("pagination.previous")}
           </button>
           <span>
-            Página {page} de {totalPages}
+            {tc("pagination.page")} {page} {tc("pagination.of")} {totalPages}
           </span>
           <button
             type="button"
             onClick={() => setPage((prev) => prev + 1)}
             disabled={page >= totalPages}
           >
-            Siguiente
+            {tc("pagination.next")}
           </button>
         </div>
       </footer>
@@ -692,70 +696,70 @@ export default function AccessoriesPage() {
       <Modal
         open={showModal}
         onClose={handleCloseModal}
-        title={editingAccessory ? "Editar accesorio" : "Nuevo accesorio"}
+        title={editingAccessory ? t("modal.edit") : t("modal.new")}
         width="min(960px, 100%)"
       >
         <form onSubmit={saveAccessory} style={{ display: "grid", gap: 16 }}>
           <div className="df-accessories-modal-grid">
             <div className="df-accessories-modal-field">
-              <label>Código</label>
+              <label>{t("fields.code")}</label>
               <input
                 value={form.code}
                 onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
-                placeholder="Ej: ACC-001"
+                placeholder={t("form.placeholders.code")}
               />
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Nombre</label>
+              <label>{t("fields.name")}</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Nombre del accesorio"
+                placeholder={t("form.placeholders.name")}
                 required
               />
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Categoría</label>
+              <label>{t("fields.category")}</label>
               <input
                 value={form.category}
                 onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                placeholder="Ej: Cinto, Cartera, Collar"
+                placeholder={t("form.placeholders.category")}
               />
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Color</label>
+              <label>{t("fields.color")}</label>
               <input
                 value={form.color}
                 onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))}
-                placeholder="Color"
+                placeholder={t("form.placeholders.color")}
               />
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Tamaño</label>
+              <label>{t("fields.size")}</label>
               <input
                 value={form.size}
                 onChange={(e) => setForm((prev) => ({ ...prev, size: e.target.value }))}
-                placeholder="Talle / tamaño"
+                placeholder={t("form.placeholders.size")}
               />
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Estado</label>
+              <label>{t("fields.status")}</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
               >
-                <option value="ACTIVE">Activo</option>
-                <option value="INACTIVE">Inactivo</option>
+                <option value="ACTIVE">{t("status.ACTIVE")}</option>
+                <option value="INACTIVE">{t("status.INACTIVE")}</option>
               </select>
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Costo unitario</label>
+              <label>{t("fields.unitCost")}</label>
               <input
                 type="number"
                 min="0"
@@ -766,7 +770,7 @@ export default function AccessoriesPage() {
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Precio de venta</label>
+              <label>{t("fields.salePrice")}</label>
               <input
                 type="number"
                 min="0"
@@ -777,7 +781,7 @@ export default function AccessoriesPage() {
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Stock actual</label>
+              <label>{t("fields.stock")}</label>
               <input
                 type="number"
                 min="0"
@@ -788,7 +792,7 @@ export default function AccessoriesPage() {
             </div>
 
             <div className="df-accessories-modal-field">
-              <label>Stock mínimo</label>
+              <label>{t("fields.minStock")}</label>
               <input
                 type="number"
                 min="0"
@@ -799,28 +803,58 @@ export default function AccessoriesPage() {
             </div>
 
             <div className="df-accessories-modal-field df-accessories-modal-field--full">
-              <label>Imagen</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setForm((prev) => ({ ...prev, file }));
+  <label>{t("fields.image")}</label>
 
-                  if (file) {
-                    const previewUrl = URL.createObjectURL(file);
-                    setImagePreview(previewUrl);
-                  }
-                }}
-              />
-            </div>
+  <input
+    id="accessory-image-file"
+    type="file"
+    accept="image/*"
+    style={{ display: "none" }}
+    onChange={(e) => {
+      const file = e.target.files?.[0] || null;
+      setForm((prev) => ({ ...prev, file }));
+
+      if (file) {
+        const previewUrl = URL.createObjectURL(file);
+        setImagePreview(previewUrl);
+      }
+    }}
+  />
+
+  <label
+    htmlFor="accessory-image-file"
+    style={{
+      minHeight: 42,
+      borderRadius: 14,
+      border: "1px solid #e7dfd6",
+      background: "#fff",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "0 16px",
+      fontSize: 14,
+      fontWeight: 700,
+      color: "#3d3648",
+      cursor: "pointer",
+      width: "fit-content",
+    }}
+  >
+    {t("actions.selectFile")}
+  </label>
+
+  {form.file ? (
+    <span style={{ fontSize: 12, color: "#7a7082" }}>
+      {form.file.name}
+    </span>
+  ) : null}
+</div> 
 
             {imagePreview ? (
               <div className="df-accessories-modal-field df-accessories-modal-field--full">
-                <label>Vista previa</label>
+                <label>{t("images.preview")}</label>
                 <img
                   src={imagePreview}
-                  alt="Vista previa"
+                  alt={t("images.preview")}
                   style={{
                     width: 140,
                     height: 140,
@@ -833,20 +867,20 @@ export default function AccessoriesPage() {
             ) : null}
 
             <div className="df-accessories-modal-field df-accessories-modal-field--full">
-              <label>Descripción</label>
+              <label>{t("fields.description")}</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Descripción del accesorio"
+                placeholder={t("form.placeholders.description")}
               />
             </div>
 
             <div className="df-accessories-modal-field df-accessories-modal-field--full">
-              <label>Notas</label>
+              <label>{t("fields.notes")}</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder="Observaciones internas"
+                placeholder={t("form.placeholders.notes")}
               />
             </div>
           </div>
@@ -867,10 +901,10 @@ export default function AccessoriesPage() {
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button type="button" onClick={handleCloseModal}>
-              Cancelar
+              {tc("actions.cancel")}
             </button>
             <PrimaryButton type="submit" disabled={saving}>
-              {saving ? "Guardando..." : editingAccessory ? "Actualizar" : "Crear accesorio"}
+              {saving ? tc("status.saving") : editingAccessory ? tc("actions.update") : t("actions.create")}
             </PrimaryButton>
           </div>
         </form>

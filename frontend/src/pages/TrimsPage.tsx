@@ -178,7 +178,7 @@ export default function TrimsPage() {
     event.preventDefault();
 
     if (!form.code.trim() || !form.name.trim()) {
-      setError("Código y nombre son obligatorios.");
+      setError(t("trims:form.validation.required"));
       return;
     }
 
@@ -224,7 +224,7 @@ export default function TrimsPage() {
   };
 
   const deleteTrim = async (id: string) => {
-    const confirmed = window.confirm("¿Eliminar avío?");
+    const confirmed = window.confirm(t("trims:delete.confirm"));
     if (!confirmed) return;
 
     try {
@@ -234,7 +234,7 @@ export default function TrimsPage() {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudo eliminar el avío.");
+      else setError(t("trims:delete.error"));
     }
   };
 
@@ -242,7 +242,7 @@ export default function TrimsPage() {
     return [
       {
         key: "photo",
-        label: "Foto",
+        label: t("trims:fields.photo"),
         render: (row) =>
           row.photo_url ? (
             <img
@@ -269,7 +269,7 @@ export default function TrimsPage() {
                 fontSize: 11,
               }}
             >
-              Sin foto
+              {t("trims:images.noImage")}
             </div>
           ),
       },
@@ -374,7 +374,7 @@ export default function TrimsPage() {
         </div>
 
         <PrimaryButton onClick={handleOpenCreate} style={{ flexShrink: 0 }}>
-          Nuevo avío
+          {t("trims:actions.new")}
         </PrimaryButton>
       </header>
 
@@ -450,7 +450,7 @@ export default function TrimsPage() {
 
       <Modal
         open={showModal}
-        title={editingId ? "Editar avío" : "Nuevo avío"}
+        title={editingId ? t("trims:modal.edit") : t("trims:modal.new")}
         onClose={handleCloseModal}
         width="min(900px, 100%)"
       >
@@ -555,29 +555,74 @@ export default function TrimsPage() {
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <label className="df-pro-label">Imagen</label>
-            <input
-              className="df-pro-input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                setForm((prev) => ({ ...prev, file }));
+            <label className="df-pro-label">{t("trims:fields.image")}</label>
 
-                if (file) {
-                  const previewUrl = URL.createObjectURL(file);
-                  setImagePreview(previewUrl);
-                }
+            <div
+              className="df-file-upload"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
               }}
-            />
+            >
+              <input
+                id="trim-file-upload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setForm((prev) => ({ ...prev, file }));
+
+                  if (file) {
+                    const previewUrl = URL.createObjectURL(file);
+                    setImagePreview(previewUrl);
+                  }
+                }}
+                style={{
+                  position: "absolute",
+                  opacity: 0,
+                  pointerEvents: "none",
+                  width: 0,
+                  height: 0,
+                }}
+              />
+
+              <label
+                htmlFor="trim-file-upload"
+                className="df-file-upload-btn"
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  border: "1px solid #d0d5dd",
+                  background: "#fff",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#344054",
+                }}
+              >
+                {t("trims:actions.selectFile")}
+              </label>
+
+              <span
+                className="df-file-upload-name"
+                style={{
+                  fontSize: 13,
+                  color: "#667085",
+                }}
+              >
+                {form.file ? form.file.name : t("trims:images.noFileSelected")}
+              </span>
+            </div>
           </div>
 
           {imagePreview ? (
             <div style={{ gridColumn: "1 / -1" }}>
-              <label className="df-pro-label">Vista previa</label>
+              <label className="df-pro-label">{t("trims:images.preview")}</label>
               <img
                 src={imagePreview}
-                alt="Vista previa"
+                alt={t("trims:images.preview")}
                 style={{
                   width: 140,
                   height: 140,

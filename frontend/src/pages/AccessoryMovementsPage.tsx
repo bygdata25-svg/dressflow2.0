@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import { Modal } from "../components/common/Modal";
@@ -58,30 +59,33 @@ const initialForm: MovementFormState = {
   notes: "",
 };
 
-const MOVEMENT_TYPES = [
-  { value: "", label: "Todos los tipos" },
-  { value: "IN", label: "Entrada" },
-  { value: "OUT", label: "Salida" },
-  { value: "ADJUST", label: "Ajuste" },
-];
-
-function movementTypeLabel(value?: string | null) {
-  const raw = String(value || "").toUpperCase();
-  if (raw === "IN") return "Entrada";
-  if (raw === "OUT") return "Salida";
-  if (raw === "ADJUST") return "Ajuste";
-  return value || "—";
-}
+const MOVEMENT_TYPE_VALUES = ["", "IN", "OUT", "ADJUST"] as const;
 
 function movementBadgeClass(value?: string | null) {
   const raw = String(value || "").toUpperCase();
+
   if (raw === "IN") return "df-status-badge df-status-badge--active";
   if (raw === "OUT") return "df-status-badge df-status-badge--late";
   if (raw === "ADJUST") return "df-status-badge df-status-badge--returned";
+
   return "df-status-badge";
 }
 
+function movementTypeKey(value?: string | null) {
+  const raw = String(value || "").toUpperCase();
+
+  if (raw === "IN") return "in";
+  if (raw === "OUT") return "out";
+  if (raw === "ADJUST") return "adjust";
+
+  return "";
+}
+
 export default function AccessoryMovementsPage() {
+  const { t, i18n } = useTranslation("accessoryMovements");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
+
   const [rows, setRows] = useState<AccessoryMovement[]>([]);
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,6 +104,22 @@ export default function AccessoryMovementsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const movementTypes = useMemo(() => {
+    return MOVEMENT_TYPE_VALUES.map((value) => {
+      if (!value) {
+        return {
+          value,
+          label: t("types.all"),
+        };
+      }
+
+      return {
+        value,
+        label: t(`types.${movementTypeKey(value)}`),
+      };
+    });
+  }, [t]);
+
   const availableAccessories = useMemo(
     () => accessories.filter((item) => item.status === "ACTIVE"),
     [accessories]
@@ -112,6 +132,14 @@ export default function AccessoryMovementsPage() {
       adjustCount: rows.filter((row) => row.type === "ADJUST").length,
     };
   }, [rows]);
+
+  function getMovementTypeLabel(value?: string | null) {
+    const key = movementTypeKey(value);
+
+    if (!key) return value || "—";
+
+    return t(`types.${key}`, { defaultValue: value || "—" });
+  }
 
   async function loadAccessories() {
     try {
@@ -135,23 +163,28 @@ export default function AccessoryMovementsPage() {
       setLoading(true);
       setError("");
 
-      const response = await api.get<PaginatedAccessoryMovementResponse>("/accessory-movements", {
-        params: {
-          page,
-          page_size: PAGE_SIZE,
-          search: search || undefined,
-          type: typeFilter || undefined,
-        },
-      });
+      const response = await api.get<PaginatedAccessoryMovementResponse>(
+        "/accessory-movements",
+        {
+          params: {
+            page,
+            page_size: PAGE_SIZE,
+            search: search || undefined,
+            type: typeFilter || undefined,
+          },
+        }
+      );
 
       setRows(Array.isArray(response.data?.items) ? response.data.items : []);
       setTotal(Number(response.data?.total || 0));
     } catch (err: any) {
       console.error("Error loading accessory movements:", err);
+
       const detail = err?.response?.data?.detail;
+
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError("No se pudieron cargar los movimientos de accesorios.");
+      else setError(t("messages.errorLoad"));
     } finally {
       setLoading(false);
     }
@@ -187,18 +220,19 @@ export default function AccessoryMovementsPage() {
   function handleCloseModal() {
     setShowModal(false);
     setForm(initialForm);
+    setError("");
   }
 
   async function saveMovement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!form.accessory_id) {
-      setError("Seleccioná un accesorio.");
+      setError(t("messages.selectAccessory"));
       return;
     }
 
     if (!form.quantity || Number(form.quantity) <= 0) {
-      setError("Ingresá una cantidad mayor a cero.");
+      setError(t("messages.invalidQuantity"));
       return;
     }
 
@@ -218,6 +252,7 @@ export default function AccessoryMovementsPage() {
       await Promise.all([loadMovements(), loadAccessories()]);
     } catch (err: any) {
       console.error("Error saving accessory movement:", err);
+
       const detail = err?.response?.data?.detail;
 
       if (Array.isArray(detail)) {
@@ -227,7 +262,7 @@ export default function AccessoryMovementsPage() {
       } else if (detail?.message) {
         setError(detail.message);
       } else {
-        setError("No se pudo guardar el movimiento.");
+        setError(t("messages.errorSave"));
       }
     } finally {
       setSaving(false);
@@ -238,22 +273,22 @@ export default function AccessoryMovementsPage() {
     return [
       {
         key: "created_at",
-        label: "Fecha",
+        label: t("table.date"),
         render: (row) =>
-          row.created_at ? new Date(row.created_at).toLocaleString("es-AR") : "—",
+          row.created_at ? new Date(row.created_at).toLocaleString(locale) : "—",
       },
       {
         key: "type",
-        label: "Tipo",
+        label: t("table.type"),
         render: (row) => (
           <span className={movementBadgeClass(row.type)}>
-            {movementTypeLabel(row.type)}
+            {getMovementTypeLabel(row.type)}
           </span>
         ),
       },
       {
         key: "accessory",
-        label: "Accesorio",
+        label: t("table.accessory"),
         render: (row) => (
           <div style={{ display: "grid", gap: 4 }}>
             <strong style={{ color: "#32273c", fontSize: 14 }}>
@@ -267,21 +302,21 @@ export default function AccessoryMovementsPage() {
       },
       {
         key: "quantity",
-        label: "Cantidad",
+        label: t("table.quantity"),
         render: (row) => row.quantity,
       },
       {
         key: "reference",
-        label: "Referencia",
+        label: t("table.reference"),
         render: (row) => row.reference || "—",
       },
       {
         key: "notes",
-        label: "Notas",
+        label: t("table.notes"),
         render: (row) => row.notes || "—",
       },
     ];
-  }, []);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -374,29 +409,29 @@ export default function AccessoryMovementsPage() {
         }}
       >
         <div>
-          <p className="df-pro-page__eyebrow">Inventario</p>
-          <h1 className="df-pro-page__title">Movimientos de accesorios</h1>
-          <p className="df-pro-page__subtitle">
-            Registrá entradas, salidas y ajustes para mantener el stock de accesorios siempre actualizado.
-          </p>
+          <p className="df-pro-page__eyebrow">{t("eyebrow")}</p>
+          <h1 className="df-pro-page__title">{t("title")}</h1>
+          <p className="df-pro-page__subtitle">{t("subtitle")}</p>
         </div>
 
         <PrimaryButton onClick={handleOpenCreate} style={{ flexShrink: 0 }}>
-          Nuevo movimiento
+          {t("new")}
         </PrimaryButton>
       </header>
 
       <section className="df-accessory-movements-kpis">
         <div className="df-accessory-movements-kpi-card">
-          <span>Entradas visibles</span>
+          <span>{t("kpis.in")}</span>
           <strong>{movementCounters.inCount}</strong>
         </div>
+
         <div className="df-accessory-movements-kpi-card">
-          <span>Salidas visibles</span>
+          <span>{t("kpis.out")}</span>
           <strong>{movementCounters.outCount}</strong>
         </div>
+
         <div className="df-accessory-movements-kpi-card">
-          <span>Ajustes visibles</span>
+          <span>{t("kpis.adjust")}</span>
           <strong>{movementCounters.adjustCount}</strong>
         </div>
       </section>
@@ -404,17 +439,17 @@ export default function AccessoryMovementsPage() {
       <section className="df-pro-card">
         <form onSubmit={handleSearchSubmit} className="df-pro-filter-grid df-pro-filter-grid--3">
           <div>
-            <label className="df-pro-label">Buscar</label>
+            <label className="df-pro-label">{t("filters.search")}</label>
             <input
               className="df-pro-input"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Código, accesorio, referencia..."
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
           <div>
-            <label className="df-pro-label">Tipo</label>
+            <label className="df-pro-label">{t("filters.type")}</label>
             <select
               className="df-pro-select"
               value={typeFilter}
@@ -423,7 +458,7 @@ export default function AccessoryMovementsPage() {
                 setTypeFilter(e.target.value);
               }}
             >
-              {MOVEMENT_TYPES.map((option) => (
+              {movementTypes.map((option) => (
                 <option key={option.value || "all"} value={option.value}>
                   {option.label}
                 </option>
@@ -431,9 +466,10 @@ export default function AccessoryMovementsPage() {
             </select>
           </div>
 
-          <button type="submit">Buscar</button>
+          <button type="submit">{t("filters.searchButton")}</button>
+
           <button type="button" onClick={handleClearFilters}>
-            Limpiar
+            {t("filters.clear")}
           </button>
         </form>
       </section>
@@ -455,36 +491,40 @@ export default function AccessoryMovementsPage() {
 
       <section className="df-pro-card">
         {loading ? (
-          <p>Cargando movimientos...</p>
+          <p>{t("messages.loading")}</p>
         ) : rows.length === 0 ? (
-          <p>No hay movimientos de accesorios para mostrar.</p>
+          <p>{t("messages.empty")}</p>
         ) : (
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            getRowKey={(row) => row.id}
-          />
+          <DataGrid rows={rows} columns={columns} getRowKey={(row) => row.id} />
         )}
       </section>
 
       <footer className="df-pro-pagination">
         <div>
-          Mostrando {rows.length} / {total}
+          {t("pagination.showing", {
+            count: rows.length,
+            total,
+          })}
         </div>
 
         <div className="df-pro-actions-row">
           <button type="button" onClick={() => setPage((prev) => prev - 1)} disabled={page <= 1}>
-            Anterior
+            {t("pagination.previous")}
           </button>
+
           <span>
-            Página {page} de {totalPages}
+            {t("pagination.page", {
+              page,
+              totalPages,
+            })}
           </span>
+
           <button
             type="button"
             onClick={() => setPage((prev) => prev + 1)}
             disabled={page >= totalPages}
           >
-            Siguiente
+            {t("pagination.next")}
           </button>
         </div>
       </footer>
@@ -492,68 +532,103 @@ export default function AccessoryMovementsPage() {
       <Modal
         open={showModal}
         onClose={handleCloseModal}
-        title="Nuevo movimiento de accesorio"
+        title={t("modal.title")}
         width="min(860px, 100%)"
       >
         <form onSubmit={saveMovement} style={{ display: "grid", gap: 16 }}>
           <div className="df-accessory-movements-modal-grid">
             <div className="df-accessory-movements-modal-field">
-              <label>Accesorio</label>
+              <label>{t("modal.accessory")}</label>
+
               <select
                 value={form.accessory_id}
-                onChange={(e) => setForm((prev) => ({ ...prev, accessory_id: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    accessory_id: e.target.value,
+                  }))
+                }
               >
-                <option value="">Seleccionar accesorio</option>
+                <option value="">{t("modal.selectAccessory")}</option>
+
                 {availableAccessories.map((accessory) => (
                   <option key={accessory.id} value={accessory.id}>
                     {(accessory.code ? `${accessory.code} · ` : "") + accessory.name}
-                    {typeof accessory.stock === "number" ? ` · Stock ${accessory.stock}` : ""}
+                    {typeof accessory.stock === "number"
+                      ? ` · ${t("modal.stock")} ${accessory.stock}`
+                      : ""}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="df-accessory-movements-modal-field">
-              <label>Tipo</label>
+              <label>{t("modal.type")}</label>
+
               <select
                 value={form.type}
-                onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    type: e.target.value,
+                  }))
+                }
               >
-                <option value="IN">Entrada</option>
-                <option value="OUT">Salida</option>
-                <option value="ADJUST">Ajuste</option>
+                <option value="IN">{t("types.in")}</option>
+                <option value="OUT">{t("types.out")}</option>
+                <option value="ADJUST">{t("types.adjust")}</option>
               </select>
             </div>
 
             <div className="df-accessory-movements-modal-field">
-              <label>
-                {form.type === "ADJUST" ? "Nuevo stock" : "Cantidad"}
-              </label>
+              <label>{form.type === "ADJUST" ? t("modal.newStock") : t("modal.quantity")}</label>
+
               <input
                 type="number"
                 min="1"
                 step="1"
                 value={form.quantity}
-                onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value }))}
-                placeholder={form.type === "ADJUST" ? "Ej: 15" : "Ej: 3"}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    quantity: e.target.value,
+                  }))
+                }
+                placeholder={
+                  form.type === "ADJUST"
+                    ? t("modal.adjustPlaceholder")
+                    : t("modal.quantityPlaceholder")
+                }
               />
             </div>
 
             <div className="df-accessory-movements-modal-field">
-              <label>Referencia</label>
+              <label>{t("modal.reference")}</label>
+
               <input
                 value={form.reference}
-                onChange={(e) => setForm((prev) => ({ ...prev, reference: e.target.value }))}
-                placeholder="Ej: Compra, venta, conteo..."
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    reference: e.target.value,
+                  }))
+                }
+                placeholder={t("modal.referencePlaceholder")}
               />
             </div>
 
             <div className="df-accessory-movements-modal-field df-accessory-movements-modal-field--full">
-              <label>Notas</label>
+              <label>{t("modal.notes")}</label>
+
               <textarea
                 value={form.notes}
-                onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder="Observaciones del movimiento"
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    notes: e.target.value,
+                  }))
+                }
+                placeholder={t("modal.notesPlaceholder")}
               />
             </div>
           </div>
@@ -574,10 +649,11 @@ export default function AccessoryMovementsPage() {
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button type="button" onClick={handleCloseModal}>
-              Cancelar
+              {t("actions.cancel")}
             </button>
+
             <PrimaryButton type="submit" disabled={saving}>
-              {saving ? "Guardando..." : "Crear movimiento"}
+              {saving ? t("actions.saving") : t("actions.save")}
             </PrimaryButton>
           </div>
         </form>

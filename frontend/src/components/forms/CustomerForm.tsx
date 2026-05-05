@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import { FormActions } from "../common/FormActions";
 
@@ -19,6 +20,8 @@ type Props = {
 };
 
 export function CustomerForm({ customer, onSuccess, onCancel }: Props) {
+  const { t } = useTranslation("customers");
+
   const [form, setForm] = useState({
     code: "",
     first_name: "",
@@ -85,12 +88,12 @@ export function CustomerForm({ customer, onSuccess, onCancel }: Props) {
     setError("");
 
     if (!form.code.trim()) {
-      setError("El código es obligatorio.");
+      setError(t("form.validation.codeRequired"));
       return;
     }
 
     if (!form.first_name.trim() || !form.last_name.trim()) {
-      setError("Nombre y apellido son obligatorios.");
+      setError(t("form.validation.nameRequired"));
       return;
     }
 
@@ -117,7 +120,13 @@ export function CustomerForm({ customer, onSuccess, onCancel }: Props) {
       const detail = err?.response?.data?.detail;
       if (typeof detail === "string") setError(detail);
       else if (detail?.message) setError(detail.message);
-      else setError(customer ? "No se pudo actualizar el cliente." : "No se pudo crear el cliente.");
+      else {
+        setError(
+          customer
+            ? t("form.messages.updateError")
+            : t("form.messages.createError")
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -133,65 +142,65 @@ export function CustomerForm({ customer, onSuccess, onCancel }: Props) {
       }}
     >
       <div style={{ gridColumn: "span 3" }}>
-        <label className="df-pro-label">Código</label>
+        <label className="df-pro-label">{t("form.fields.code")}</label>
         <input
           className={`df-pro-input ${isEditing ? "df-pro-input--readonly" : ""}`}
           value={form.code}
           onChange={(e) => setForm({ ...form, code: e.target.value })}
-          placeholder="CLI-0001"
+          placeholder={t("form.placeholders.code")}
           readOnly={isEditing}
         />
       </div>
 
       <div style={{ gridColumn: "span 4" }}>
-        <label className="df-pro-label">Nombre</label>
+        <label className="df-pro-label">{t("form.fields.firstName")}</label>
         <input
           className="df-pro-input"
           value={form.first_name}
           onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-          placeholder="María"
+          placeholder={t("form.placeholders.firstName")}
           autoFocus={!isEditing}
         />
       </div>
 
       <div style={{ gridColumn: "span 5" }}>
-        <label className="df-pro-label">Apellido</label>
+        <label className="df-pro-label">{t("form.fields.lastName")}</label>
         <input
           className="df-pro-input"
           value={form.last_name}
           onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-          placeholder="Gómez"
+          placeholder={t("form.placeholders.lastName")}
         />
       </div>
 
       <div style={{ gridColumn: "span 6" }}>
-        <label className="df-pro-label">Email</label>
+        <label className="df-pro-label">{t("form.fields.email")}</label>
         <input
           className="df-pro-input"
           type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
-          placeholder="cliente@email.com"
+          placeholder={t("form.placeholders.email")}
         />
       </div>
 
       <div style={{ gridColumn: "span 6" }}>
-        <label className="df-pro-label">Teléfono</label>
+        <label className="df-pro-label">{t("form.fields.phone")}</label>
         <input
           className="df-pro-input"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          placeholder="+54 9 11 5555 5555"
+          placeholder={t("form.placeholders.phone")}
         />
       </div>
 
       <div style={{ gridColumn: "1 / -1" }}>
-        <label className="df-pro-label">Notas</label>
+        <label className="df-pro-label">{t("form.fields.notes")}</label>
         <textarea
           className="df-pro-input"
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          placeholder="Observaciones internas"
+          placeholder={t("form.placeholders.notes")}
           rows={3}
           style={{ resize: "vertical", minHeight: 92 }}
         />
@@ -214,7 +223,7 @@ export function CustomerForm({ customer, onSuccess, onCancel }: Props) {
 
       <FormActions
         saving={saving}
-        submitLabel={customer ? "Actualizar" : "Crear"}
+        submitLabel={customer ? t("common:actions.update") : t("common:actions.create")}
         onClear={handleClear}
         onCancel={onCancel}
       />

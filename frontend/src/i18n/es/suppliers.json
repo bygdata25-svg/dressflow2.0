@@ -1,45 +1,87 @@
 {
   "title": "Proveedores",
   "hero": {
-    "eyebrow": "Partners y abastecimiento",
-    "subtitle": "Organizá tu red de proveedores para telas, rollos y operaciones de compra."
+    "eyebrow": "Abastecimiento",
+    "subtitle": "Gestioná proveedores de telas, talleres y contactos operativos."
   },
-  "empty": "No hay proveedores cargados todavía.",
+
+  "actions": {
+    "new": "Nuevo proveedor"
+  },
+
+  "empty": "No hay proveedores para mostrar.",
+
+  "states": {
+    "loading": "Cargando proveedores..."
+  },
+
+  "messages": {
+    "loadError": "Error cargando proveedores"
+  },
+
   "fields": {
     "name": "Nombre",
     "email": "Email",
     "phone": "Teléfono",
+    "origin": "Origen",
     "notes": "Notas",
-    "supplierType": "Tipo"
+    "supplierType": "Tipo",
+    "noCode": "Sin código"
   },
+
   "types": {
     "FABRIC_SUPPLIER": "Proveedor de telas",
-    "WORKSHOP": "Taller / Modista",
+    "WORKSHOP": "Taller",
     "BOTH": "Ambos"
   },
+
   "filters": {
     "search": "Buscar",
-    "searchPlaceholder": "Buscar por nombre, email, teléfono o tipo"
+    "searchPlaceholder": "Nombre, email, teléfono..."
   },
+
   "delete": {
-    "confirm": "¿Querés eliminar este proveedor?",
+    "confirm": "¿Eliminar proveedor?",
     "error": "No se pudo eliminar el proveedor."
   },
+
+  "modal": {
+    "createTitle": "Nuevo proveedor",
+    "editTitle": "Editar proveedor"
+  },
+
   "form": {
-    "title": "Crear proveedor",
+    "fields": {
+      "name": "Nombre",
+      "supplierCode": "Código",
+      "origin": "Origen",
+      "email": "Email",
+      "phone": "Teléfono",
+      "notes": "Notas",
+      "supplierType": "Tipo"
+    },
     "placeholders": {
       "name": "Ej: Textiles del Sur",
+      "supplierCode": "Ej: PROV-001",
+      "origin": "Ej: Argentina",
       "email": "Ej: contacto@proveedor.com",
       "phone": "Ej: 11 1234 5678",
-      "notes": "Notas del proveedor",
-      "supplierType": "Seleccionar tipo"
+      "notes": "Notas del proveedor"
     },
     "validation": {
-      "required": "El nombre es obligatorio."
+      "nameRequired": "El nombre es obligatorio.",
+      "typeRequired": "El tipo es obligatorio."
     },
     "messages": {
-      "created": "Proveedor creado correctamente.",
-      "error": "No se pudo crear el proveedor."
+      "createError": "No se pudo crear el proveedor.",
+      "updateError": "No se pudo actualizar el proveedor.",
+      "saveError": "No se pudo guardar el proveedor."
+    },
+    "actions": {
+      "create": "Crear proveedor",
+      "update": "Guardar cambios",
+      "cancel": "Cancelar",
+      "saving": "Guardando..."
     }
   }
 }

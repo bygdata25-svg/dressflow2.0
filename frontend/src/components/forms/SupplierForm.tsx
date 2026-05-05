@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import { useFieldConfig } from "../../hooks/useFieldConfig";
 import { DynamicForm } from "../dynamic/DynamicForm";
 import type { Supplier, SupplierType } from "../../types/supplier";
-
 
 type SupplierFormProps = {
   supplier?: Supplier | null;
@@ -39,6 +39,7 @@ function normalizeSupplierType(value?: string | null): SupplierType {
 }
 
 export function SupplierForm({ supplier, onSuccess, onCancel }: SupplierFormProps) {
+  const { t } = useTranslation(["suppliers", "common"]);
   const fieldConfig = useFieldConfig("supplier");
 
   const [form, setForm] = useState<SupplierFormState>(EMPTY_FORM);
@@ -61,10 +62,14 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: SupplierFormProp
     } else {
       setForm(EMPTY_FORM);
     }
+
     setError("");
   }, [supplier]);
 
-  function updateField<K extends keyof SupplierFormState>(key: K, value: SupplierFormState[K]) {
+  function updateField<K extends keyof SupplierFormState>(
+    key: K,
+    value: SupplierFormState[K]
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -72,12 +77,12 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: SupplierFormProp
     e.preventDefault();
 
     if (fieldConfig.isRequired("name") && !form.name.trim()) {
-      setError("El nombre es obligatorio.");
+      setError(t("form.validation.nameRequired"));
       return;
     }
 
     if (fieldConfig.isRequired("supplier_type") && !form.supplier_type) {
-      setError("El tipo es obligatorio.");
+      setError(t("form.validation.typeRequired"));
       return;
     }
 
@@ -106,7 +111,7 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: SupplierFormProp
       setError(
         err?.response?.data?.detail?.message ||
           err?.response?.data?.detail ||
-          "No se pudo guardar el proveedor."
+          t("form.messages.saveError")
       );
     } finally {
       setSaving(false);
@@ -114,16 +119,26 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: SupplierFormProp
   }
 
   return (
-    <form className="gf-form" onSubmit={handleSubmit}>
+    <form className="gf-form" onSubmit={handleSubmit} noValidate>
       <DynamicForm<SupplierFormState>
         fields={fieldConfig.fields}
         values={form}
         onChange={updateField}
+        i18nNamespace="suppliers"
         selectOptions={{
           supplier_type: [
-            { value: "FABRIC_SUPPLIER", label: "Proveedor de telas" },
-            { value: "WORKSHOP", label: "Taller" },
-            { value: "BOTH", label: "Ambos" },
+            {
+              value: "FABRIC_SUPPLIER",
+              label: t("types.FABRIC_SUPPLIER"),
+            },
+            {
+              value: "WORKSHOP",
+              label: t("types.WORKSHOP"),
+            },
+            {
+              value: "BOTH",
+              label: t("types.BOTH"),
+            },
           ],
         }}
       />
@@ -137,11 +152,15 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: SupplierFormProp
           onClick={onCancel}
           disabled={saving}
         >
-          Cancelar
+          {t("form.actions.cancel")}
         </button>
 
         <button type="submit" className="gf-btn gf-btn-primary" disabled={saving}>
-          {saving ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear proveedor"}
+          {saving
+            ? t("form.actions.saving")
+            : isEdit
+              ? t("form.actions.update")
+              : t("form.actions.create")}
         </button>
       </div>
     </form>

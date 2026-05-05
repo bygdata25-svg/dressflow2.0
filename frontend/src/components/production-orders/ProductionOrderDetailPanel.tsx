@@ -413,6 +413,7 @@ function printLabel(lang: PrintLang, key: string) {
       normal: "Normal",
       high: "Alta",
       urgent: "Urgente",
+      approved: "Aprobada",
     },
     en: {
       workshopTitle: "Production Technical Sheet",
@@ -470,6 +471,7 @@ function printLabel(lang: PrintLang, key: string) {
       normal: "Normal",
       high: "High",
       urgent: "Urgent",
+      approved: "Approved",
     },
   };
 
@@ -483,6 +485,7 @@ function getPrintableStatus(status?: string | null, lang: PrintLang = "es") {
     DRAFT: printLabel(lang, "draft"),
     MATERIALS_RESERVED: printLabel(lang, "materialsReserved"),
     IN_PRODUCTION: printLabel(lang, "inProduction"),
+    APPROVED: printLabel(lang, "approved"),
     COMPLETED: printLabel(lang, "completed"),
     CANCELLED: printLabel(lang, "cancelled"),
   };

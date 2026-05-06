@@ -24,6 +24,29 @@
     "preview": "Preview",
     "confirm": "Confirm import",
     "close": "Close"
-  }
+  },
+    "stats": {
+    "rows": "Rows",
+    "newSuppliers": "New suppliers",
+    "newFabrics": "New fabrics",
+    "newRolls": "New rolls",
+    "skippedRolls": "Skipped rolls",
+    "errors": "Errors"
+  },
+  "preview": {
+    "title": "Preview",
+    "subtitle": "Review the data before confirming the import.",
+    "columns": {
+      "row": "Row",
+      "code": "Code",
+      "fabric": "Fabric",
+      "supplier": "Supplier",
+      "color": "Color",
+      "rollCode": "Roll",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "price": "Price",
+      "status": "Status"
+    }
 }
 }

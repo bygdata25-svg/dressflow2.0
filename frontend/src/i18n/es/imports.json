@@ -24,6 +24,29 @@
     "preview": "Preview",
     "confirm": "Confirmar importación",
     "close": "Cerrar"
-  }
+  },
+   "stats": {
+    "rows": "Filas",
+    "newSuppliers": "Proveedores nuevos",
+    "newFabrics": "Telas nuevas",
+    "newRolls": "Rollos nuevos",
+    "skippedRolls": "Rollos omitidos",
+    "errors": "Errores"
+  },
+  "preview": {
+    "title": "Vista previa",
+    "subtitle": "Revisá los datos antes de confirmar la importación.",
+    "columns": {
+      "row": "Fila",
+      "code": "Código",
+      "fabric": "Tela",
+      "supplier": "Proveedor",
+      "color": "Color",
+      "rollCode": "Rollo",
+      "quantity": "Cantidad",
+      "unit": "Unidad",
+      "price": "Precio",
+      "status": "Estado"
+    }
 }
 }

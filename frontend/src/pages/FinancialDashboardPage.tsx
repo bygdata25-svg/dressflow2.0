@@ -10,7 +10,6 @@ import {
   CartesianGrid,
   BarChart,
   Bar,
-  Cell,
 } from "recharts";
 import { api } from "../lib/api";
 import "../styles/pro-pages.css";

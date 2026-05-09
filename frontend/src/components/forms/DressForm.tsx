@@ -106,16 +106,6 @@ const textareaStyle: React.CSSProperties = {
   resize: "vertical",
 };
 
-function fallbackSymbol(currencyCode: string) {
-  const code = String(currencyCode || "").toUpperCase();
-
-  if (code === "USD") return "U$S";
-  if (code === "ARS") return "$";
-  if (code === "EUR") return "€";
-
-  return code || "USD";
-}
-
 function formatCurrencyOption(currency: TenantCurrencyOption) {
   if (!currency.symbol || currency.symbol === currency.currency_code) {
     return currency.currency_code;

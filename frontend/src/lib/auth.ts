@@ -21,6 +21,8 @@ export type MeResponse = {
   tenant_default_language?: "es" | "en";
   preferred_language?: "es" | "en" | null;
   effective_language?: "es" | "en";
+  tenant_plan?: string | null;
+  tenant_plan_label?: string | null;
 };
 
 export type TokenResponse = {

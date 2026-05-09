@@ -694,7 +694,7 @@ export default function SalesUnifiedPage() {
         name: [accessory.code, accessory.name].filter(Boolean).join(" - "),
         price: Number(accessory.sale_price ?? 0),
         quantity: 1,
-        currency: (accessory.sale_price_currency || "ARS").toUpperCase(),
+        currency: (accessory.sale_currency || "ARS").toUpperCase(),
       });
     }
 
@@ -1404,7 +1404,7 @@ export default function SalesUnifiedPage() {
                                     ? t("items.free")
                                     : formatMoney(
                                         Number(accessory.sale_price ?? 0),
-                                        (accessory.sale_price_currency || "ARS").toUpperCase()
+                                        (accessory.sale_currency || "ARS").toUpperCase()
                                       )} 
                                 </span>
                               </button>

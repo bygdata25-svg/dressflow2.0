@@ -67,6 +67,7 @@ def create_trim(
     min_stock: Decimal = Form(default=0),
     supplier_id: UUIDType | None = Form(default=None),
     unit_cost: Decimal | None = Form(default=None),
+    unit_cost_currency: str = Form(default="ARS"),
     notes: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
@@ -113,6 +114,7 @@ def create_trim(
         min_stock=min_stock,
         supplier_id=supplier_id,
         unit_cost=unit_cost,
+        unit_cost_currency=unit_cost_currency,
         photo_url=photo_url,
         photo_public_id=photo_public_id,
         notes=notes.strip() if notes else None,
@@ -148,6 +150,7 @@ def update_trim(
     min_stock: Decimal = Form(default=0),
     supplier_id: UUIDType | None = Form(default=None),
     unit_cost: Decimal | None = Form(default=None),
+    unit_cost_currency: str = Form(default="ARS"),
     notes: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
@@ -160,6 +163,8 @@ def update_trim(
             Trim.deleted_at.is_(None),
         )
     ).scalar_one_or_none()
+
+    trim.unit_cost_currency = unit_cost_currency
 
     if not trim:
         raise AppException(404, "Trim not found", "TRIM_NOT_FOUND")

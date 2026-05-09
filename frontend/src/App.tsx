@@ -45,6 +45,7 @@ import { setBrowserFavicon, setBrowserTitle } from "./lib/browserBranding";
 import { getTenantSlugFromHostname } from "./lib/tenantHost";
 import DressStockValuationReportPage from "./pages/DressStockValuationReportPage";
 import ImportSettingsPage from "./pages/ImportSettingsPage";
+import ProductionProcessTypesPage from "./pages/ProductionProcessTypesPage";
 
 import { applyTenantBranding } from "./lib/tenantBranding";
 import { api } from "./lib/api";
@@ -72,6 +73,8 @@ type Me = {
   impersonated?: boolean;
   must_change_password?: boolean;
   features?: string[];
+  tenant_plan?: string | null;
+  tenant_plan_label?: string | null;
 };
 
 type NavItem = {
@@ -966,15 +969,28 @@ function AppShell({
             ),
           }
         : null,
-          {
+       hasFeature("imports")
+        ? {
             to: "/settings/imports",
             label: (
               <>
                 <SidebarIcon><ReportsIcon /></SidebarIcon>
-                <span>Importaciones</span>
+                <span>{t("navigation.imports")}</span>
               </>
             ),
-          },
+          }
+        : null,
+       hasFeature("production_process_types")
+        ? {
+            to: "/settings/production-process-types",
+            label: (
+              <>
+                <SidebarIcon><OrderIcon /></SidebarIcon>
+                <span>{t("navigation.productionProcessTypes")}</span>
+              </>
+            ),
+          }
+        : null,
       me.is_superuser
         ? {
             to: "/settings/field-config",
@@ -1139,6 +1155,17 @@ function AppShell({
               >
                 <span style={{ fontSize: 13, fontWeight: 700 }}>
                   {me.tenant_name || t("topbar.companyFallback")}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "var(--tenant-primary)",
+                    fontWeight: 800,
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {me.tenant_plan_label || "DressFlow Pro"}
                 </span>
 
                 {me.impersonated && (
@@ -1311,6 +1338,10 @@ function AppShell({
                 )
               }
             />
+            <Route
+              path="/settings/production-process-types"
+              element={<ProductionProcessTypesPage />}
+            />
             <Route path="/settings/imports" element={<ImportSettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -1432,6 +1463,8 @@ export default function App() {
           impersonated: me.impersonated,
           must_change_password: me.must_change_password,
           features: (me as MeResponse & { features?: string[] }).features || [],
+          tenant_plan: me.tenant_plan,
+          tenant_plan_label: me.tenant_plan_label,
         }}
         onLogout={handleLogout}
       />

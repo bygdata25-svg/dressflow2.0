@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, Column
+from sqlalchemy import String, DateTime, Column, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -28,3 +28,9 @@ class Tenant(UUIDMixin, TimestampMixin, Base):
     branding_sidebar_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     logo_public_id = Column(String, nullable=True)
     default_language = Column(String(5), nullable=False, server_default="es")
+    max_users = Column(Integer, nullable=False, default=3)
+    plan_code: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        default="PRO",
+    )

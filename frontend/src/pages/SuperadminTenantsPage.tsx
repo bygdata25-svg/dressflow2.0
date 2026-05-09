@@ -12,9 +12,44 @@ type Tenant = {
   phone?: string | null;
   currency: string;
   timezone: string;
+  plan_code?: string | null;
+
+  max_users?: number;
+  active_users?: number;
+  available_users?: number;
+
   admin_membership_id?: string | null;
   admin_user_name?: string | null;
   admin_user_email?: string | null;
+};
+
+type TenantCurrency = {
+  id: string;
+  tenant_id: string;
+  currency_code: string;
+  symbol: string;
+  is_base: boolean;
+  is_enabled: boolean;
+  display_order: number;
+};
+
+type TenantCurrencyRule = {
+  id: string;
+  tenant_id: string;
+
+  module: string;
+  price_type: string;
+
+  default_currency: string;
+
+  allow_override: boolean;
+};
+
+type TenantFeature = {
+  id: string;
+  tenant_id: string;
+  feature_key: string;
+  enabled: boolean;
 };
 
 type PaginatedResponse<T> = {
@@ -24,132 +59,83 @@ type PaginatedResponse<T> = {
   total: number;
 };
 
-type TenantFeature = {
-  feature_key: string;
-  enabled: boolean;
+const FEATURE_LABELS: Record<string, string> = {
+  dashboard: "Dashboard",
+  dresses: "Vestidos",
+  accessories: "Accesorios",
+  accessory_movements: "Movimientos de accesorios",
+  capsules: "Cápsulas",
+  loans: "Préstamos / Alquileres",
+  sales: "Ventas",
+  production_orders: "Órdenes de producción",
+  fabrics: "Telas",
+  fabric_rolls: "Rollos",
+  trims: "Avíos",
+  fabric_movements: "Movimientos de tela",
+  reports: "Reportes",
+  reports_stock_valuation: "Valuación de stock",
+  reports_dress_stock: "Stock de vestidos",
+  reports_fabric_movements: "Reporte de movimientos de tela",
+  reports_loans: "Reporte de préstamos",
+  reports_production_costs: "Reporte de costos de producción",
+  reports_sales: "Reporte de ventas",
+  financial_dashboard: "Dashboard financiero",
+  branding: "Branding",
+  users: "Usuarios",
+  suppliers: "Proveedores",
+  customers: "Clientes",
+  imports: "Importaciones",
+  production_process_types: "Procesos de producción",
 };
-
-type FeatureDefinition = {
-  key: string;
-  label: string;
-  description: string;
-  group: "Core" | "Inventario" | "Operación" | "Reportes" | "Comercial" | "Premium";
-};
-
-const FEATURE_DEFINITIONS: FeatureDefinition[] = [
-  {
-    key: "dresses",
-    label: "Vestidos",
-    description: "Alta, edición y consulta del inventario de vestidos.",
-    group: "Core",
-  },
-  {
-    key: "customers",
-    label: "Clientes",
-    description: "Base de clientes, contacto y documento fiscal.",
-    group: "Core",
-  },
-  {
-    key: "suppliers",
-    label: "Proveedores",
-    description: "Gestión de proveedores y talleres.",
-    group: "Core",
-  },
-  {
-    key: "loans",
-    label: "Préstamos / Alquileres",
-    description: "Circuito de préstamos, alquileres y vencimientos.",
-    group: "Comercial",
-  },
-  {
-    key: "sales",
-    label: "Ventas",
-    description: "Ventas unificadas, multipago y multimoneda.",
-    group: "Comercial",
-  },
-  {
-    key: "accessories",
-    label: "Accesorios",
-    description: "Inventario y gestión de accesorios.",
-    group: "Inventario",
-  },
-  {
-    key: "accessory_movements",
-    label: "Movimientos accesorios",
-    description: "Movimientos de stock de accesorios.",
-    group: "Inventario",
-  },
-  {
-    key: "fabric_inventory",
-    label: "Inventario textil",
-    description: "Telas, rollos, avíos y movimientos de tela.",
-    group: "Inventario",
-  },
-  {
-    key: "production_orders",
-    label: "Órdenes de producción",
-    description: "Producción, materiales, costos e impresión de fichas.",
-    group: "Operación",
-  },
-  {
-    key: "reports",
-    label: "Reportes",
-    description: "Reportes operativos, stock valorizado, costos y ventas.",
-    group: "Reportes",
-  },
-  {
-    key: "financial_dashboard",
-    label: "Dashboard financiero",
-    description: "Dashboard financiero con KPIs y gráficos.",
-    group: "Premium",
-  },
-  {
-    key: "field_config",
-    label: "Configuración de campos",
-    description: "Campos dinámicos por tenant.",
-    group: "Premium",
-  },
-  {
-    key: "electronic_billing",
-    label: "Facturación electrónica",
-    description: "Módulo futuro de comprobantes electrónicos.",
-    group: "Premium",
-  },
-];
-
-const FEATURES_BY_GROUP = FEATURE_DEFINITIONS.reduce<Record<string, FeatureDefinition[]>>(
-  (acc, feature) => {
-    if (!acc[feature.group]) acc[feature.group] = [];
-    acc[feature.group].push(feature);
-    return acc;
-  },
-  {}
-);
-
-const GROUP_ORDER: FeatureDefinition["group"][] = [
-  "Core",
-  "Comercial",
-  "Inventario",
-  "Operación",
-  "Reportes",
-  "Premium",
-];
-
-function featureLabel(featureKey: string) {
-  return FEATURE_DEFINITIONS.find((item) => item.key === featureKey)?.label || featureKey;
-}
 
 export default function SuperadminTenantsPage() {
   const [rows, setRows] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
-  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [featureRows, setFeatureRows] = useState<TenantFeature[]>([]);
-  const [featuresLoading, setFeaturesLoading] = useState(false);
-  const [featuresSavingKey, setFeaturesSavingKey] = useState<string | null>(null);
+  const [selectedTenantId, setSelectedTenantId] =
+    useState<string | null>(null);
+
+  const [impersonatingId, setImpersonatingId] =
+    useState<string | null>(null);
+
+  const [currencies, setCurrencies] = useState<
+    TenantCurrency[]
+  >([]);
+
+  const [currenciesLoading, setCurrenciesLoading] =
+    useState(false);
+
+  const [currencyRules, setCurrencyRules] =
+    useState<TenantCurrencyRule[]>([]);
+
+  const [currencyRulesLoading, setCurrencyRulesLoading] =
+    useState(false);
+
+  const [features, setFeatures] = useState<
+    TenantFeature[]
+  >([]);
+
+  const [featuresLoading, setFeaturesLoading] =
+    useState(false);
+
+  const [limitSaving, setLimitSaving] =
+    useState(false);
+
+  const [maxUsers, setMaxUsers] = useState(3);
+
+  const [selectedPlan, setSelectedPlan] =
+    useState("PRO");
+
+  const [planSaving, setPlanSaving] =
+    useState(false);
+
+  const [newCurrency, setNewCurrency] = useState({
+    currency_code: "USD",
+    symbol: "U$S",
+  });
 
   const [form, setForm] = useState({
     tenant_name: "",
@@ -157,7 +143,9 @@ export default function SuperadminTenantsPage() {
     tenant_email: "",
     tenant_phone: "",
     tenant_currency: "USD",
-    tenant_timezone: "America/Argentina/Buenos_Aires",
+    tenant_timezone:
+      "America/Argentina/Buenos_Aires",
+
     admin_first_name: "",
     admin_last_name: "",
     admin_email: "",
@@ -165,68 +153,141 @@ export default function SuperadminTenantsPage() {
   });
 
   const selectedTenant = useMemo(
-    () => rows.find((tenant) => tenant.id === selectedTenantId) || null,
+    () =>
+      rows.find(
+        (tenant) => tenant.id === selectedTenantId
+      ) || null,
     [rows, selectedTenantId]
   );
 
-  const featureMap = useMemo(() => {
-    const map = new Map<string, boolean>();
-    featureRows.forEach((feature) => map.set(feature.feature_key, Boolean(feature.enabled)));
-    return map;
-  }, [featureRows]);
+  useEffect(() => {
+    if (selectedTenant?.max_users) {
+      setMaxUsers(
+        selectedTenant.max_users
+      );
+    }
 
-  const enabledCount = useMemo(
-    () => FEATURE_DEFINITIONS.filter((feature) => featureMap.get(feature.key)).length,
-    [featureMap]
-  );
+    setSelectedPlan(
+      selectedTenant?.plan_code ||
+        "PRO"
+    );
+  }, [selectedTenant]);
 
   const loadTenants = async () => {
     try {
       setLoading(true);
-      setError("");
-      const response = await api.get<PaginatedResponse<Tenant>>("/superadmin/tenants", {
-        params: { page: 1, page_size: 100 },
-      });
 
-      const items = Array.isArray(response.data.items) ? response.data.items : [];
+      const response =
+        await api.get<PaginatedResponse<Tenant>>(
+          "/superadmin/tenants",
+          {
+            params: {
+              page: 1,
+              page_size: 100,
+            },
+          }
+        );
+
+      const items = Array.isArray(response.data.items)
+        ? response.data.items
+        : [];
+
       setRows(items);
 
       setSelectedTenantId((prev) => {
-        if (prev && items.some((tenant) => tenant.id === prev)) return prev;
+        if (
+          prev &&
+          items.some(
+            (tenant) => tenant.id === prev
+          )
+        ) {
+          return prev;
+        }
+
         return items[0]?.id || null;
       });
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "No se pudieron cargar las empresas.");
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudieron cargar las empresas."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const loadTenantFeatures = async (tenantId: string) => {
+  const loadCurrencies = async (
+    tenantId: string
+  ) => {
     try {
-      setFeaturesLoading(true);
-      setError("");
+      setCurrenciesLoading(true);
 
-      const response = await api.get<TenantFeature[]>(`/superadmin/tenants/${tenantId}/features`);
-      const incoming = Array.isArray(response.data) ? response.data : [];
-      const incomingMap = new Map(incoming.map((item) => [item.feature_key, Boolean(item.enabled)]));
+      const response =
+        await api.get<TenantCurrency[]>(
+          `/tenant-currencies/${tenantId}`
+        );
 
-      setFeatureRows(
-        FEATURE_DEFINITIONS.map((feature) => ({
-          feature_key: feature.key,
-          enabled: incomingMap.has(feature.key) ? Boolean(incomingMap.get(feature.key)) : true,
-        }))
+      setCurrencies(
+        Array.isArray(response.data)
+          ? response.data
+          : []
       );
     } catch (err: any) {
       setError(
         err?.response?.data?.detail ||
-          "No se pudieron cargar los módulos del tenant. Verificá que exista el endpoint de tenant features."
+          "No se pudieron cargar las monedas."
       );
-      setFeatureRows(
-        FEATURE_DEFINITIONS.map((feature) => ({
-          feature_key: feature.key,
-          enabled: true,
-        }))
+    } finally {
+      setCurrenciesLoading(false);
+    }
+  };
+
+  const loadCurrencyRules = async (
+    tenantId: string
+  ) => {
+    try {
+      setCurrencyRulesLoading(true);
+
+      const response =
+        await api.get<TenantCurrencyRule[]>(
+          `/superadmin/tenants/${tenantId}/currency-rules`
+        );
+
+      setCurrencyRules(
+        Array.isArray(response.data)
+          ? response.data
+          : []
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudieron cargar las reglas financieras."
+      );
+    } finally {
+      setCurrencyRulesLoading(false);
+    }
+  };
+
+  const loadFeatures = async (
+    tenantId: string
+  ) => {
+    try {
+      setFeaturesLoading(true);
+
+      const response =
+        await api.get<TenantFeature[]>(
+          `/superadmin/tenants/${tenantId}/features`
+        );
+
+      setFeatures(
+        Array.isArray(response.data)
+          ? response.data
+          : []
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudieron cargar los módulos."
       );
     } finally {
       setFeaturesLoading(false);
@@ -239,14 +300,17 @@ export default function SuperadminTenantsPage() {
 
   useEffect(() => {
     if (selectedTenantId) {
-      void loadTenantFeatures(selectedTenantId);
-    } else {
-      setFeatureRows([]);
+      void loadCurrencies(selectedTenantId);
+      void loadCurrencyRules(selectedTenantId);
+      void loadFeatures(selectedTenantId);
     }
   }, [selectedTenantId]);
 
-  const createTenant = async (event: React.FormEvent) => {
+  const createTenant = async (
+    event: React.FormEvent
+  ) => {
     event.preventDefault();
+
     try {
       setError("");
       setSuccess("");
@@ -255,18 +319,30 @@ export default function SuperadminTenantsPage() {
         tenant: {
           name: form.tenant_name,
           slug: form.tenant_slug,
-          email: form.tenant_email || null,
-          phone: form.tenant_phone || null,
-          currency: form.tenant_currency,
-          timezone: form.tenant_timezone,
+          email:
+            form.tenant_email || null,
+          phone:
+            form.tenant_phone || null,
+          currency:
+            form.tenant_currency,
+          timezone:
+            form.tenant_timezone,
         },
+
         admin_user: {
-          first_name: form.admin_first_name,
-          last_name: form.admin_last_name,
+          first_name:
+            form.admin_first_name,
+          last_name:
+            form.admin_last_name,
           email: form.admin_email,
-          password: form.admin_password,
+          password:
+            form.admin_password,
         },
       });
+
+      setSuccess(
+        "Empresa creada correctamente."
+      );
 
       setForm({
         tenant_name: "",
@@ -274,218 +350,451 @@ export default function SuperadminTenantsPage() {
         tenant_email: "",
         tenant_phone: "",
         tenant_currency: "USD",
-        tenant_timezone: "America/Argentina/Buenos_Aires",
+        tenant_timezone:
+          "America/Argentina/Buenos_Aires",
+
         admin_first_name: "",
         admin_last_name: "",
         admin_email: "",
         admin_password: "",
       });
 
-      setSuccess("Empresa creada correctamente.");
       await loadTenants();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "No se pudo crear la empresa.");
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo crear la empresa."
+      );
     }
   };
 
-  const handleImpersonate = async (tenant: Tenant) => {
+  const handleImpersonate = async (
+    tenant: Tenant
+  ) => {
     if (!tenant.admin_membership_id) {
-      setError(
-        `La empresa "${tenant.name}" no tiene admin_membership_id disponible para impersonar.`
-      );
       return;
     }
 
     try {
-      setError("");
-      setSuccess("");
       setImpersonatingId(tenant.id);
 
-      const data = await impersonateMembership(tenant.admin_membership_id);
+      const data =
+        await impersonateMembership(
+          tenant.admin_membership_id
+        );
+
       setToken(data.access_token);
 
       window.location.href = "/";
     } catch (err: any) {
-      const detail =
+      setError(
         err?.response?.data?.detail ||
-        err?.message ||
-        "No se pudo iniciar la impersonación.";
-      setError(detail);
+          "No se pudo impersonar."
+      );
     } finally {
       setImpersonatingId(null);
     }
   };
 
-  const toggleFeature = async (featureKey: string, enabled: boolean) => {
+  const updateUserLimit = async () => {
     if (!selectedTenantId) return;
 
-    const previousRows = featureRows;
-
-    setFeatureRows((prev) =>
-      prev.map((item) =>
-        item.feature_key === featureKey ? { ...item, enabled } : item
-      )
-    );
-
     try {
-      setError("");
-      setSuccess("");
-      setFeaturesSavingKey(featureKey);
+      setLimitSaving(true);
 
-      await api.put(`/superadmin/tenants/${selectedTenantId}/features/${featureKey}`, {
-        enabled,
-      });
+      await api.put(
+        `/superadmin/tenant-limits/${selectedTenantId}`,
+        {
+          max_users: maxUsers,
+        }
+      );
 
       setSuccess(
-        `${featureLabel(featureKey)} ${enabled ? "habilitado" : "deshabilitado"} para ${
-          selectedTenant?.name || "el tenant"
-        }.`
+        "Límite de usuarios actualizado."
       );
+
+      await loadTenants();
     } catch (err: any) {
-      setFeatureRows(previousRows);
-      setError(err?.response?.data?.detail || "No se pudo actualizar el módulo.");
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo actualizar el límite."
+      );
     } finally {
-      setFeaturesSavingKey(null);
+      setLimitSaving(false);
     }
   };
 
-  const enableAllFeatures = async () => {
+  const addCurrency = async () => {
     if (!selectedTenantId) return;
 
     try {
-      setFeaturesLoading(true);
-      setError("");
-      setSuccess("");
+      await api.post(
+        `/tenant-currencies/${selectedTenantId}`,
+        {
+          currency_code:
+            newCurrency.currency_code,
+          symbol: newCurrency.symbol,
+          is_base:
+            currencies.length === 0,
+          is_enabled: true,
+          display_order:
+            currencies.length,
+        }
+      );
 
-      await api.put(`/superadmin/tenants/${selectedTenantId}/features`, {
-        items: FEATURE_DEFINITIONS.map((feature) => ({
-          feature_key: feature.key,
-          enabled: true,
-        })),
-      });
+      setSuccess("Moneda agregada.");
 
-      setSuccess(`Todos los módulos quedaron habilitados para ${selectedTenant?.name || "el tenant"}.`);
-      await loadTenantFeatures(selectedTenantId);
+      await loadCurrencies(
+        selectedTenantId
+      );
+
+      await loadCurrencyRules(
+        selectedTenantId
+      );
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "No se pudieron habilitar todos los módulos.");
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo agregar la moneda."
+      );
+    }
+  };
+
+  const setBaseCurrency = async (
+    currency: TenantCurrency
+  ) => {
+    if (!selectedTenantId) return;
+
+    try {
+      await api.put(
+        `/tenant-currencies/${selectedTenantId}/${currency.id}`,
+        {
+          is_base: true,
+        }
+      );
+
+      setSuccess(
+        "Moneda base actualizada."
+      );
+
+      await loadCurrencies(
+        selectedTenantId
+      );
+
+      await loadCurrencyRules(
+        selectedTenantId
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo actualizar la moneda base."
+      );
+    }
+  };
+
+  const deleteCurrency = async (
+    currency: TenantCurrency
+  ) => {
+    if (!selectedTenantId) return;
+
+    try {
+      await api.delete(
+        `/tenant-currencies/${selectedTenantId}/${currency.id}`
+      );
+
+      setSuccess("Moneda eliminada.");
+
+      await loadCurrencies(
+        selectedTenantId
+      );
+
+      await loadCurrencyRules(
+        selectedTenantId
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo eliminar la moneda."
+      );
+    }
+  };
+
+  const updateCurrencyRule = async (
+    ruleId: string,
+    payload: {
+      default_currency?: string;
+      allow_override?: boolean;
+    }
+  ) => {
+    if (!selectedTenantId) return;
+
+    try {
+      await api.put(
+        `/superadmin/tenants/${selectedTenantId}/currency-rules/${ruleId}`,
+        payload
+      );
+
+      setSuccess(
+        "Regla financiera actualizada."
+      );
+
+      await loadCurrencyRules(
+        selectedTenantId
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo actualizar la regla."
+      );
+    }
+  };
+
+  const updateFeature = async (
+    featureId: string,
+    enabled: boolean
+  ) => {
+    if (!selectedTenantId) return;
+
+    try {
+      await api.put(
+        `/superadmin/tenants/${selectedTenantId}/features/${featureId}`,
+        {
+          enabled,
+        }
+      );
+
+      setSuccess(
+        "Módulo actualizado."
+      );
+
+      await loadFeatures(
+        selectedTenantId
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo actualizar el módulo."
+      );
+    }
+  };
+
+  const updateTenantPlan = async () => {
+    if (!selectedTenantId) return;
+
+    try {
+      setPlanSaving(true);
+
+      await api.put(
+        `/superadmin/tenants/${selectedTenantId}/plan`,
+        {
+          plan_code: selectedPlan,
+        }
+      );
+
+      setSuccess(
+        "Plan actualizado."
+      );
+
+      await loadFeatures(
+        selectedTenantId
+      );
+
+      await loadTenants();
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          "No se pudo actualizar el plan."
+      );
     } finally {
-      setFeaturesLoading(false);
+      setPlanSaving(false);
     }
   };
 
   return (
     <section className="df-pro-page">
-      <header
-        className="df-pro-page__hero"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 20,
-          flexWrap: "wrap",
-          width: "100%",
-        }}
-      >
+      <header className="df-pro-page__hero">
         <div>
-          <p className="df-pro-page__eyebrow">Superadmin</p>
-          <h1 className="df-pro-page__title">Empresas</h1>
+          <p className="df-pro-page__eyebrow">
+            Superadmin
+          </p>
+
+          <h1 className="df-pro-page__title">
+            Empresas
+          </h1>
+
           <p className="df-pro-page__subtitle">
-            Creá tenants, impersoná usuarios admin y activá módulos contratados por empresa.
+            Administración SaaS
+            multi-tenant.
           </p>
         </div>
       </header>
 
       <section className="df-pro-card">
-        <form onSubmit={createTenant} className="df-pro-form-grid df-pro-form-grid--6">
+        <form
+          onSubmit={createTenant}
+          className="df-pro-form-grid df-pro-form-grid--6"
+        >
           <input
             className="df-pro-input"
             placeholder="Nombre empresa"
             value={form.tenant_name}
-            onChange={(e) => setForm((p) => ({ ...p, tenant_name: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                tenant_name:
+                  e.target.value,
+              }))
+            }
           />
+
           <input
             className="df-pro-input"
             placeholder="Slug"
             value={form.tenant_slug}
-            onChange={(e) => setForm((p) => ({ ...p, tenant_slug: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                tenant_slug:
+                  e.target.value,
+              }))
+            }
           />
+
           <input
             className="df-pro-input"
             placeholder="Email empresa"
             value={form.tenant_email}
-            onChange={(e) => setForm((p) => ({ ...p, tenant_email: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                tenant_email:
+                  e.target.value,
+              }))
+            }
           />
+
           <input
             className="df-pro-input"
-            placeholder="Teléfono empresa"
+            placeholder="Teléfono"
             value={form.tenant_phone}
-            onChange={(e) => setForm((p) => ({ ...p, tenant_phone: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                tenant_phone:
+                  e.target.value,
+              }))
+            }
           />
-          <input
+
+          <select
             className="df-pro-input"
-            placeholder="Moneda"
             value={form.tenant_currency}
-            onChange={(e) => setForm((p) => ({ ...p, tenant_currency: e.target.value }))}
-          />
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                tenant_currency:
+                  e.target.value,
+              }))
+            }
+          >
+            <option value="USD">
+              USD
+            </option>
+            <option value="ARS">
+              ARS
+            </option>
+            <option value="EUR">
+              EUR
+            </option>
+          </select>
+
           <input
             className="df-pro-input"
             placeholder="Timezone"
             value={form.tenant_timezone}
-            onChange={(e) => setForm((p) => ({ ...p, tenant_timezone: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                tenant_timezone:
+                  e.target.value,
+              }))
+            }
           />
 
           <input
             className="df-pro-input"
             placeholder="Nombre admin"
             value={form.admin_first_name}
-            onChange={(e) => setForm((p) => ({ ...p, admin_first_name: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                admin_first_name:
+                  e.target.value,
+              }))
+            }
           />
+
           <input
             className="df-pro-input"
             placeholder="Apellido admin"
             value={form.admin_last_name}
-            onChange={(e) => setForm((p) => ({ ...p, admin_last_name: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                admin_last_name:
+                  e.target.value,
+              }))
+            }
           />
+
           <input
             className="df-pro-input"
             placeholder="Email admin"
             value={form.admin_email}
-            onChange={(e) => setForm((p) => ({ ...p, admin_email: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                admin_email:
+                  e.target.value,
+              }))
+            }
           />
+
           <input
             className="df-pro-input"
             type="password"
             placeholder="Password admin"
             value={form.admin_password}
-            onChange={(e) => setForm((p) => ({ ...p, admin_password: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                admin_password:
+                  e.target.value,
+              }))
+            }
           />
 
-          <button type="submit">Crear empresa</button>
+          <button type="submit">
+            Crear empresa
+          </button>
         </form>
       </section>
 
-      {loading && <p>Cargando...</p>}
       {error && (
         <section className="df-pro-card">
           <div
             style={{
-              padding: "10px 12px",
-              borderRadius: 12,
-              background: "#fdecec",
-              color: "#9a2f2f",
+              color: "#b42318",
             }}
           >
             {error}
           </div>
         </section>
       )}
+
       {success && (
         <section className="df-pro-card">
           <div
             style={{
-              padding: "10px 12px",
-              borderRadius: 12,
-              background: "#ecfdf3",
               color: "#027a48",
             }}
           >
@@ -497,210 +806,687 @@ export default function SuperadminTenantsPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(360px, 0.9fr) minmax(0, 1.25fr)",
+          gridTemplateColumns:
+            "minmax(340px, 0.8fr) minmax(0, 1.2fr)",
           gap: 20,
-          alignItems: "start",
         }}
       >
         <section className="df-pro-card">
-          <h2 style={{ marginTop: 0 }}>Empresas existentes</h2>
+          <h2>Empresas</h2>
 
-          {rows.length === 0 && !loading && <p>No hay empresas cargadas.</p>}
+          {loading && <p>Cargando...</p>}
 
-          {rows.length > 0 && (
-            <div style={{ display: "grid", gap: 12 }}>
-              {rows.map((tenant) => {
-                const canImpersonate = Boolean(tenant.admin_membership_id);
-                const isBusy = impersonatingId === tenant.id;
-                const isSelected = selectedTenantId === tenant.id;
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            {rows.map((tenant) => (
+              <div
+                key={tenant.id}
+                onClick={() =>
+                  setSelectedTenantId(
+                    tenant.id
+                  )
+                }
+                style={{
+                  border:
+                    selectedTenantId ===
+                    tenant.id
+                      ? "1px solid #b08a5a"
+                      : "1px solid #e5e7eb",
 
-                return (
-                  <div
-                    key={tenant.id}
-                    onClick={() => setSelectedTenantId(tenant.id)}
-                    style={{
-                      border: isSelected
-                        ? "1px solid var(--tenant-primary, #3d3648)"
-                        : "1px solid var(--df-border)",
-                      borderRadius: 16,
-                      padding: 14,
-                      display: "grid",
-                      gap: 8,
-                      cursor: "pointer",
-                      background: isSelected ? "#fbf7f3" : "#fff",
-                      boxShadow: isSelected ? "0 14px 28px rgba(64, 52, 42, 0.08)" : undefined,
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-                      <div style={{ display: "grid", gap: 4 }}>
-                        <strong>{tenant.name}</strong>
-                        <div>Slug: {tenant.slug || "-"}</div>
-                        <div>Status: {tenant.status}</div>
-                        <div>Email: {tenant.email || "-"}</div>
-                        <div>Moneda: {tenant.currency}</div>
-                        <div>Timezone: {tenant.timezone}</div>
+                  borderRadius: 16,
+                  padding: 14,
+                  cursor: "pointer",
 
-                        {(tenant.admin_user_name || tenant.admin_user_email) && (
-                          <div style={{ marginTop: 4 }}>
-                            Admin: {tenant.admin_user_name || "-"}
-                            {tenant.admin_user_email ? ` · ${tenant.admin_user_email}` : ""}
-                          </div>
-                        )}
-                      </div>
+                  background:
+                    selectedTenantId ===
+                    tenant.id
+                      ? "#fffaf5"
+                      : "#fff",
+                }}
+              >
+                <strong>
+                  {tenant.name}
+                </strong>
 
-                      <div style={{ display: "flex", alignItems: "flex-start" }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleImpersonate(tenant);
-                          }}
-                          disabled={!canImpersonate || isBusy}
-                          title={
-                            canImpersonate
-                              ? "Ingresar como el admin de esta empresa"
-                              : "Falta admin_membership_id en la respuesta del backend"
-                          }
-                          style={{
-                            minWidth: 150,
-                            height: 40,
-                            borderRadius: 10,
-                            border: "1px solid var(--df-border)",
-                            cursor: canImpersonate && !isBusy ? "pointer" : "not-allowed",
-                            opacity: canImpersonate ? 1 : 0.5,
-                          }}
-                        >
-                          {isBusy ? "Impersonando..." : "Impersonar admin"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                <div>
+                  Slug: {tenant.slug}
+                </div>
+
+                <div>
+                  Moneda base:
+                  {" "}
+                  {tenant.currency}
+                </div>
+
+                <div>
+                  Usuarios:
+                  {" "}
+                  <strong>
+                    {tenant.active_users ||
+                      0}
+                    {" / "}
+                    {tenant.max_users ||
+                      0}
+                  </strong>
+                </div>
+
+                <div>
+                  Status:
+                  {" "}
+                  {tenant.status}
+                </div>
+
+                <button
+                  type="button"
+                  style={{
+                    marginTop: 10,
+                  }}
+                  disabled={
+                    impersonatingId ===
+                    tenant.id
+                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+
+                    void handleImpersonate(
+                      tenant
+                    );
+                  }}
+                >
+                  {impersonatingId ===
+                  tenant.id
+                    ? "Impersonando..."
+                    : "Impersonar"}
+                </button>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="df-pro-card">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 16,
-              flexWrap: "wrap",
-              marginBottom: 18,
-            }}
-          >
-            <div>
-              <p className="df-pro-page__eyebrow" style={{ marginBottom: 4 }}>
-                Módulos por tenant
-              </p>
-              <h2 style={{ margin: 0 }}>{selectedTenant?.name || "Seleccioná una empresa"}</h2>
-              <p style={{ margin: "6px 0 0", color: "#8a7f78" }}>
-                Activá o desactivá opciones del menú principal según el plan contratado.
-              </p>
-            </div>
+          {!selectedTenant ? (
+            <p>
+              Seleccioná una empresa.
+            </p>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gap: 24,
+              }}
+            >
+              <div>
+                <h2
+                  style={{
+                    marginTop: 0,
+                  }}
+                >
+                  {selectedTenant.name}
+                </h2>
 
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <div
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  background: "#f8f4ef",
-                  border: "1px solid #eadfd7",
-                  fontSize: 13,
-                }}
-              >
-                Activos: <strong>{enabledCount}</strong> / {FEATURE_DEFINITIONS.length}
+                <p>
+                  Configuración SaaS y
+                  financiera.
+                </p>
               </div>
 
-              <button
-                type="button"
-                className="gf-btn gf-btn-secondary"
-                onClick={enableAllFeatures}
-                disabled={!selectedTenantId || featuresLoading}
+              <section
+                style={{
+                  border:
+                    "1px solid #e5e7eb",
+
+                  borderRadius: 18,
+                  padding: 18,
+                }}
               >
-                Habilitar todos
-              </button>
-            </div>
-          </div>
+                <h3>
+                  Plan comercial
+                </h3>
 
-          {!selectedTenantId ? (
-            <p>Seleccioná una empresa para configurar sus módulos.</p>
-          ) : featuresLoading ? (
-            <p>Cargando módulos...</p>
-          ) : (
-            <div style={{ display: "grid", gap: 18 }}>
-              {GROUP_ORDER.map((group) => {
-                const groupFeatures = FEATURES_BY_GROUP[group] || [];
-                if (groupFeatures.length === 0) return null;
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                    marginTop: 14,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <select
+                    className="df-pro-input"
+                    value={selectedPlan}
+                    onChange={(e) =>
+                      setSelectedPlan(
+                        e.target.value
+                      )
+                    }
+                    style={{
+                      maxWidth: 260,
+                    }}
+                  >
+                    <option value="BASIC">
+                      DressFlow Basic
+                    </option>
 
-                return (
-                  <div key={group} style={{ display: "grid", gap: 10 }}>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: 13,
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                        color: "#8a7f78",
-                      }}
-                    >
-                      {group}
-                    </h3>
+                    <option value="PRO">
+                      DressFlow Pro
+                    </option>
+
+                    <option value="PREMIUM">
+                      DressFlow Premium
+                    </option>
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={
+                      updateTenantPlan
+                    }
+                    disabled={planSaving}
+                  >
+                    {planSaving
+                      ? "Guardando..."
+                      : "Aplicar plan"}
+                  </button>
+                </div>
+
+                <p
+                  style={{
+                    marginTop: 14,
+                    color: "#6b7280",
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  El plan activa y desactiva
+                  automáticamente los módulos
+                  SaaS disponibles para el
+                  tenant. Luego podés ajustar
+                  módulos manualmente desde
+                  Módulos habilitados.
+                </p>
+              </section>
+
+              <section
+                style={{
+                  border:
+                    "1px solid #e5e7eb",
+
+                  borderRadius: 18,
+                  padding: 18,
+                }}
+              >
+                <h3>
+                  Límite de usuarios
+                </h3>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems:
+                      "center",
+                  }}
+                >
+                  <input
+                    className="df-pro-input"
+                    type="number"
+                    value={maxUsers}
+                    onChange={(e) =>
+                      setMaxUsers(
+                        Number(
+                          e.target.value
+                        )
+                      )
+                    }
+                    style={{
+                      maxWidth: 140,
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={
+                      updateUserLimit
+                    }
+                    disabled={
+                      limitSaving
+                    }
+                  >
+                    {limitSaving
+                      ? "Guardando..."
+                      : "Guardar"}
+                  </button>
+                </div>
+              </section>
+
+              <section
+                style={{
+                  border:
+                    "1px solid #e5e7eb",
+
+                  borderRadius: 18,
+                  padding: 18,
+                }}
+              >
+                <h3>
+                  Monedas habilitadas
+                </h3>
+
+                {currenciesLoading ? (
+                  <p>
+                    Cargando monedas...
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    {currencies.map(
+                      (currency) => (
+                        <div
+                          key={
+                            currency.id
+                          }
+                          style={{
+                            border:
+                              "1px solid #ececec",
+
+                            borderRadius: 12,
+                            padding: 12,
+
+                            display:
+                              "flex",
+
+                            justifyContent:
+                              "space-between",
+
+                            alignItems:
+                              "center",
+                          }}
+                        >
+                          <div>
+                            <strong>
+                              {
+                                currency.currency_code
+                              }
+                            </strong>
+
+                            {" · "}
+
+                            {
+                              currency.symbol
+                            }
+
+                            {currency.is_base && (
+                              <span>
+                                {" "}
+                                ·
+                                BASE
+                              </span>
+                            )}
+                          </div>
+
+                          <div
+                            style={{
+                              display:
+                                "flex",
+
+                              gap: 10,
+                            }}
+                          >
+                            {!currency.is_base && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void setBaseCurrency(
+                                      currency
+                                    )
+                                  }
+                                >
+                                  Base
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void deleteCurrency(
+                                      currency
+                                    )
+                                  }
+                                >
+                                  Eliminar
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
 
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                        gap: 12,
+                        display: "flex",
+                        gap: 10,
+                        marginTop: 12,
                       }}
                     >
-                      {groupFeatures.map((feature) => {
-                        const enabled = featureMap.get(feature.key) ?? true;
-                        const savingThis = featuresSavingKey === feature.key;
+                      <select
+                        className="df-pro-input"
+                        value={
+                          newCurrency.currency_code
+                        }
+                        onChange={(e) => {
+                          const value =
+                            e.target
+                              .value;
 
-                        return (
-                          <label
-                            key={feature.key}
-                            style={{
-                              border: enabled ? "1px solid #d9c7b9" : "1px solid #e5e7eb",
-                              borderRadius: 16,
-                              padding: 14,
-                              background: enabled ? "#fffaf5" : "#fff",
-                              display: "flex",
-                              justifyContent: "space-between",
-                              gap: 14,
-                              alignItems: "flex-start",
-                              cursor: savingThis ? "wait" : "pointer",
-                              opacity: savingThis ? 0.7 : 1,
-                            }}
-                          >
-                            <span style={{ display: "grid", gap: 4 }}>
-                              <strong>{feature.label}</strong>
-                              <small style={{ color: "#8a7f78", lineHeight: 1.35 }}>
-                                {feature.description}
-                              </small>
-                              <small style={{ color: "#b08a5a", fontWeight: 700 }}>
-                                {feature.key}
-                              </small>
-                            </span>
+                          setNewCurrency(
+                            {
+                              currency_code:
+                                value,
 
-                            <input
-                              type="checkbox"
-                              checked={enabled}
-                              disabled={savingThis}
-                              onChange={(e) => void toggleFeature(feature.key, e.target.checked)}
-                              style={{ width: 20, height: 20, marginTop: 2 }}
-                            />
-                          </label>
-                        );
-                      })}
+                              symbol:
+                                value ===
+                                "USD"
+                                  ? "U$S"
+                                  : value ===
+                                    "ARS"
+                                  ? "$"
+                                  : value ===
+                                    "EUR"
+                                  ? "€"
+                                  : value,
+                            }
+                          );
+                        }}
+                      >
+                        <option value="USD">
+                          USD
+                        </option>
+
+                        <option value="ARS">
+                          ARS
+                        </option>
+
+                        <option value="EUR">
+                          EUR
+                        </option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={
+                          addCurrency
+                        }
+                      >
+                        Agregar moneda
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                )}
+              </section>
+
+              <section
+                style={{
+                  border:
+                    "1px solid #e5e7eb",
+
+                  borderRadius: 18,
+                  padding: 18,
+                }}
+              >
+                <h3>
+                  Reglas financieras
+                </h3>
+
+                {currencyRulesLoading ? (
+                  <p>
+                    Cargando reglas...
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: 12,
+                    }}
+                  >
+                    {currencyRules.map(
+                      (rule) => (
+                        <div
+                          key={rule.id}
+                          style={{
+                            border:
+                              "1px solid #ececec",
+
+                            borderRadius: 14,
+                            padding: 14,
+
+                            display:
+                              "grid",
+
+                            gridTemplateColumns:
+                              "1fr 1fr 180px 160px",
+
+                            gap: 14,
+
+                            alignItems:
+                              "center",
+                          }}
+                        >
+                          <div>
+                            <strong>
+                              {
+                                rule.module
+                              }
+                            </strong>
+                          </div>
+
+                          <div>
+                            {
+                              rule.price_type
+                            }
+                          </div>
+
+                          <select
+                            className="df-pro-input"
+                            value={
+                              rule.default_currency
+                            }
+                            onChange={(
+                              e
+                            ) =>
+                              void updateCurrencyRule(
+                                rule.id,
+                                {
+                                  default_currency:
+                                    e
+                                      .target
+                                      .value,
+                                }
+                              )
+                            }
+                          >
+                            {currencies.map(
+                              (
+                                currency
+                              ) => (
+                                <option
+                                  key={
+                                    currency.id
+                                  }
+                                  value={
+                                    currency.currency_code
+                                  }
+                                >
+                                  {
+                                    currency.currency_code
+                                  }
+                                </option>
+                              )
+                            )}
+                          </select>
+
+                          <label
+                            style={{
+                              display:
+                                "flex",
+
+                              gap: 10,
+
+                              alignItems:
+                                "center",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={
+                                rule.allow_override
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                void updateCurrencyRule(
+                                  rule.id,
+                                  {
+                                    allow_override:
+                                      e
+                                        .target
+                                        .checked,
+                                  }
+                                )
+                              }
+                            />
+
+                            Override
+                          </label>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </section>
+
+              <section
+                style={{
+                  border:
+                    "1px solid #e5e7eb",
+
+                  borderRadius: 18,
+                  padding: 18,
+                }}
+              >
+                <h3>
+                  Módulos habilitados
+                </h3>
+
+                <p
+                  style={{
+                    marginTop: -6,
+                    marginBottom: 16,
+                    color: "#6b7280",
+                    fontSize: 13,
+                  }}
+                >
+                  Activá o desactivá módulos según el plan comercial del tenant.
+                </p>
+
+                {featuresLoading ? (
+                  <p>
+                    Cargando módulos...
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(240px, 1fr))",
+                      gap: 12,
+                    }}
+                  >
+                    {features.map((feature) => (
+                      <label
+                        key={feature.id}
+                        style={{
+                          border:
+                            feature.enabled
+                              ? "1px solid #d6b98c"
+                              : "1px solid #ececec",
+
+                          borderRadius: 14,
+                          padding: 14,
+
+                          display: "flex",
+
+                          justifyContent:
+                            "space-between",
+
+                          alignItems: "center",
+
+                          gap: 14,
+
+                          background:
+                            feature.enabled
+                              ? "#fffaf5"
+                              : "#fff",
+
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div>
+                          <strong>
+                            {FEATURE_LABELS[
+                              feature.feature_key
+                            ] ||
+                              feature.feature_key}
+                          </strong>
+
+                          <div
+                            style={{
+                              marginTop: 4,
+                              color: "#8a7f78",
+                              fontSize: 12,
+                            }}
+                          >
+                            {feature.feature_key}
+                          </div>
+                        </div>
+
+                        <input
+                          type="checkbox"
+                          checked={feature.enabled}
+                          onChange={(e) =>
+                            void updateFeature(
+                              feature.feature_key,
+                              e.target.checked
+                            )
+                          }
+                        />
+                      </label>
+                    ))}
+
+                    {features.length === 0 && (
+                      <div
+                        style={{
+                          border: "1px dashed #d1d5db",
+                          borderRadius: 14,
+                          padding: 16,
+                          color: "#6b7280",
+                        }}
+                      >
+                        No hay módulos configurados para este tenant.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
             </div>
           )}
         </section>

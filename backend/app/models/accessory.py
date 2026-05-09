@@ -39,11 +39,22 @@ class Accessory(Base):
         nullable=False,
         default=Decimal("0.00"),
     )
+    unit_cost_currency: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+        default="ARS",
+    )
 
     sale_price: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,
         default=Decimal("0.00"),
+    )
+    
+    sale_price_currency: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+        default="ARS",
     )
 
     stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

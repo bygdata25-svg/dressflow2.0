@@ -35,10 +35,16 @@ class SuperadminTenantResponse(BaseModel):
     name: str
     slug: str | None = None
     status: str
+
     email: EmailStr | None = None
     phone: str | None = None
+
     currency: str
     timezone: str
+
+    max_users: int = 3
+    active_users: int = 0
+    available_users: int = 0
 
 
 class SuperadminTenantListItemResponse(SuperadminTenantResponse):

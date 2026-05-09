@@ -45,7 +45,7 @@
     "LOANED": "Loaned",
     "RENTED": "Rented",
     "CLEANING": "Cleaning",
-    "MAINTENANCE": "Maintenance",
+    "MAINTENANCE": "In workshop",
     "SOLD": "Sold",
     "RETIRED": "Retired"
   },

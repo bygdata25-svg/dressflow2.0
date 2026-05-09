@@ -27,7 +27,9 @@
     "productionCosts": "Production costs",
     "financialDashboard": "Financial dashboard",
     "branding": "Branding",
-    "fieldSettings": "Field configuration"
+    "fieldSettings": "Field configuration",
+    "imports": "Imports",
+    "productionProcessTypes": "Production processes"
   },
   "home": {
     "title": "DressFlow v2",

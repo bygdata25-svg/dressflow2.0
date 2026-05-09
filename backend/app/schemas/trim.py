@@ -13,6 +13,7 @@ class TrimCreate(BaseModel):
     min_stock: Decimal = Field(default=0, ge=0)
     supplier_id: UUID | None = None
     unit_cost: Decimal | None = Field(default=None, ge=0)
+    unit_cost_currency: str = "ARS"
     photo_url: str | None = None
     photo_public_id: str | None = None
     notes: str | None = Field(default=None, max_length=2000)
@@ -26,6 +27,7 @@ class TrimUpdate(BaseModel):
     min_stock: Decimal = Field(default=0, ge=0)
     supplier_id: UUID | None = None
     unit_cost: Decimal | None = Field(default=None, ge=0)
+    unit_cost_currency: str = "ARS"
     photo_url: str | None = None
     photo_public_id: str | None = None
     notes: str | None = Field(default=None, max_length=2000)
@@ -44,6 +46,7 @@ class TrimResponse(BaseModel):
     min_stock: Decimal
     supplier_id: UUID | None = None
     unit_cost: Decimal | None = None
+    unit_cost_currency: str = "ARS"
     photo_url: str | None = None
     photo_public_id: str | None = None
     notes: str | None = None

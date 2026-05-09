@@ -15,7 +15,9 @@ class AccessoryBase(BaseModel):
     color: str | None = None
     size: str | None = None
     unit_cost: Decimal = Field(default=Decimal("0.00"), ge=0)
+    unit_cost_currency: str = "ARS"
     sale_price: Decimal = Field(default=Decimal("0.00"), ge=0)
+    sale_price_currency: str = "ARS"
     stock: int = Field(default=0, ge=0)
     min_stock: int = Field(default=0, ge=0)
     status: str = "ACTIVE"
@@ -36,7 +38,9 @@ class AccessoryUpdate(BaseModel):
     color: str | None = None
     size: str | None = None
     unit_cost: Decimal | None = Field(default=None, ge=0)
+    unit_cost_currency: str | None = None
     sale_price: Decimal | None = Field(default=None, ge=0)
+    sale_price_currency: str | None = None
     stock: int | None = Field(default=None, ge=0)
     min_stock: int | None = Field(default=None, ge=0)
     status: str | None = None
@@ -55,7 +59,9 @@ class AccessoryResponse(BaseModel):
     color: str | None = None
     size: str | None = None
     unit_cost: Decimal
+    unit_cost_currency: str
     sale_price: Decimal
+    sale_price_currency: str
     stock: int
     min_stock: int
     status: str

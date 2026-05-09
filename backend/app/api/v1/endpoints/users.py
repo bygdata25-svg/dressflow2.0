@@ -15,6 +15,8 @@ from app.models.user import User, UserTenant
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
 from app.services.audit_service import create_audit_log
 
+from app.services.tenant_limits import validate_tenant_user_limit
+
 router = APIRouter(prefix="/users", tags=["users"])
 
 class UserPreferencesUpdate(BaseModel):
@@ -50,6 +52,7 @@ def create_user(
     db: Session = Depends(get_db),
     membership=Depends(get_current_membership),
 ):
+    validate_tenant_user_limit(db, membership.tenant_id)
     user = User(
         email=payload.email,
         password_hash=get_password_hash(payload.password),

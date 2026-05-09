@@ -12,6 +12,7 @@ from app.models.customer import Customer
 from app.models.dress import Dress
 from app.models.dress_image import DressImage
 from app.models.tenant import Tenant
+from app.models.tenant_currency_rule import TenantCurrencyRule
 from app.models.loan import Loan
 from app.schemas.dress import (
     DressCreate,
@@ -24,6 +25,27 @@ from app.services.cloudinary_service import upload_image, delete_image
 from app.models.dress_status_history import DressStatusHistory
 
 router = APIRouter(prefix="/dresses", tags=["dresses"])
+
+
+def get_default_currency_for_rule(
+    db: Session,
+    tenant_id,
+    module: str,
+    price_type: str,
+    fallback: str = "USD",
+):
+    rule = db.execute(
+        select(TenantCurrencyRule).where(
+            TenantCurrencyRule.tenant_id == tenant_id,
+            TenantCurrencyRule.module == module,
+            TenantCurrencyRule.price_type == price_type,
+        )
+    ).scalar_one_or_none()
+
+    if not rule:
+        return fallback
+
+    return rule.default_currency or fallback
 
 
 def build_dress_response(db: Session, dress: Dress) -> DressResponse:
@@ -56,15 +78,14 @@ def build_dress_response(db: Session, dress: Dress) -> DressResponse:
         size=dress.size,
         color=dress.color,
         sale_price=dress.sale_price,
+        sale_currency=dress.sale_currency,
         rental_price=dress.rental_price,
+        rental_currency=dress.rental_currency,
         status=dress.status,
-        main_image_url=(
-            main_image.file_url
-            if main_image
-            else dress.photo_url
-        ),
+        main_image_url=main_image.file_url if main_image else dress.photo_url,
         capsule_id=getattr(dress, "capsule_id", None),
         capsule_name=capsule_name,
+        photo_url=dress.photo_url,
     )
 
 
@@ -136,7 +157,10 @@ def list_dresses(
     rows = db.execute(query).scalars().all()
 
     return {
-        "items": [build_dress_response(db, row).model_dump(mode="json") for row in rows],
+        "items": [
+            build_dress_response(db, row).model_dump(mode="json")
+            for row in rows
+        ],
         "page": page,
         "page_size": page_size,
         "total": total,
@@ -200,11 +224,21 @@ def get_dress_loans(
             {
                 "id": str(loan.id),
                 "start_date": str(loan.start_date),
-                "expected_return_date": str(loan.expected_return_date) if loan.expected_return_date else None,
-                "actual_return_date": str(loan.actual_return_date) if loan.actual_return_date else None,
+                "expected_return_date": (
+                    str(loan.expected_return_date)
+                    if loan.expected_return_date
+                    else None
+                ),
+                "actual_return_date": (
+                    str(loan.actual_return_date)
+                    if loan.actual_return_date
+                    else None
+                ),
                 "status": loan.status,
                 "customer_name": (
-                    f"{customer.first_name} {customer.last_name}" if customer else None
+                    f"{customer.first_name} {customer.last_name}"
+                    if customer
+                    else None
                 ),
             }
         )
@@ -227,12 +261,38 @@ def create_dress(
     ).scalar_one_or_none()
 
     if existing:
-        raise AppException(400, "Dress code already exists for this tenant", "DRESS_DUPLICATE_CODE")
+        raise AppException(
+            400,
+            "Dress code already exists for this tenant",
+            "DRESS_DUPLICATE_CODE",
+        )
 
     validate_capsule_for_tenant(
         db=db,
         tenant_id=membership.tenant_id,
         capsule_id=getattr(payload, "capsule_id", None),
+    )
+
+    sale_currency = (
+        payload.sale_currency
+        or get_default_currency_for_rule(
+            db=db,
+            tenant_id=membership.tenant_id,
+            module="dresses",
+            price_type="sale_price",
+            fallback="USD",
+        )
+    )
+
+    rental_currency = (
+        payload.rental_currency
+        or get_default_currency_for_rule(
+            db=db,
+            tenant_id=membership.tenant_id,
+            module="dresses",
+            price_type="rental_price",
+            fallback="USD",
+        )
     )
 
     dress = Dress(
@@ -244,7 +304,9 @@ def create_dress(
         size=payload.size,
         color=payload.color,
         sale_price=payload.sale_price,
+        sale_currency=sale_currency,
         rental_price=payload.rental_price,
+        rental_currency=rental_currency,
         status="AVAILABLE",
         photo_url=payload.photo_url,
     )
@@ -263,6 +325,10 @@ def create_dress(
             "code": dress.code,
             "name": dress.name,
             "status": dress.status,
+            "sale_price": str(dress.sale_price) if dress.sale_price is not None else None,
+            "sale_currency": dress.sale_currency,
+            "rental_price": str(dress.rental_price) if dress.rental_price is not None else None,
+            "rental_currency": dress.rental_currency,
             "capsule_id": str(dress.capsule_id) if dress.capsule_id else None,
         },
     )
@@ -301,7 +367,11 @@ def update_dress(
     ).scalar_one_or_none()
 
     if duplicate:
-        raise AppException(400, "Dress code already exists for this tenant", "DRESS_DUPLICATE_CODE")
+        raise AppException(
+            400,
+            "Dress code already exists for this tenant",
+            "DRESS_DUPLICATE_CODE",
+        )
 
     validate_capsule_for_tenant(
         db=db,
@@ -312,6 +382,30 @@ def update_dress(
     previous_status = dress.status
     new_status = payload.status
 
+    sale_currency = (
+        payload.sale_currency
+        or dress.sale_currency
+        or get_default_currency_for_rule(
+            db=db,
+            tenant_id=membership.tenant_id,
+            module="dresses",
+            price_type="sale_price",
+            fallback="USD",
+        )
+    )
+
+    rental_currency = (
+        payload.rental_currency
+        or dress.rental_currency
+        or get_default_currency_for_rule(
+            db=db,
+            tenant_id=membership.tenant_id,
+            module="dresses",
+            price_type="rental_price",
+            fallback="USD",
+        )
+    )
+
     dress.capsule_id = getattr(payload, "capsule_id", None)
     dress.code = payload.code
     dress.name = payload.name
@@ -320,7 +414,10 @@ def update_dress(
     dress.color = payload.color
     dress.status = new_status
     dress.sale_price = payload.sale_price
+    dress.sale_currency = sale_currency
     dress.rental_price = payload.rental_price
+    dress.rental_currency = rental_currency
+    dress.photo_url = payload.photo_url
 
     if previous_status != new_status:
         history = DressStatusHistory(
@@ -343,6 +440,10 @@ def update_dress(
             "code": dress.code,
             "name": dress.name,
             "status": dress.status,
+            "sale_price": str(dress.sale_price) if dress.sale_price is not None else None,
+            "sale_currency": dress.sale_currency,
+            "rental_price": str(dress.rental_price) if dress.rental_price is not None else None,
+            "rental_currency": dress.rental_currency,
             "capsule_id": str(dress.capsule_id) if dress.capsule_id else None,
         },
     )
@@ -455,7 +556,7 @@ def upload_dress_image(
         entity="dresses",
         asset_key=dress.code,
         overwrite=True,
-    ) 
+    )
 
     file_url = result["url"]
     public_id = result["public_id"]
@@ -506,6 +607,7 @@ def upload_dress_image(
 
     return image
 
+
 @router.post("/{dress_id}/images/{image_id}/set-primary")
 def set_primary_dress_image(
     dress_id: UUIDType,
@@ -546,6 +648,7 @@ def set_primary_dress_image(
 
     image.is_primary = True
     dress.photo_url = image.file_url
+
     if hasattr(dress, "photo_public_id"):
         dress.photo_public_id = image.file_path
 
@@ -590,19 +693,21 @@ def get_dress_status_history(
     result = []
 
     for history, first_name, last_name, email in rows:
-        full_name = (
-            f"{(first_name or '').strip()} {(last_name or '').strip()}".strip()
-        )
+        full_name = f"{(first_name or '').strip()} {(last_name or '').strip()}".strip()
 
         if not full_name:
             full_name = email or "Usuario"
 
-        result.append({
-            "from": history.from_status,
-            "to": history.to_status,
-            "date": history.created_at.isoformat() if history.created_at else None,
-            "user": full_name,
-        })
+        result.append(
+            {
+                "from": history.from_status,
+                "to": history.to_status,
+                "date": history.created_at.isoformat()
+                if history.created_at
+                else None,
+                "user": full_name,
+            }
+        )
 
     return result
 
@@ -662,10 +767,13 @@ def delete_dress_image(
     if next_primary and was_primary:
         next_primary.is_primary = True
         dress.photo_url = next_primary.file_url
+
         if hasattr(dress, "photo_public_id"):
             dress.photo_public_id = next_primary.file_path
+
     elif was_primary:
         dress.photo_url = None
+
         if hasattr(dress, "photo_public_id"):
             dress.photo_public_id = None
 

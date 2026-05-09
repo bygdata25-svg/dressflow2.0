@@ -11,6 +11,8 @@ from app.models.production_order import ProductionOrder
 from app.models.production_order_material import ProductionOrderMaterial
 from app.models.production_order_event import ProductionOrderEvent
 from app.models.production_order_output import ProductionOrderOutput
+from app.models.production_order_assignment import ProductionOrderAssignment
+from app.models.production_process_type import ProductionProcessType
 from app.models.trim import Trim
 from app.models.trim_movement import TrimMovement
 from app.models.loan import Loan
@@ -23,6 +25,8 @@ from app.models.accessory import Accessory
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.sale_payment import SalePayment
+from app.models.tenant_currency import TenantCurrency
+from app.models.tenant_currency_rule import TenantCurrencyRule
 
 
 __all__ = [
@@ -30,7 +34,6 @@ __all__ = [
     "User",
     "UserTenant",
     "Dress",
-    "DressSale",
     "DressImage",
     "Customer",
     "Supplier",
@@ -41,9 +44,20 @@ __all__ = [
     "ProductionOrderMaterial",
     "ProductionOrderEvent",
     "ProductionOrderOutput",
+    "ProductionOrderAssignment",
+    "ProductionProcessType",
     "Trim",
     "TrimMovement",
     "Loan",
-    "Accessory",
     "AuditLog",
+    "ImpersonationAudit",
+    "FieldDefinition",
+    "TenantFieldSetting",
+    "DressSale",
+    "Accessory",
+    "Sale",
+    "SaleItem",
+    "SalePayment",
+    "TenantCurrency",
+    "TenantCurrencyRule",
 ]

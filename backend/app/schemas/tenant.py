@@ -23,6 +23,12 @@ class TenantBrandingResponse(BaseModel):
     timezone: str
     logo_url: str | None = None
     primary_color: str | None = None
+    tenant_plan: str = "PRO"
+    tenant_plan_label: str = "DressFlow Pro"
+
+    max_users: int = 3
+    active_users: int = 0
+    available_users: int = 0
 
 
 class TenantBrandingUpdateRequest(BaseModel):
@@ -74,3 +80,9 @@ class TenantRead(BaseModel):
     name: str
     slug: str
     branding: TenantBrandingRead
+    tenant_plan: str = "PRO"
+    tenant_plan_label: str = "DressFlow Pro"
+
+    max_users: int = 3
+    active_users: int = 0
+    available_users: int = 0

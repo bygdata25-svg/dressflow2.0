@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
-import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import { Modal } from "../components/common/Modal";
 import ProductionOrderDetailPanel from "../components/production-orders/ProductionOrderDetailPanel";
 import "../styles/pro-pages.css";
+import "../styles/production-orders.css";
 
 type Supplier = {
   id: string;
@@ -61,6 +61,17 @@ function formatDate(value?: string | null, locale = "es-AR") {
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
+function formatShortDate(value?: string | null, locale = "es-AR") {
+  if (!value) return "-";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+  }).format(date);
+}
+
 function isOverdue(row: ProductionOrderListItem) {
   if (!row.due_date) return false;
   if (row.status === "COMPLETED" || row.status === "CANCELLED") return false;
@@ -74,9 +85,19 @@ function isOverdue(row: ProductionOrderListItem) {
   return due < today;
 }
 
-function getProgressPercent(row: { planned_quantity: number; produced_quantity: number }) {
+function getProgressPercent(row: {
+  planned_quantity: number;
+  produced_quantity: number;
+}) {
   if (!row.planned_quantity || row.planned_quantity <= 0) return 0;
-  return Math.max(0, Math.min(100, Math.round((row.produced_quantity / row.planned_quantity) * 100)));
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round((row.produced_quantity / row.planned_quantity) * 100)
+    )
+  );
 }
 
 function getPriorityBadgeClass(priority: string) {
@@ -111,10 +132,176 @@ function getStatusBadgeClass(status: string) {
   }
 }
 
+function getOperationalIcon(status: string) {
+  switch (status) {
+    case "DRAFT":
+      return "✦";
+    case "MATERIALS_RESERVED":
+      return "◈";
+    case "IN_PRODUCTION":
+      return "✂";
+    case "COMPLETED":
+      return "✓";
+    case "CANCELLED":
+      return "×";
+    default:
+      return "•";
+  }
+}
+
 function getOperationalHint(t: any, row: ProductionOrderListItem) {
   return t(`production-orders:operationalHints.${row.status}`, {
     defaultValue: row.status || "-",
   });
+}
+
+function translateStatus(t: any, status: string) {
+  return t(`production-orders:status.${status}`, {
+    defaultValue: status,
+  });
+}
+
+function translatePriority(t: any, priority: string) {
+  return t(`production-orders:priority.${priority}`, {
+    defaultValue: priority,
+  });
+}
+
+function resolveDesignPhotoUrl(photoUrl?: string | null) {
+  if (!photoUrl) return null;
+  if (photoUrl.startsWith("blob:") || photoUrl.startsWith("data:")) return photoUrl;
+  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) return photoUrl;
+
+  const apiBaseUrl =
+    import.meta.env.VITE_API_URL?.replace(/\/api\/v1\/?$/, "")?.replace(/\/$/, "") || "";
+
+  return `${apiBaseUrl}/${photoUrl.replace(/^\/+/, "")}`;
+}
+
+function ProductionOrderWorkflowCard({
+  row,
+  selected,
+  locale,
+  t,
+  onSelect,
+}: {
+  row: ProductionOrderListItem;
+  selected: boolean;
+  locale: string;
+  t: any;
+  onSelect: () => void;
+}) {
+  const percent = getProgressPercent(row);
+  const overdue = isOverdue(row);
+  const photoUrl = resolveDesignPhotoUrl(row.design_photo_url);
+
+  const metaParts = [
+    row.target_dress_code
+      ? `${t("production-orders:fields.codeShort", "Cód.")} ${row.target_dress_code}`
+      : null,
+    row.target_size
+      ? `${t("production-orders:fields.size", "Talle")} ${row.target_size}`
+      : null,
+    row.target_color || null,
+  ].filter(Boolean);
+
+  return (
+    <button
+      type="button"
+      className={`po-workflow-card ${selected ? "po-workflow-card--active" : ""}`}
+      onClick={onSelect}
+    >
+      <div className="po-workflow-card__main">
+        <div className="po-workflow-card__visual">
+          {photoUrl ? (
+            <img src={photoUrl} alt={row.target_dress_name} />
+          ) : (
+            <span>{getOperationalIcon(row.status)}</span>
+          )}
+        </div>
+
+        <div className="po-workflow-card__content">
+          <div className="po-workflow-card__top">
+            <div>
+              <div className="po-workflow-card__number">{row.order_number}</div>
+              <h3 className="po-workflow-card__title">{row.target_dress_name}</h3>
+
+              <div className="po-workflow-card__meta">
+                {metaParts.length > 0 ? (
+                  metaParts.map((item) => <span key={String(item)}>{item}</span>)
+                ) : (
+                  <span>{t("production-orders:fields.noGarmentDetails", "Sin detalles de prenda")}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="po-workflow-card__badges">
+              {overdue ? (
+                <span className="df-status-badge df-status-badge--cancelled">
+                  {t("production-orders:date.overdue", "Atrasada")}
+                </span>
+              ) : null}
+
+              <span className={getStatusBadgeClass(row.status)}>
+                {translateStatus(t, row.status)}
+              </span>
+            </div>
+          </div>
+
+          <div className="po-workflow-card__middle">
+            <div className="po-workflow-card__stage">
+              <span className="po-workflow-card__stage-icon">
+                {getOperationalIcon(row.status)}
+              </span>
+
+              <div>
+                <strong>{getOperationalHint(t, row)}</strong>
+                <small>
+                  {row.workshop_supplier_name ||
+                    t("production-orders:fields.noWorkshopAssigned", "Sin taller asignado")}
+                </small>
+              </div>
+            </div>
+
+            <div className="po-workflow-card__date">
+              <span>{t("production-orders:fields.dueDate", "Entrega")}</span>
+              <strong>
+                {row.due_date
+                  ? formatShortDate(row.due_date, locale)
+                  : t("production-orders:date.noDate", "Sin fecha")}
+              </strong>
+            </div>
+          </div>
+
+          <div className="po-workflow-card__progress">
+            <div className="po-workflow-card__progress-top">
+              <span>
+                {row.produced_quantity} / {row.planned_quantity}{" "}
+                {t("production-orders:fields.units", "unidades")}
+              </span>
+              <strong>{percent}%</strong>
+            </div>
+
+            <div className="po-progress-track">
+              <div className="po-progress-fill" style={{ width: `${percent}%` }} />
+            </div>
+          </div>
+
+          <div className="po-workflow-card__footer">
+            <span className={getPriorityBadgeClass(row.priority)}>
+              {translatePriority(t, row.priority)}
+            </span>
+
+            <span className="po-workflow-card__soft">
+              {row.due_date
+                ? formatDate(row.due_date, locale)
+                : t("production-orders:date.noDate", "Sin fecha")}
+            </span>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
 }
 
 export default function ProductionOrdersPage() {
@@ -138,6 +325,8 @@ export default function ProductionOrdersPage() {
   const [form, setForm] = useState(INITIAL_FORM);
 
   const selectedOrderId = searchParams.get("order");
+  const locale = i18n.language === "en" ? "en-US" : "es-AR";
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const setSelectedOrderId = (orderId: string | null) => {
     const next = new URLSearchParams(searchParams);
@@ -152,8 +341,6 @@ export default function ProductionOrdersPage() {
 
     setSearchParams(next, { replace: true });
   };
-
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const closeCreateModal = () => {
     if (creating) return;
@@ -180,7 +367,10 @@ export default function ProductionOrdersPage() {
         }),
       ]);
 
-      const nextRows = Array.isArray(ordersResponse.data.items) ? ordersResponse.data.items : [];
+      const nextRows = Array.isArray(ordersResponse.data.items)
+        ? ordersResponse.data.items
+        : [];
+
       setRows(nextRows);
       setTotal(Number(ordersResponse.data.total || 0));
 
@@ -200,7 +390,10 @@ export default function ProductionOrdersPage() {
     } catch (err: any) {
       setError(
         err?.response?.data?.detail?.message ||
-          t("production-orders:messages.loadError", "No se pudieron cargar las órdenes.")
+          t(
+            "production-orders:messages.loadError",
+            "No se pudieron cargar las órdenes."
+          )
       );
     } finally {
       setLoading(false);
@@ -209,6 +402,7 @@ export default function ProductionOrdersPage() {
 
   useEffect(() => {
     void loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search, statusFilter]);
 
   const createOrder = async (event: React.FormEvent) => {
@@ -270,148 +464,6 @@ export default function ProductionOrdersPage() {
     };
   }, [rows]);
 
-  const columns = useMemo<DataGridColumn<ProductionOrderListItem>[]>(() => {
-    return [
-      {
-        key: "order_number",
-        label: t("production-orders:fields.orderNumber", "Número de orden"),
-        render: (row) => (
-          <button
-            type="button"
-            className={`po-row-anchor ${selectedOrderId === row.id ? "po-row-anchor--active" : ""}`}
-            onClick={() => setSelectedOrderId(row.id)}
-          >
-            <div className="po-cell-block po-cell-block--left">
-              <div className="po-order-line">
-                <div className="po-order-id">{row.order_number}</div>
-                {isOverdue(row) && (
-                  <span className="df-status-badge df-status-badge--cancelled">{t("production-orders:date.overdue", "Atrasada")}</span>
-                )}
-              </div>
-              <div className="po-order-subtitle">{getOperationalHint(t, row)}</div>
-            </div>
-          </button>
-        ),
-      },
-      {
-        key: "target",
-        label: t("production-orders:fields.targetDressName", "Vestido"),
-        render: (row) => (
-          <button
-            type="button"
-            className={`po-row-anchor ${selectedOrderId === row.id ? "po-row-anchor--active" : ""}`}
-            onClick={() => setSelectedOrderId(row.id)}
-          >
-            <div className="po-cell-block po-cell-block--left">
-              <div className="po-main-value">{row.target_dress_name}</div>
-              <div className="po-meta-row">
-                {row.target_dress_code ? <span>{t("production-orders:fields.codeShort", "Cód.")} {row.target_dress_code}</span> : null}
-                {row.target_size ? <span>{t("production-orders:fields.size", "Talle")} {row.target_size}</span> : null}
-                {row.target_color ? <span>{row.target_color}</span> : null}
-              </div>
-            </div>
-          </button>
-        ),
-      },
-      {
-        key: "workshop",
-        label: t("production-orders:fields.workshop", "Taller"),
-        render: (row) => (
-          <button
-            type="button"
-            className={`po-row-anchor ${selectedOrderId === row.id ? "po-row-anchor--active" : ""}`}
-            onClick={() => setSelectedOrderId(row.id)}
-          >
-            <div className="po-cell-block po-cell-block--left">
-              <div className="po-main-value">{row.workshop_supplier_name || "-"}</div>
-              <div className="po-soft-text">{t("production-orders:fields.workshopAssigned", "Taller asignado")}</div>
-            </div>
-          </button>
-        ),
-      },
-      {
-        key: "progress",
-        label: t("production-orders:fields.progress", "Avance"),
-        render: (row) => {
-          const percent = getProgressPercent(row);
-          return (
-            <button
-              type="button"
-              className={`po-row-anchor ${selectedOrderId === row.id ? "po-row-anchor--active" : ""}`}
-              onClick={() => setSelectedOrderId(row.id)}
-            >
-              <div className="po-progress-cell">
-                <div className="po-progress-top">
-                  <strong>
-                    {row.produced_quantity} / {row.planned_quantity}
-                  </strong>
-                  <span>{percent}%</span>
-                </div>
-                <div className="po-progress-track">
-                  <div className="po-progress-fill" style={{ width: `${percent}%` }} />
-                </div>
-              </div>
-            </button>
-          );
-        },
-      },
-      {
-        key: "status",
-        label: t("production-orders:fields.status", "Estado"),
-        render: (row) => (
-          <button
-            type="button"
-            className={`po-row-anchor ${selectedOrderId === row.id ? "po-row-anchor--active" : ""}`}
-            onClick={() => setSelectedOrderId(row.id)}
-          >
-            <span className={getStatusBadgeClass(row.status)}>
-              {t(`production-orders:status.${row.status}`, { defaultValue: row.status })}
-            </span>
-          </button>
-        ),
-      },
-      {
-        key: "priority",
-        label: t("production-orders:fields.priority", "Prioridad"),
-        render: (row) => (
-          <button
-            type="button"
-            className={`po-row-anchor ${selectedOrderId === row.id ? "po-row-anchor--active" : ""}`}
-            onClick={() => setSelectedOrderId(row.id)}
-          >
-            <span className={getPriorityBadgeClass(row.priority)}>
-              {t(`production-orders:priority.${row.priority}`, { defaultValue: row.priority })}
-            </span>
-          </button>
-        ),
-      },
-      {
-        key: "due_date",
-        label: t("production-orders:fields.dueDate", "Entrega"),
-        render: (row) => (
-          <button
-            type="button"
-            className={`po-row-anchor ${selectedOrderId === row.id ? "po-row-anchor--active" : ""}`}
-            onClick={() => setSelectedOrderId(row.id)}
-          >
-            <div className={`po-date-block ${isOverdue(row) ? "po-date-block--overdue" : ""}`}>
-              <strong>{formatDate(row.due_date, i18n.language === "en" ? "en-US" : "es-AR")}</strong>
-              <span>
-                {
-                  !row.due_date
-                    ? t("production-orders:date.noDate", "Sin fecha")
-                    : isOverdue(row)
-                      ? t("production-orders:date.overdue", "Atrasada")
-                      : t("production-orders:date.planned", "Planificada")
-                }
-              </span>
-            </div>
-          </button>
-        ),
-      },
-    ];
-  }, [t, i18n.language, selectedOrderId]);
-
   return (
     <section className="df-pro-page po-orders-page">
       <div className="po-orders-shell">
@@ -419,18 +471,36 @@ export default function ProductionOrdersPage() {
           <section className="po-orders-hero df-pro-card">
             <div className="po-orders-hero__top">
               <div>
-                <p className="df-pro-page__eyebrow">{t("production-orders:page.eyebrow", "Producción")}</p>
-                <h1 className="df-pro-page__title">{t("production-orders:page.title", "Órdenes de producción")}</h1>
+                <p className="df-pro-page__eyebrow">
+                  {t("production-orders:page.eyebrow", "Producción")}
+                </p>
+
+                <h1 className="df-pro-page__title">
+                  {t("production-orders:page.title", "Órdenes de producción")}
+                </h1>
+
                 <p className="df-pro-page__subtitle">
-                  {t("production-orders:page.subtitle", "Seguimiento operativo y financiero en una sola vista de trabajo.")}
+                  {t(
+                    "production-orders:page.subtitle",
+                    "Seguimiento operativo y financiero en una sola vista de trabajo."
+                  )}
                 </p>
               </div>
 
               <div className="po-orders-hero__actions">
-                <button type="button" className="po-secondary-btn" onClick={() => loadOrders()}>
+                <button
+                  type="button"
+                  className="po-secondary-btn"
+                  onClick={() => loadOrders()}
+                >
                   {t("production-orders:actions.refresh", "Actualizar")}
                 </button>
-                <button type="button" className="po-primary-btn" onClick={() => setIsCreateOpen(true)}>
+
+                <button
+                  type="button"
+                  className="po-primary-btn"
+                  onClick={() => setIsCreateOpen(true)}
+                >
                   {t("production-orders:actions.new", "Nueva orden")}
                 </button>
               </div>
@@ -438,39 +508,58 @@ export default function ProductionOrdersPage() {
 
             <div className="po-orders-kpis">
               <div className="po-orders-kpi">
-                <span className="po-orders-kpi__label">{t("production-orders:kpis.draft", "Borrador")}</span>
+                <span className="po-orders-kpi__label">
+                  {t("production-orders:kpis.draft", "Borrador")}
+                </span>
                 <strong className="po-orders-kpi__value">{summary.draft}</strong>
               </div>
+
               <div className="po-orders-kpi">
-                <span className="po-orders-kpi__label">{t("production-orders:kpis.reserved", "Reservadas")}</span>
+                <span className="po-orders-kpi__label">
+                  {t("production-orders:kpis.reserved", "Reservadas")}
+                </span>
                 <strong className="po-orders-kpi__value">{summary.reserved}</strong>
               </div>
+
               <div className="po-orders-kpi">
-                <span className="po-orders-kpi__label">{t("production-orders:kpis.inProduction", "En producción")}</span>
+                <span className="po-orders-kpi__label">
+                  {t("production-orders:kpis.inProduction", "En producción")}
+                </span>
                 <strong className="po-orders-kpi__value">{summary.inProduction}</strong>
               </div>
+
               <div className="po-orders-kpi">
-                <span className="po-orders-kpi__label">{t("production-orders:kpis.completed", "Completadas")}</span>
+                <span className="po-orders-kpi__label">
+                  {t("production-orders:kpis.completed", "Completadas")}
+                </span>
                 <strong className="po-orders-kpi__value">{summary.completed}</strong>
               </div>
-              <div className="po-orders-kpi">
-                <span className="po-orders-kpi__label">{t("production-orders:kpis.overdue", "Vencidas")}</span>
+
+              <div className="po-orders-kpi po-orders-kpi--alert">
+                <span className="po-orders-kpi__label">
+                  {t("production-orders:kpis.overdue", "Vencidas")}
+                </span>
                 <strong className="po-orders-kpi__value">{summary.overdue}</strong>
               </div>
             </div>
           </section>
 
-          {error && !isCreateOpen && <div className="po-inline-error">{error}</div>}
+          {error && !isCreateOpen ? <div className="po-inline-error">{error}</div> : null}
 
           <section className="po-filters-card">
             <div className="po-filters-card__top">
               <div>
-                <h2 className="po-filters-card__title">{t("production-orders:filters.title", "Listado de órdenes")}</h2>
+                <h2 className="po-filters-card__title">
+                  {t("production-orders:filters.title", "Listado de órdenes")}
+                </h2>
+
                 <p className="po-filters-card__subtitle">
-                  {t("production-orders:filters.subtitle", "Filtrá por número, taller, vestido, talle o código.")}
+                  {t(
+                    "production-orders:filters.subtitle",
+                    "Filtrá por número, taller, vestido, talle o código."
+                  )}
                 </p>
               </div>
-
             </div>
 
             <form
@@ -482,17 +571,26 @@ export default function ProductionOrdersPage() {
               className="po-orders-filter-grid"
             >
               <div>
-                <label className="df-pro-label">{t("production-orders:filters.search", "Buscar")}</label>
+                <label className="df-pro-label">
+                  {t("production-orders:filters.search", "Buscar")}
+                </label>
+
                 <input
                   className="df-pro-input"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder={t("production-orders:filters.searchPlaceholder", "Buscar por orden o vestido")}
+                  placeholder={t(
+                    "production-orders:filters.searchPlaceholder",
+                    "Buscar por orden o vestido"
+                  )}
                 />
               </div>
 
               <div>
-                <label className="df-pro-label">{t("production-orders:filters.status", "Estado")}</label>
+                <label className="df-pro-label">
+                  {t("production-orders:filters.status", "Estado")}
+                </label>
+
                 <select
                   className="df-pro-select"
                   value={statusFilter}
@@ -501,14 +599,22 @@ export default function ProductionOrdersPage() {
                     setStatusFilter(e.target.value);
                   }}
                 >
-                  <option value="">{t("production-orders:filters.allStatuses", "Todos los estados")}</option>
+                  <option value="">
+                    {t("production-orders:filters.allStatuses", "Todos los estados")}
+                  </option>
                   <option value="DRAFT">{t("production-orders:status.DRAFT")}</option>
                   <option value="MATERIALS_RESERVED">
                     {t("production-orders:status.MATERIALS_RESERVED")}
                   </option>
-                  <option value="IN_PRODUCTION">{t("production-orders:status.IN_PRODUCTION")}</option>
-                  <option value="COMPLETED">{t("production-orders:status.COMPLETED")}</option>
-                  <option value="CANCELLED">{t("production-orders:status.CANCELLED")}</option>
+                  <option value="IN_PRODUCTION">
+                    {t("production-orders:status.IN_PRODUCTION")}
+                  </option>
+                  <option value="COMPLETED">
+                    {t("production-orders:status.COMPLETED")}
+                  </option>
+                  <option value="CANCELLED">
+                    {t("production-orders:status.CANCELLED")}
+                  </option>
                 </select>
               </div>
 
@@ -531,7 +637,7 @@ export default function ProductionOrdersPage() {
             </form>
           </section>
 
-          <section className="po-list-card">
+          <section className="po-workflow-list-card">
             {loading ? (
               <div className="po-loading-state">
                 <p>{t("common:status.loading", "Cargando...")}</p>
@@ -539,10 +645,26 @@ export default function ProductionOrdersPage() {
             ) : rows.length === 0 ? (
               <div className="po-empty-state">
                 <h3>{t("production-orders:empty", "No hay órdenes")}</h3>
-                <p>{t("production-orders:messages.emptyFiltered", "No hay órdenes para los filtros actuales.")}</p>
+                <p>
+                  {t(
+                    "production-orders:messages.emptyFiltered",
+                    "No hay órdenes para los filtros actuales."
+                  )}
+                </p>
               </div>
             ) : (
-              <DataGrid rows={rows} columns={columns} getRowKey={(row) => row.id} />
+              <div className="po-workflow-list">
+                {rows.map((row) => (
+                  <ProductionOrderWorkflowCard
+                    key={row.id}
+                    row={row}
+                    selected={selectedOrderId === row.id}
+                    locale={locale}
+                    t={t}
+                    onSelect={() => setSelectedOrderId(row.id)}
+                  />
+                ))}
+              </div>
             )}
           </section>
 
@@ -560,9 +682,12 @@ export default function ProductionOrdersPage() {
               >
                 {t("common:pagination.previous", "Anterior")}
               </button>
+
               <span>
-                {t("common:pagination.page", "Página")} {page} {t("common:pagination.of", "de")} {totalPages}
+                {t("common:pagination.page", "Página")} {page}{" "}
+                {t("common:pagination.of", "de")} {totalPages}
               </span>
+
               <button
                 type="button"
                 className="po-secondary-btn"
@@ -589,15 +714,6 @@ export default function ProductionOrdersPage() {
         <form onSubmit={createOrder}>
           <div style={{ display: "grid", gap: 20 }}>
             <section>
-              <p
-                style={{
-                  margin: "0 0 10px",
-                  color: "var(--df-text-muted, #6b7280)",
-                  fontSize: 15,
-                }}
-              >
-              </p>
-
               <div
                 style={{
                   display: "grid",
@@ -606,31 +722,56 @@ export default function ProductionOrdersPage() {
                 }}
               >
                 <div style={{ gridColumn: "span 4" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.orderNumber", "Número de orden")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.orderNumber", "Número de orden")}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     value={form.order_number}
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, order_number: e.target.value }))
                     }
-                    placeholder={t("production-orders:form.autoPlaceholder", "Automático")}
+                    placeholder={t(
+                      "production-orders:form.autoPlaceholder",
+                      "Automático"
+                    )}
                   />
-                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--df-text-muted, #6b7280)" }}>
-                    {t("production-orders:form.autoHint", "Dejalo vacío para generar automáticamente el próximo número OP.")}
+
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: 12,
+                      color: "var(--df-text-muted, #6b7280)",
+                    }}
+                  >
+                    {t(
+                      "production-orders:form.autoHint",
+                      "Dejalo vacío para generar automáticamente el próximo número OP."
+                    )}
                   </p>
                 </div>
 
                 <div style={{ gridColumn: "span 4" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.workshop", "Taller")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.workshop", "Taller")}
+                  </label>
+
                   <select
                     className="df-pro-select"
                     value={form.workshop_supplier_id}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, workshop_supplier_id: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        workshop_supplier_id: e.target.value,
+                      }))
                     }
                     required
                   >
-                    <option value="">{t("production-orders:form.selectWorkshop", "Seleccionar taller")}</option>
+                    <option value="">
+                      {t("production-orders:form.selectWorkshop", "Seleccionar taller")}
+                    </option>
+
                     {workshops.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
@@ -640,7 +781,10 @@ export default function ProductionOrdersPage() {
                 </div>
 
                 <div style={{ gridColumn: "span 4" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.priority", "Prioridad")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.priority", "Prioridad")}
+                  </label>
+
                   <select
                     className="df-pro-select"
                     value={form.priority}
@@ -649,9 +793,13 @@ export default function ProductionOrdersPage() {
                     }
                   >
                     <option value="LOW">{t("production-orders:priority.LOW")}</option>
-                    <option value="NORMAL">{t("production-orders:priority.NORMAL")}</option>
+                    <option value="NORMAL">
+                      {t("production-orders:priority.NORMAL")}
+                    </option>
                     <option value="HIGH">{t("production-orders:priority.HIGH")}</option>
-                    <option value="URGENT">{t("production-orders:priority.URGENT")}</option>
+                    <option value="URGENT">
+                      {t("production-orders:priority.URGENT")}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -676,30 +824,45 @@ export default function ProductionOrdersPage() {
                 }}
               >
                 <div style={{ gridColumn: "span 6" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.targetDressName", "Vestido")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.targetDressName", "Vestido")}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     value={form.target_dress_name}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, target_dress_name: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        target_dress_name: e.target.value,
+                      }))
                     }
                     required
                   />
                 </div>
 
                 <div style={{ gridColumn: "span 3" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.code", "Código")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.code", "Código")}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     value={form.target_dress_code}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, target_dress_code: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        target_dress_code: e.target.value,
+                      }))
                     }
                   />
                 </div>
 
                 <div style={{ gridColumn: "span 3" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.size", "Talle")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.size", "Talle")}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     value={form.target_size}
@@ -710,7 +873,10 @@ export default function ProductionOrdersPage() {
                 </div>
 
                 <div style={{ gridColumn: "span 3" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.color", "Color")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.color", "Color")}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     value={form.target_color}
@@ -721,21 +887,33 @@ export default function ProductionOrdersPage() {
                 </div>
 
                 <div style={{ gridColumn: "span 3" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.plannedQuantity", "Cantidad planificada")}</label>
+                  <label className="df-pro-label">
+                    {t(
+                      "production-orders:fields.plannedQuantity",
+                      "Cantidad planificada"
+                    )}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     type="number"
                     min={1}
                     value={form.planned_quantity}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, planned_quantity: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        planned_quantity: e.target.value,
+                      }))
                     }
                     required
                   />
                 </div>
 
                 <div style={{ gridColumn: "span 3" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.dueDate", "Entrega")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.dueDate", "Entrega")}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     type="date"
@@ -747,24 +925,63 @@ export default function ProductionOrdersPage() {
                 </div>
 
                 <div style={{ gridColumn: "span 6" }}>
-                  <label className="df-pro-label">{t("production-orders:fields.designImage", "Imagen diseño")}</label>
+                  <label className="df-pro-label">
+                    {t("production-orders:fields.designImage", "Imagen diseño")}
+                  </label>
+
                   <input
                     className="df-pro-input"
                     value={form.design_photo_url}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, design_photo_url: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        design_photo_url: e.target.value,
+                      }))
                     }
-                    placeholder={t("production-orders:form.imageUrlPlaceholder", "URL de imagen")}
+                    placeholder={t(
+                      "production-orders:form.imageUrlPlaceholder",
+                      "URL de imagen"
+                    )}
                   />
-                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--df-text-muted, #6b7280)" }}>
-                    {t("production-orders:form.imageUrlHint", "Podés pegar una URL de imagen del diseño o referencia de la orden.")}
+
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: 12,
+                      color: "var(--df-text-muted, #6b7280)",
+                    }}
+                  >
+                    {t(
+                      "production-orders:form.imageUrlHint",
+                      "Podés pegar una URL de imagen del diseño o referencia de la orden."
+                    )}
                   </p>
                 </div>
 
                 {form.design_photo_url ? (
                   <div style={{ gridColumn: "span 6" }}>
-                    <div style={{ border: "1px solid rgba(148, 163, 184, 0.35)", borderRadius: 18, padding: 10, background: "rgba(248, 250, 252, 0.8)" }}>
-                      <img src={form.design_photo_url} alt={t("production-orders:form.designPreview", "Vista previa del diseño")} style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 14, display: "block" }} />
+                    <div
+                      style={{
+                        border: "1px solid rgba(148, 163, 184, 0.35)",
+                        borderRadius: 18,
+                        padding: 10,
+                        background: "rgba(248, 250, 252, 0.8)",
+                      }}
+                    >
+                      <img
+                        src={form.design_photo_url}
+                        alt={t(
+                          "production-orders:form.designPreview",
+                          "Vista previa del diseño"
+                        )}
+                        style={{
+                          width: "100%",
+                          maxHeight: 180,
+                          objectFit: "cover",
+                          borderRadius: 14,
+                          display: "block",
+                        }}
+                      />
                     </div>
                   </div>
                 ) : null}
@@ -783,7 +1000,10 @@ export default function ProductionOrdersPage() {
               </h3>
 
               <div>
-                <label className="df-pro-label">{t("production-orders:fields.notes", "Notas")}</label>
+                <label className="df-pro-label">
+                  {t("production-orders:fields.notes", "Notas")}
+                </label>
+
                 <textarea
                   className="df-pro-input"
                   rows={4}
@@ -815,7 +1035,9 @@ export default function ProductionOrdersPage() {
               </button>
 
               <button type="submit" className="po-primary-btn" disabled={creating}>
-                {creating ? t("production-orders:form.creating", "Creando...") : t("common:actions.create", "Crear")}
+                {creating
+                  ? t("production-orders:form.creating", "Creando...")
+                  : t("common:actions.create", "Crear")}
               </button>
             </div>
           </div>

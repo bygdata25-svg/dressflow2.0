@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import "./SalesUnifiedPage.css";
 
-type CurrencyCode = "USD" | "ARS";
+type CurrencyCode = string;
 type SaleItemType = "dress" | "accessory";
 type PaymentMethod = "cash" | "transfer" | "debit" | "credit" | "mercadopago" | "other";
 
@@ -39,6 +39,7 @@ type DressOption = {
   code?: string;
   name: string;
   sale_price?: number;
+  sale_currency?: string;
   rental_price?: number;
   status?: string;
 };
@@ -48,6 +49,7 @@ type AccessoryOption = {
   code?: string;
   name: string;
   sale_price?: number;
+  sale_currency?: string;
   stock?: number;
 };
 
@@ -668,7 +670,7 @@ export default function SalesUnifiedPage() {
       name: [dress.code, dress.name].filter(Boolean).join(" - "),
       price: Number(dress.sale_price ?? 0),
       quantity: 1,
-      currency: "USD",
+      currency: (dress.sale_currency || "USD").toUpperCase(),
     });
     setDressQuery("");
     setDressOpen(false);
@@ -692,7 +694,7 @@ export default function SalesUnifiedPage() {
         name: [accessory.code, accessory.name].filter(Boolean).join(" - "),
         price: Number(accessory.sale_price ?? 0),
         quantity: 1,
-        currency: "ARS",
+        currency: (accessory.sale_price_currency || "ARS").toUpperCase(),
       });
     }
 
@@ -1350,7 +1352,10 @@ export default function SalesUnifiedPage() {
                                   {[dress.code, dress.name].filter(Boolean).join(" - ")}
                                 </strong>
                                 <span>
-                                  {formatMoney(Number(dress.sale_price ?? 0), "USD")}
+                                  {formatMoney(
+                                    Number(dress.sale_price ?? 0),
+                                    (dress.sale_currency || "USD").toUpperCase()
+                                  )}
                                 </span>
                               </button>
                             ))
@@ -1397,7 +1402,10 @@ export default function SalesUnifiedPage() {
                                 <span>
                                   {Number(accessory.sale_price ?? 0) === 0
                                     ? t("items.free")
-                                    : formatMoney(Number(accessory.sale_price ?? 0), "ARS")}
+                                    : formatMoney(
+                                        Number(accessory.sale_price ?? 0),
+                                        (accessory.sale_price_currency || "ARS").toUpperCase()
+                                      )} 
                                 </span>
                               </button>
                             ))

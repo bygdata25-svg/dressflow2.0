@@ -1,0 +1,100 @@
+{
+  "title": "Procesos de producción",
+  "subtitle": "Diseñá el workflow operativo del atelier. Arrastrá y soltá los procesos para definir el flujo de producción.",
+  "loading": "Cargando procesos...",
+  "empty": "Todavía no hay procesos configurados.",
+  "new": "Nuevo proceso",
+  "edit": "Editar proceso",
+  "close": "Cerrar",
+  "save": "Guardar",
+  "saving": "Guardando...",
+  "cancel": "Cancelar",
+  "activate": "Activar",
+  "deactivate": "Desactivar",
+  "active": "Activo",
+  "inactive": "Inactivo",
+  "preview": "Preview",
+  "workflowDescription": "Definí una etapa del workflow operativo.",
+  "orderLabel": "Orden {{value}}",
+  "placeholder": {
+    "name": "Ej. Costura",
+    "code": "Ej. SEWING",
+    "nameFallback": "Nombre del proceso",
+    "codeFallback": "PROCESS_CODE"
+  },
+  "fields": {
+    "name": "Nombre",
+    "code": "Código",
+    "sortOrder": "Orden",
+    "color": "Color",
+    "icon": "Ícono",
+    "status": "Estado"
+  },
+  "errors": {
+    "load": "No se pudieron cargar los procesos.",
+    "save": "No se pudo guardar el proceso.",
+    "toggle": "No se pudo actualizar el estado.",
+    "reorder": "No se pudo actualizar el orden."
+  },
+  "icons": {
+    "scissors": "Tijeras",
+    "shirt": "Vestido",
+    "sparkles": "Brillos",
+    "gem": "Pedrería",
+    "wand": "Varita",
+    "badgeCheck": "Control",
+    "package": "Caja",
+    "needle": "Aguja"
+  },
+"templates": {
+  "apply": "Aplicar template",
+  "title": "Aplicar template de workflow",
+  "subtitle": "Usá un template opcional para acelerar la configuración inicial. No reemplaza ni elimina procesos existentes.",
+  "applySelected": "Aplicar template",
+  "applying": "Aplicando...",
+  "cancel": "Cancelar",
+  "alreadyConfigured": "Ya configurado",
+  "willBeAdded": "Se agregará",
+  "success": "Template aplicado correctamente.",
+  "errors": {
+    "apply": "No se pudo aplicar el template."
+  },
+  "items": {
+    "hauteCouture": {
+      "title": "Alta costura",
+      "description": "Workflow detallado para piezas premium, bordado, pedrería y control fino."
+    },
+    "bridal": {
+      "title": "Novias",
+      "description": "Flujo orientado a pruebas, ajustes, terminaciones y control final."
+    },
+    "tailoring": {
+      "title": "Sastrería",
+      "description": "Procesos para moldería, corte, confección, prueba y ajustes."
+    },
+    "streetwear": {
+      "title": "Streetwear",
+      "description": "Workflow ágil para producción seriada, estampas y packaging."
+    },
+    "uniforms": {
+      "title": "Uniformes",
+      "description": "Flujo pensado para lotes, control de calidad y despacho."
+    }
+  },
+  "processNames": {
+    "PATTERN_MAKING": "Moldería",
+    "CUTTING": "Corte",
+    "SEWING": "Costura",
+    "EMBROIDERY": "Bordado",
+    "BEADING": "Pedrería",
+    "FITTING": "Prueba",
+    "ALTERATIONS": "Ajustes",
+    "FINISHING": "Terminaciones",
+    "QUALITY_CONTROL": "Control de calidad",
+    "PACKAGING": "Packaging",
+    "DISPATCH": "Despacho",
+    "PRINTING": "Estampa",
+    "SUBLIMATION": "Sublimación"
+  }
+}
+}

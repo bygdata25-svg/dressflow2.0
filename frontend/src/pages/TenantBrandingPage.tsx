@@ -11,7 +11,7 @@ type MeResponse = {
 };
 
 export default function TenantBrandingPage() {
-  const { t } = useTranslation("branding");
+  const { t, i18n } = useTranslation("branding");
 
   const [logo, setLogo] = useState<string | null>(null);
   const [primaryColor, setPrimaryColor] = useState("#3d3648");
@@ -417,9 +417,14 @@ export default function TenantBrandingPage() {
             className="df-pro-select"
             value={defaultLanguage}
             onChange={(e) => {
+              const language = e.target.value as "es" | "en";
+
               setError("");
               setSuccess("");
-              setDefaultLanguage(e.target.value as "es" | "en");
+
+              setDefaultLanguage(language);
+
+              void i18n.changeLanguage(language);
             }}
             style={{
               padding: "10px 12px",

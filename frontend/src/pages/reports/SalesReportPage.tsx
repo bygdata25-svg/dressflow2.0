@@ -4,7 +4,7 @@ import { api } from "../../lib/api";
 import { PrimaryButton } from "../../components/common/buttons";
 import "../../styles/pro-pages.css";
 
-type CurrencyCode = "USD" | "ARS";
+type CurrencyCode = string;
 
 type SaleReportItemLine = {
   id: string;
@@ -40,6 +40,8 @@ type SaleReportRow = {
   items_total_usd: number;
   paid_total_ars: number;
   paid_total_usd: number;
+  items_totals?: Record<string, number>;
+  paid_totals?: Record<string, number>;
   items: SaleReportItemLine[];
   payments: SaleReportPaymentLine[];
 };
@@ -50,6 +52,8 @@ type SalesUnifiedReportResponse = {
   total_ars: number;
   total_usd: number;
   mixed_count: number;
+  currency_totals?: Record<string, number>;
+  payment_totals?: Record<string, number>;
 };
 
 type FiltersState = {
@@ -91,12 +95,61 @@ export default function SalesReportPage() {
   const [selectedSale, setSelectedSale] = useState<SaleReportRow | null>(null);
 
   function formatMoney(value: number, currency: CurrencyCode) {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+    const currencyCode = String(currency || "ARS").toUpperCase();
+
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: currencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(value || 0));
+    } catch {
+      return `${currencyCode} ${Number(value || 0).toFixed(2)}`;
+    }
+  }
+
+  function normalizeTotals(
+    totals?: Record<string, number> | null,
+    legacy?: Record<string, number>
+  ) {
+    const source = totals && Object.keys(totals).length > 0 ? totals : legacy || {};
+
+    return Object.entries(source).reduce<Record<string, number>>((acc, [currency, value]) => {
+      const code = String(currency || "ARS").toUpperCase();
+      const amount = Number(value || 0);
+
+      if (amount > 0) {
+        acc[code] = Number(((acc[code] || 0) + amount).toFixed(2));
+      }
+
+      return acc;
+    }, {});
+  }
+
+  function rowItemTotals(row: SaleReportRow) {
+    return normalizeTotals(row.items_totals, {
+      ARS: row.items_total_ars || 0,
+      USD: row.items_total_usd || 0,
+    });
+  }
+
+  function rowPaymentTotals(row: SaleReportRow) {
+    return normalizeTotals(row.paid_totals, {
+      ARS: row.paid_total_ars || 0,
+      USD: row.paid_total_usd || 0,
+    });
+  }
+
+  function totalsLabel(totals: Record<string, number>) {
+    const entries = Object.entries(totals).filter(([, value]) => Number(value || 0) > 0);
+
+    if (entries.length === 0) return "—";
+
+    return entries
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([currency, value]) => formatMoney(Number(value || 0), currency))
+      .join(" + ");
   }
 
   function formatDateTime(value?: string | null) {
@@ -127,17 +180,7 @@ export default function SalesReportPage() {
   }
 
   function saleTotalLabel(row: SaleReportRow) {
-    const hasUSD = Number(row.items_total_usd || 0) > 0;
-    const hasARS = Number(row.items_total_ars || 0) > 0;
-
-    if (hasUSD && hasARS) {
-      return `${formatMoney(row.items_total_usd, "USD")} + ${formatMoney(row.items_total_ars, "ARS")}`;
-    }
-
-    if (hasUSD) return formatMoney(row.items_total_usd, "USD");
-    if (hasARS) return formatMoney(row.items_total_ars, "ARS");
-
-    return "—";
+    return totalsLabel(rowItemTotals(row));
   }
 
   async function loadData() {
@@ -233,38 +276,58 @@ export default function SalesReportPage() {
       (item) => String(item.status || "").toUpperCase() !== "CANCELLED"
     );
 
-    const totalARS = validRows.reduce(
-      (acc, item) => acc + Number(item.items_total_ars || 0),
-      0
-    );
-    const totalUSD = validRows.reduce(
-      (acc, item) => acc + Number(item.items_total_usd || 0),
-      0
-    );
+    const totalsByCurrency: Record<string, number> = {};
+    const paymentsByCurrency: Record<string, number> = {};
+
+    validRows.forEach((row) => {
+      Object.entries(rowItemTotals(row)).forEach(([currency, amount]) => {
+        totalsByCurrency[currency] = Number(
+          ((totalsByCurrency[currency] || 0) + Number(amount || 0)).toFixed(2)
+        );
+      });
+
+      Object.entries(rowPaymentTotals(row)).forEach(([currency, amount]) => {
+        paymentsByCurrency[currency] = Number(
+          ((paymentsByCurrency[currency] || 0) + Number(amount || 0)).toFixed(2)
+        );
+      });
+    });
+
     const mixedCount = validRows.filter(
-      (item) => item.items_total_ars > 0 && item.items_total_usd > 0
+      (item) => Object.keys(rowItemTotals(item)).length > 1
     ).length;
-    const averageTicketARS = validRows.length > 0 ? totalARS / validRows.length : 0;
-    const averageTicketUSD = validRows.length > 0 ? totalUSD / validRows.length : 0;
+
+    const currencyOptions = Array.from(
+      new Set([
+        ...Object.keys(totalsByCurrency),
+        ...Object.keys(paymentsByCurrency),
+        ...items.flatMap((row) => [
+          ...(row.items || []).map((item) => String(item.currency || "").toUpperCase()),
+          ...(row.payments || []).map((payment) => String(payment.currency || "").toUpperCase()),
+        ]),
+        "ARS",
+        "USD",
+      ].filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
 
     return {
       count: validRows.length,
-      totalARS,
-      totalUSD,
+      totalsByCurrency,
+      paymentsByCurrency,
       mixedCount,
-      averageTicketARS,
-      averageTicketUSD,
+      currencyOptions,
     };
   }, [items]);
 
   const headline = useMemo(() => {
-    const hasUSD = metrics.totalUSD > 0;
-    const hasARS = metrics.totalARS > 0;
+    const entries = Object.entries(metrics.totalsByCurrency).filter(
+      ([, value]) => Number(value || 0) > 0
+    );
 
-    if (hasUSD && hasARS) {
+    if (entries.length > 1) {
       return {
         label: t("headline.mixedTotal"),
-        value: `${formatMoney(metrics.totalUSD, "USD")} + ${formatMoney(metrics.totalARS, "ARS")}`,
+        value: totalsLabel(metrics.totalsByCurrency),
         subtitle: t("headline.mixedSubtitle", {
           count: metrics.mixedCount,
           operationLabel:
@@ -275,18 +338,22 @@ export default function SalesReportPage() {
       };
     }
 
-    if (hasUSD) {
+    if (entries.length === 1) {
+      const [currency, amount] = entries[0];
+
       return {
         label: t("headline.total"),
-        value: formatMoney(metrics.totalUSD, "USD"),
-        subtitle: t("headline.usdSubtitle"),
+        value: formatMoney(Number(amount || 0), currency),
+        subtitle: t(`headline.${currency.toLowerCase()}Subtitle`, {
+          defaultValue: currency,
+        }),
       };
     }
 
     return {
       label: t("headline.total"),
-      value: formatMoney(metrics.totalARS, "ARS"),
-      subtitle: t("headline.arsSubtitle"),
+      value: "—",
+      subtitle: t("headline.emptySubtitle", { defaultValue: "" }),
     };
   }, [metrics, t, locale]);
 
@@ -656,8 +723,11 @@ export default function SalesReportPage() {
               onChange={(e) => setFilters((prev) => ({ ...prev, currency: e.target.value }))}
             >
               <option value="">{t("filters.allCurrencies")}</option>
-              <option value="ARS">ARS</option>
-              <option value="USD">USD</option>
+              {metrics.currencyOptions.map((currency) => (
+                <option key={currency} value={currency}>
+                  {currency}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -712,17 +782,21 @@ export default function SalesReportPage() {
           <small>{t("kpis.salesSubtitle")}</small>
         </div>
 
-        <div className="df-sales-report-kpi-card">
-          <span>{t("kpis.totalARS")}</span>
-          <strong>{formatMoney(metrics.totalARS, "ARS")}</strong>
-          <small>{t("kpis.totalARSSubtitle")}</small>
-        </div>
-
-        <div className="df-sales-report-kpi-card">
-          <span>{t("kpis.totalUSD")}</span>
-          <strong>{formatMoney(metrics.totalUSD, "USD")}</strong>
-          <small>{t("kpis.totalUSDSubtitle")}</small>
-        </div>
+        {Object.entries(metrics.totalsByCurrency).length === 0 ? (
+          <div className="df-sales-report-kpi-card">
+            <span>{t("kpis.total")}</span>
+            <strong>—</strong>
+            <small>{t("kpis.totalSubtitle", { defaultValue: "" })}</small>
+          </div>
+        ) : (
+          Object.entries(metrics.totalsByCurrency).map(([currency, amount]) => (
+            <div className="df-sales-report-kpi-card" key={currency}>
+              <span>{t("kpis.totalByCurrency", { currency, defaultValue: `Total ${currency}` })}</span>
+              <strong>{formatMoney(Number(amount || 0), currency)}</strong>
+              <small>{currency}</small>
+            </div>
+          ))
+        )}
 
         <div className="df-sales-report-kpi-card">
           <span>{t("kpis.mixed")}</span>
@@ -738,8 +812,7 @@ export default function SalesReportPage() {
           </div>
 
           <div className="df-sales-report-total-chip">
-            {t("summary.totals")}: {formatMoney(metrics.totalUSD, "USD")} +{" "}
-            {formatMoney(metrics.totalARS, "ARS")}
+            {t("summary.totals")}: {totalsLabel(metrics.totalsByCurrency)}
           </div>
         </div>
       </section>
@@ -767,7 +840,7 @@ export default function SalesReportPage() {
 
               <tbody>
                 {items.map((row) => {
-                  const isMixed = row.items_total_ars > 0 && row.items_total_usd > 0;
+                  const isMixed = Object.keys(rowItemTotals(row)).length > 1;
 
                   return (
                     <Fragment key={row.id}>
@@ -786,14 +859,12 @@ export default function SalesReportPage() {
                         </td>
                         <td className="df-pro-table__td">
                           <div className="df-sales-report-meta">
-                            {row.paid_total_usd > 0 && (
-                              <span>{formatMoney(row.paid_total_usd, "USD")}</span>
-                            )}
-                            {row.paid_total_ars > 0 && (
-                              <span>{formatMoney(row.paid_total_ars, "ARS")}</span>
-                            )}
-                            {row.paid_total_usd === 0 && row.paid_total_ars === 0 && (
+                            {Object.entries(rowPaymentTotals(row)).length === 0 ? (
                               <span>—</span>
+                            ) : (
+                              Object.entries(rowPaymentTotals(row)).map(([currency, amount]) => (
+                                <span key={currency}>{formatMoney(Number(amount || 0), currency)}</span>
+                              ))
                             )}
                           </div>
                         </td>
@@ -870,14 +941,19 @@ export default function SalesReportPage() {
                 <section>
                   <h4>{t("sections.summary")}</h4>
                   <div className="df-summary">
-                    <div>
-                      <span>ARS</span>
-                      <strong>{formatMoney(selectedSale.items_total_ars, "ARS")}</strong>
-                    </div>
-                    <div>
-                      <span>USD</span>
-                      <strong>{formatMoney(selectedSale.items_total_usd, "USD")}</strong>
-                    </div>
+                    {Object.entries(rowItemTotals(selectedSale)).length === 0 ? (
+                      <div>
+                        <span>—</span>
+                        <strong>—</strong>
+                      </div>
+                    ) : (
+                      Object.entries(rowItemTotals(selectedSale)).map(([currency, amount]) => (
+                        <div key={currency}>
+                          <span>{currency}</span>
+                          <strong>{formatMoney(Number(amount || 0), currency)}</strong>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </section>
               </div>

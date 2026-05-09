@@ -22,7 +22,9 @@ type Dress = {
   capsule_name?: string | null;
   purchase_price?: number | string | null;
   rental_price?: number | string | null;
+  rental_currency?: string | null;
   sale_price?: number | string | null;
+  sale_currency?: string | null;
 };
 
 type Customer = {
@@ -71,14 +73,21 @@ function TrashIcon() {
   );
 }
 
-function money(value?: number | string | null) {
+function money(value?: number | string | null, currency?: string | null) {
   const n = Number(value ?? 0);
   if (Number.isNaN(n)) return "—";
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(n);
+
+  const currencyCode = currency || "USD";
+
+  try {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: currencyCode,
+      minimumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${currencyCode} ${n.toFixed(2)}`;
+  }
 }
 
 function todayIso() {
@@ -222,47 +231,50 @@ export default function DressesPage() {
       else setError(t("dresses:delete.error"));
     }
   };
- 
-  const updateDressStatus = async (
-  row: Dress,
-  status: "AVAILABLE" | "CLEANING" | "MAINTENANCE"
-) => {
-  try {
-    setError("");
-    await api.put(`/dresses/${row.id}`, {
-  code: row.code,
-  name: row.name,
-  description: row.description ?? "", // 👈 NO modificar más
-  size: row.size ?? "",
-  color: row.color ?? "",
-  status,
-  capsule_id: row.capsule_id ?? null,
-  sale_price: row.sale_price ?? 0,
-  rental_price: row.rental_price ?? 0,
-});
-    
-    await loadDresses();
-  } catch (err: any) {
-    console.error("updateDressStatus error =>", err?.response?.data || err);
 
-    const detail = err?.response?.data?.detail;
-    if (Array.isArray(detail)) {
-      setError(detail.map((item: any) => item.msg).join(" | "));
-    } else if (typeof detail === "string") {
-      setError(detail);
-    } else if (detail?.message) {
-      setError(detail.message);
-    } else {
-      if (status === "AVAILABLE") {
-        setError(t("dresses:errors.available"));
-      } else if (status === "CLEANING") {
-        setError(t("dresses:errors.cleaning"));
+  const updateDressStatus = async (
+    row: Dress,
+    status: "AVAILABLE" | "CLEANING" | "MAINTENANCE"
+  ) => {
+    try {
+      setError("");
+
+      await api.put(`/dresses/${row.id}`, {
+        code: row.code,
+        name: row.name,
+        description: row.description ?? "",
+        size: row.size ?? "",
+        color: row.color ?? "",
+        status,
+        capsule_id: row.capsule_id ?? null,
+        sale_price: row.sale_price ?? 0,
+        sale_currency: row.sale_currency || "USD",
+        rental_price: row.rental_price ?? 0,
+        rental_currency: row.rental_currency || "USD",
+      });
+
+      await loadDresses();
+    } catch (err: any) {
+      console.error("updateDressStatus error =>", err?.response?.data || err);
+
+      const detail = err?.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        setError(detail.map((item: any) => item.msg).join(" | "));
+      } else if (typeof detail === "string") {
+        setError(detail);
+      } else if (detail?.message) {
+        setError(detail.message);
       } else {
-        setError(t("dresses:errors.maintenance"));
+        if (status === "AVAILABLE") {
+          setError(t("dresses:errors.available"));
+        } else if (status === "CLEANING") {
+          setError(t("dresses:errors.cleaning"));
+        } else {
+          setError(t("dresses:errors.maintenance"));
+        }
       }
     }
-  }
-};  
+  };
 
   const handleSendToCleaning = async (row: Dress) => {
     await updateDressStatus(row, "CLEANING");
@@ -271,7 +283,7 @@ export default function DressesPage() {
   const handleSendToMaintenance = async (row: Dress) => {
     await updateDressStatus(row, "MAINTENANCE");
   };
-  
+
   const handleBackToAvailable = async (row: Dress) => {
     await updateDressStatus(row, "AVAILABLE");
   };
@@ -503,6 +515,16 @@ export default function DressesPage() {
         render: (row) => row.color || "-",
       },
       {
+        key: "sale_price",
+        label: t("dresses:fields.purchasePrice"),
+        render: (row) => money(row.sale_price, row.sale_currency),
+      },
+      {
+        key: "rental_price",
+        label: t("dresses:fields.rentalPrice"),
+        render: (row) => money(row.rental_price, row.rental_currency),
+      },
+      {
         key: "status",
         label: t("dresses:fields.status"),
         render: (row) => (
@@ -512,102 +534,102 @@ export default function DressesPage() {
         ),
       },
       {
-  key: "actions",
-  label: "",
-  render: (row) => {
-    const normalizedStatus = String(row.status || "").toUpperCase();
-    const isAvailable = normalizedStatus === "AVAILABLE";
-    const isInCare = ["CLEANING", "MAINTENANCE"].includes(normalizedStatus);
+        key: "actions",
+        label: "",
+        render: (row) => {
+          const normalizedStatus = String(row.status || "").toUpperCase();
+          const isAvailable = normalizedStatus === "AVAILABLE";
+          const isInCare = ["CLEANING", "MAINTENANCE"].includes(normalizedStatus);
 
-    return (
-      <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-        {isAvailable && (
-          <>
-            <button
-              type="button"
-              title={t("dresses:actions.loan")}
-              aria-label={t("dresses:actions.loan")}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleLoan(row);
-              }}
-              className="df-action-btn df-action-btn--loan"
-            >
-              📦
-            </button>
+          return (
+            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+              {isAvailable && (
+                <>
+                  <button
+                    type="button"
+                    title={t("dresses:actions.loan")}
+                    aria-label={t("dresses:actions.loan")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLoan(row);
+                    }}
+                    className="df-action-btn df-action-btn--loan"
+                  >
+                    📦
+                  </button>
 
-            <button
-              type="button"
-              title={t("dresses:actions.rent")}
-              aria-label={t("dresses:actions.rent")}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRent(row);
-              }}
-              className="df-action-btn df-action-btn--rent"
-            >
-              👗
-            </button>
+                  <button
+                    type="button"
+                    title={t("dresses:actions.rent")}
+                    aria-label={t("dresses:actions.rent")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRent(row);
+                    }}
+                    className="df-action-btn df-action-btn--rent"
+                  >
+                    👗
+                  </button>
 
-            <button
-              type="button"
-              title={t("dresses:actions.cleaning")}
-              aria-label={t("dresses:actions.cleaning")}
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleSendToCleaning(row);
-              }}
-              className="df-action-btn df-action-btn--cleaning"
-            >
-              🧼
-            </button>
+                  <button
+                    type="button"
+                    title={t("dresses:actions.cleaning")}
+                    aria-label={t("dresses:actions.cleaning")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleSendToCleaning(row);
+                    }}
+                    className="df-action-btn df-action-btn--cleaning"
+                  >
+                    🧼
+                  </button>
 
-            <button
-              type="button"
-              title={t("dresses:actions.maintenance")}
-              aria-label={t("dresses:actions.maintenance")}
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleSendToMaintenance(row);
-              }}
-              className="df-action-btn df-action-btn--maintenance"
-            >
-              🔧
-            </button>
-          </>
-        )}
+                  <button
+                    type="button"
+                    title={t("dresses:actions.maintenance")}
+                    aria-label={t("dresses:actions.maintenance")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleSendToMaintenance(row);
+                    }}
+                    className="df-action-btn df-action-btn--maintenance"
+                  >
+                    ✂️
+                  </button>
+                </>
+              )}
 
-        {isInCare && (
-          <button
-            type="button"
-            title={t("dresses:actions.available")}
-            aria-label={t("dresses:actions.available")}
-            onClick={(e) => {
-              e.stopPropagation();
-              void handleBackToAvailable(row);
-            }}
-            className="df-action-btn df-action-btn--available"
-          >
-            ↺
-          </button>
-        )}
+              {isInCare && (
+                <button
+                  type="button"
+                  title={t("dresses:actions.available")}
+                  aria-label={t("dresses:actions.available")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleBackToAvailable(row);
+                  }}
+                  className="df-action-btn df-action-btn--available"
+                >
+                  ↺
+                </button>
+              )}
 
-        <button
-          type="button"
-          title={t("common:actions.delete")}
-          aria-label={t("common:actions.delete")}
-          onClick={(e) => {
-            e.stopPropagation();
-            void handleDeleteDress(row.id);
-          }}
-          className="df-action-btn df-action-btn--delete"
-        >
-          <TrashIcon />
-        </button>
-      </div>
-    );
-  },
-}
+              <button
+                type="button"
+                title={t("common:actions.delete")}
+                aria-label={t("common:actions.delete")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleDeleteDress(row.id);
+                }}
+                className="df-action-btn df-action-btn--delete"
+              >
+                <TrashIcon />
+              </button>
+            </div>
+          );
+        },
+      },
     ];
   }, [t]);
 
@@ -786,9 +808,7 @@ export default function DressesPage() {
         <div>
           <p className="df-pro-page__eyebrow">{t("dresses:sections.inventory")}</p>
           <h1 className="df-pro-page__title">{t("dresses:title")}</h1>
-          <p className="df-pro-page__subtitle">
-            {t("dresses:hero.catalogSubtitle")}
-          </p>
+          <p className="df-pro-page__subtitle">{t("dresses:hero.catalogSubtitle")}</p>
         </div>
 
         <PrimaryButton
@@ -921,7 +941,7 @@ export default function DressesPage() {
         width="min(1100px, 100%)"
       >
         <DressForm
-          key={editingDress?.id || "new"}
+          key={`${editingDress?.id || "new"}-${showModal ? "open" : "closed"}-${selectedDress?.tenant_id || "tenant"}`}
           mode={editingDress ? "edit" : "create"}
           initialData={
             editingDress
@@ -936,15 +956,15 @@ export default function DressesPage() {
                   main_image_url: editingDress.main_image_url ?? null,
                   capsule_id: editingDress.capsule_id ?? "",
                   sale_price:
-                    editingDress.sale_price !== undefined &&
-                    editingDress.sale_price !== null
+                    editingDress.sale_price !== undefined && editingDress.sale_price !== null
                       ? String(editingDress.sale_price)
                       : "",
+                  sale_currency: editingDress.sale_currency || "USD",
                   rental_price:
-                    editingDress.rental_price !== undefined &&
-                    editingDress.rental_price !== null
+                    editingDress.rental_price !== undefined && editingDress.rental_price !== null
                       ? String(editingDress.rental_price)
                       : "",
+                  rental_currency: editingDress.rental_currency || "USD",
                 }
               : undefined
           }
@@ -965,12 +985,7 @@ export default function DressesPage() {
         />
       </Modal>
 
-      <Modal
-        open={showOperationModal}
-        onClose={resetOperationModal}
-        title={operationTitle}
-        width="min(760px, 100%)"
-      >
+      <Modal open={showOperationModal} onClose={resetOperationModal} title={operationTitle} width="min(760px, 100%)">
         <form onSubmit={submitLoanLikeOperation} style={{ display: "grid", gap: 14 }}>
           <div className="df-operation-box">
             <span className="df-operation-box__eyebrow">
@@ -980,7 +995,10 @@ export default function DressesPage() {
             <div className="df-operation-box__meta">
               {operationSubtitle}
               {operationMode === "rental" && selectedDress?.rental_price
-                ? ` · ${t("dresses:operations.suggestedValue")}: ${money(selectedDress.rental_price)}`
+                ? ` · ${t("dresses:operations.suggestedValue")}: ${money(
+                    selectedDress.rental_price,
+                    selectedDress.rental_currency
+                  )}`
                 : ""}
             </div>
           </div>
@@ -1032,9 +1050,7 @@ export default function DressesPage() {
               <input
                 type="date"
                 value={operationForm.start_date}
-                onChange={(e) =>
-                  setOperationForm((prev) => ({ ...prev, start_date: e.target.value }))
-                }
+                onChange={(e) => setOperationForm((prev) => ({ ...prev, start_date: e.target.value }))}
                 required
               />
             </div>
@@ -1076,9 +1092,7 @@ export default function DressesPage() {
               <label>{t("dresses:operations.notes")}</label>
               <textarea
                 value={operationForm.notes}
-                onChange={(e) =>
-                  setOperationForm((prev) => ({ ...prev, notes: e.target.value }))
-                }
+                onChange={(e) => setOperationForm((prev) => ({ ...prev, notes: e.target.value }))}
                 placeholder={
                   operationMode === "rental"
                     ? t("dresses:operations.rentalNotesPlaceholder")
@@ -1178,11 +1192,7 @@ export default function DressesPage() {
                       {t("common:actions.cancel")}
                     </button>
 
-                    <PrimaryButton
-                      type="button"
-                      onClick={submitCreateCustomer}
-                      disabled={creatingCustomer}
-                    >
+                    <PrimaryButton type="button" onClick={submitCreateCustomer} disabled={creatingCustomer}>
                       {creatingCustomer ? t("dresses:customer.actions.creating") : t("dresses:customer.actions.create")}
                     </PrimaryButton>
                   </div>

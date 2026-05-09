@@ -12,6 +12,8 @@ from app.api.v1.endpoints import (
     fabric_rolls,
     fabric_movements,
     production_orders,
+    production_process_types,
+    production_order_assignments,
     productions,
     trims,
     reports,
@@ -28,6 +30,10 @@ from app.api.v1.endpoints import (
     ui_config,
     my_ui_config,
     tenant_branding,
+    tenant_currencies,
+    tenant_currency_rules,
+    superadmin_tenant_limits,
+    superadmin_tenant_currency_rules,
 )
 
 api_router = APIRouter()
@@ -43,6 +49,8 @@ api_router.include_router(fabric_rolls.router)
 api_router.include_router(fabric_movements.router)
 api_router.include_router(productions.router)
 api_router.include_router(production_orders.router)
+api_router.include_router(production_process_types.router)
+api_router.include_router(production_order_assignments.router)
 api_router.include_router(trims.router)
 api_router.include_router(reports.router)
 api_router.include_router(superadmin_tenants.router)
@@ -58,3 +66,7 @@ api_router.include_router(accessory_movements.router)
 api_router.include_router(accessory_sales.router)
 api_router.include_router(sales_unified.router)
 api_router.include_router(tenant_branding.router)
+api_router.include_router(tenant_currencies.router)
+api_router.include_router(tenant_currency_rules.router)
+api_router.include_router(superadmin_tenant_limits.router)
+api_router.include_router(superadmin_tenant_currency_rules.router)

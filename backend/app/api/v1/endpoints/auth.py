@@ -163,6 +163,21 @@ def me(
         "tenant_name": tenant.name if tenant else None,
         "tenant_logo_url": tenant.logo_url if tenant else None,
         "tenant_primary_color": tenant.primary_color if tenant else None,
+        
+        "tenant_plan": (
+            tenant.plan_code
+            if tenant and tenant.plan_code
+            else "PRO"
+        ),
+
+        "tenant_plan_label": {
+            "BASIC": "DressFlow Basic",
+            "PRO": "DressFlow Pro",
+            "PREMIUM": "DressFlow Premium",
+        }.get(
+            tenant.plan_code if tenant else "PRO",
+            "DressFlow Pro",
+        ),
 
         "tenant_default_language": tenant_default_language,
         "preferred_language": preferred_language,

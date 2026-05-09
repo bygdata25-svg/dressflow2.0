@@ -130,7 +130,9 @@ def create_accessory(
     color: str | None = Form(default=None),
     size: str | None = Form(default=None),
     unit_cost: Decimal = Form(default=Decimal("0.00")),
+    unit_cost_currency: str = Form(default="ARS"),
     sale_price: Decimal = Form(default=Decimal("0.00")),
+    sale_price_currency: str = Form(default="ARS"),
     stock: int = Form(default=0),
     min_stock: int = Form(default=0),
     status_value: str = Form(default="ACTIVE", alias="status"),
@@ -184,7 +186,9 @@ def create_accessory(
         color=color.strip() if color else None,
         size=size.strip() if size else None,
         unit_cost=unit_cost,
+        unit_cost_currency=unit_cost_currency,
         sale_price=sale_price,
+        sale_price_currency=sale_price_currency,
         stock=stock,
         min_stock=min_stock,
         status=status_value,
@@ -210,7 +214,9 @@ def update_accessory(
     color: str | None = Form(default=None),
     size: str | None = Form(default=None),
     unit_cost: Decimal | None = Form(default=None),
+    unit_cost_currency: str | None = Form(default=None),
     sale_price: Decimal | None = Form(default=None),
+    sale_price_currency: str | None = Form(default=None),
     stock: int | None = Form(default=None),
     min_stock: int | None = Form(default=None),
     status_value: str | None = Form(default=None, alias="status"),
@@ -259,6 +265,12 @@ def update_accessory(
 
     if sale_price is not None:
         accessory.sale_price = sale_price
+
+    if unit_cost_currency is not None:
+        accessory.unit_cost_currency = unit_cost_currency
+
+    if sale_price_currency is not None:
+        accessory.sale_price_currency = sale_price_currency
 
     if stock is not None:
         accessory.stock = stock

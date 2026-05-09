@@ -21,7 +21,9 @@ class DressCreate(BaseModel):
     size: str | None = Field(default=None, max_length=50)
     color: str | None = Field(default=None, max_length=50)
     sale_price: Decimal | None = None
+    sale_currency: str | None = None
     rental_price: Decimal | None = None
+    rental_currency: str | None = None
     capsule_id: UUID | None = None
     photo_url: str | None = None
 
@@ -34,7 +36,9 @@ class DressUpdate(BaseModel):
     color: str | None = Field(default=None, max_length=50)
     status: str = Field(min_length=1, max_length=30)
     sale_price: Decimal | None = None
+    sale_currency: str | None = None
     rental_price: Decimal | None = None
+    rental_currency: str | None = None
     capsule_id: UUID | None = None
     photo_url: str | None = None
 
@@ -51,7 +55,9 @@ class DressResponse(BaseModel):
     color: str | None = None
     status: str
     sale_price: Decimal | None = None
+    sale_currency: str | None = None
     rental_price: Decimal | None = None
+    rental_currency: str | None = None
     main_image_url: str | None = None
     capsule_id: UUID | None = None
     capsule_name: str | None = None

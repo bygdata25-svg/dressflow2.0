@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 VALID_ITEM_TYPES = {"dress", "accessory"}
-VALID_CURRENCIES = {"ARS", "USD"}
+VALID_CURRENCIES = {"ARS", "USD", "EUR"}
 VALID_PAYMENT_METHODS = {
     "cash",
     "transfer",

@@ -919,131 +919,161 @@ def financial_summary(
 ):
     tenant_id = membership.tenant_id
 
-    summary = db.execute(
+    sales_count = db.execute(
         text("""
-            SELECT
-                COUNT(DISTINCT s.id) AS sales_count,
-
-                COALESCE(SUM(
-                    CASE
-                        WHEN si.currency = 'ARS' THEN si.line_total
-                        ELSE 0
-                    END
-                ), 0) AS total_ars,
-
-                COALESCE(SUM(
-                    CASE
-                        WHEN si.currency = 'USD' THEN si.line_total
-                        ELSE 0
-                    END
-                ), 0) AS total_usd,
-
-                COALESCE(AVG(
-                    CASE
-                        WHEN sale_totals.items_total_ars > 0 THEN sale_totals.items_total_ars
-                        ELSE NULL
-                    END
-                ), 0) AS avg_ticket_ars,
-
-                COALESCE(AVG(
-                    CASE
-                        WHEN sale_totals.items_total_usd > 0 THEN sale_totals.items_total_usd
-                        ELSE NULL
-                    END
-                ), 0) AS avg_ticket_usd,
-
-                COALESCE(SUM(
-                    CASE
-                        WHEN sale_totals.items_total_ars > 0 THEN 1
-                        ELSE 0
-                    END
-                ), 0) AS sales_count_ars,
-
-                COALESCE(SUM(
-                    CASE
-                        WHEN sale_totals.items_total_usd > 0 THEN 1
-                        ELSE 0
-                    END
-                ), 0) AS sales_count_usd
-
+            SELECT COUNT(*)
             FROM sales s
-            LEFT JOIN sale_items si
-                ON si.sale_id = s.id
-            LEFT JOIN (
-                SELECT
-                    sale_id,
-                    SUM(CASE WHEN currency = 'ARS' THEN line_total ELSE 0 END) AS items_total_ars,
-                    SUM(CASE WHEN currency = 'USD' THEN line_total ELSE 0 END) AS items_total_usd
-                FROM sale_items
-                GROUP BY sale_id
-            ) sale_totals
-                ON sale_totals.sale_id = s.id
             WHERE s.tenant_id = :tenant_id
               AND COALESCE(s.status, 'COMPLETED') != 'CANCELLED'
         """),
         {"tenant_id": str(tenant_id)},
-    ).mappings().first()
+    ).scalar_one()
+
+    currency_rows = db.execute(
+        text("""
+            SELECT
+                UPPER(COALESCE(si.currency, 'ARS')) AS currency,
+                COALESCE(SUM(COALESCE(si.line_total, 0)), 0) AS total_amount,
+                COUNT(DISTINCT s.id) AS sales_count
+            FROM sales s
+            JOIN sale_items si
+                ON si.sale_id = s.id
+               AND si.tenant_id = s.tenant_id
+            WHERE s.tenant_id = :tenant_id
+              AND COALESCE(s.status, 'COMPLETED') != 'CANCELLED'
+            GROUP BY UPPER(COALESCE(si.currency, 'ARS'))
+            ORDER BY UPPER(COALESCE(si.currency, 'ARS'))
+        """),
+        {"tenant_id": str(tenant_id)},
+    ).mappings().all()
+
+    totals_by_currency: dict[str, float] = {}
+    sales_count_by_currency: dict[str, int] = {}
+    avg_ticket_by_currency: dict[str, float] = {}
+
+    for row in currency_rows:
+        currency = str(row["currency"] or "ARS").upper()
+        total_amount = _to_float(row["total_amount"])
+        count = int(row["sales_count"] or 0)
+
+        totals_by_currency[currency] = total_amount
+        sales_count_by_currency[currency] = count
+        avg_ticket_by_currency[currency] = total_amount / count if count > 0 else 0.0
 
     monthly_rows = db.execute(
         text("""
             SELECT
                 DATE_TRUNC('month', s.sale_date) AS month,
-                COALESCE(SUM(CASE WHEN si.currency = 'ARS' THEN si.line_total ELSE 0 END), 0) AS total_ars,
-                COALESCE(SUM(CASE WHEN si.currency = 'USD' THEN si.line_total ELSE 0 END), 0) AS total_usd,
+                UPPER(COALESCE(si.currency, 'ARS')) AS currency,
+                COALESCE(SUM(COALESCE(si.line_total, 0)), 0) AS total_amount,
                 COUNT(DISTINCT s.id) AS sales_count
             FROM sales s
-            LEFT JOIN sale_items si
+            JOIN sale_items si
                 ON si.sale_id = s.id
+               AND si.tenant_id = s.tenant_id
             WHERE s.tenant_id = :tenant_id
               AND s.sale_date IS NOT NULL
               AND COALESCE(s.status, 'COMPLETED') != 'CANCELLED'
-            GROUP BY DATE_TRUNC('month', s.sale_date)
-            ORDER BY DATE_TRUNC('month', s.sale_date)
+            GROUP BY DATE_TRUNC('month', s.sale_date), UPPER(COALESCE(si.currency, 'ARS'))
+            ORDER BY DATE_TRUNC('month', s.sale_date), UPPER(COALESCE(si.currency, 'ARS'))
         """),
         {"tenant_id": str(tenant_id)},
     ).mappings().all()
+
+    monthly_map: dict[str, dict] = {}
+
+    for row in monthly_rows:
+        month_key = row["month"].strftime("%Y-%m") if row["month"] else ""
+        currency = str(row["currency"] or "ARS").upper()
+        total_amount = _to_float(row["total_amount"])
+        row_sales_count = int(row["sales_count"] or 0)
+
+        if month_key not in monthly_map:
+            monthly_map[month_key] = {
+                "month": month_key,
+                "sales_count": 0,
+                "totals_by_currency": {},
+                # legacy fields kept for the current dashboard frontend
+                "total_ars": 0.0,
+                "total_usd": 0.0,
+            }
+
+        monthly_map[month_key]["sales_count"] += row_sales_count
+        monthly_map[month_key]["totals_by_currency"][currency] = total_amount
+
+        if currency == "ARS":
+            monthly_map[month_key]["total_ars"] = total_amount
+        elif currency == "USD":
+            monthly_map[month_key]["total_usd"] = total_amount
 
     payment_method_rows = db.execute(
         text("""
             SELECT
-                COALESCE(payment_method, 'other') AS payment_method,
+                COALESCE(sp.payment_method, 'other') AS payment_method,
+                UPPER(COALESCE(sp.currency, 'ARS')) AS currency,
                 COUNT(*) AS operations_count,
-                COALESCE(SUM(CASE WHEN currency = 'ARS' THEN amount ELSE 0 END), 0) AS total_ars,
-                COALESCE(SUM(CASE WHEN currency = 'USD' THEN amount ELSE 0 END), 0) AS total_usd
-            FROM sale_payments
-            WHERE tenant_id = :tenant_id
-            GROUP BY COALESCE(payment_method, 'other')
-            ORDER BY operations_count DESC, payment_method ASC
+                COALESCE(SUM(COALESCE(sp.amount, 0)), 0) AS total_amount
+            FROM sale_payments sp
+            JOIN sales s
+                ON s.id = sp.sale_id
+               AND s.tenant_id = sp.tenant_id
+            WHERE sp.tenant_id = :tenant_id
+              AND COALESCE(s.status, 'COMPLETED') != 'CANCELLED'
+            GROUP BY COALESCE(sp.payment_method, 'other'), UPPER(COALESCE(sp.currency, 'ARS'))
+            ORDER BY operations_count DESC, payment_method ASC, currency ASC
         """),
         {"tenant_id": str(tenant_id)},
     ).mappings().all()
 
+    payment_methods_map: dict[str, dict] = {}
+
+    for row in payment_method_rows:
+        method = row["payment_method"] or "other"
+        currency = str(row["currency"] or "ARS").upper()
+        operations_count = int(row["operations_count"] or 0)
+        total_amount = _to_float(row["total_amount"])
+
+        if method not in payment_methods_map:
+            payment_methods_map[method] = {
+                "payment_method": method,
+                "operations_count": 0,
+                "totals_by_currency": {},
+                # legacy fields kept for the current dashboard frontend
+                "total_ars": 0.0,
+                "total_usd": 0.0,
+            }
+
+        payment_methods_map[method]["operations_count"] += operations_count
+        payment_methods_map[method]["totals_by_currency"][currency] = total_amount
+
+        if currency == "ARS":
+            payment_methods_map[method]["total_ars"] = total_amount
+        elif currency == "USD":
+            payment_methods_map[method]["total_usd"] = total_amount
+
+    total_ars = totals_by_currency.get("ARS", 0.0)
+    total_usd = totals_by_currency.get("USD", 0.0)
+    sales_count_ars = sales_count_by_currency.get("ARS", 0)
+    sales_count_usd = sales_count_by_currency.get("USD", 0)
+
     return {
-        "sales_count": int(summary["sales_count"] or 0),
-        "total_ars": float(summary["total_ars"] or 0),
-        "total_usd": float(summary["total_usd"] or 0),
-        "avg_ticket_ars": float(summary["avg_ticket_ars"] or 0),
-        "avg_ticket_usd": float(summary["avg_ticket_usd"] or 0),
-        "sales_count_ars": int(summary["sales_count_ars"] or 0),
-        "sales_count_usd": int(summary["sales_count_usd"] or 0),
-        "monthly": [
-            {
-                "month": row["month"].strftime("%Y-%m") if row["month"] else "",
-                "total_ars": float(row["total_ars"] or 0),
-                "total_usd": float(row["total_usd"] or 0),
-                "sales_count": int(row["sales_count"] or 0),
-            }
-            for row in monthly_rows
-        ],
-        "payment_methods": [
-            {
-                "payment_method": row["payment_method"],
-                "operations_count": int(row["operations_count"] or 0),
-                "total_ars": float(row["total_ars"] or 0),
-                "total_usd": float(row["total_usd"] or 0),
-            }
-            for row in payment_method_rows
-        ],
+        "sales_count": int(sales_count or 0),
+
+        # Dynamic multi-currency fields
+        "totals_by_currency": totals_by_currency,
+        "avg_ticket_by_currency": avg_ticket_by_currency,
+        "sales_count_by_currency": sales_count_by_currency,
+
+        # Legacy fields kept to avoid breaking current FinancialDashboardPage.tsx
+        "total_ars": float(total_ars),
+        "total_usd": float(total_usd),
+        "avg_ticket_ars": float(avg_ticket_by_currency.get("ARS", 0.0)),
+        "avg_ticket_usd": float(avg_ticket_by_currency.get("USD", 0.0)),
+        "sales_count_ars": int(sales_count_ars),
+        "sales_count_usd": int(sales_count_usd),
+
+        "monthly": list(monthly_map.values()),
+        "payment_methods": list(payment_methods_map.values()),
     }
 
 @router.get("/operational-summary")

@@ -15,6 +15,7 @@ from app.models.user import User, UserTenant
 from app.schemas.tenant import TenantBrandingResponse, TenantBrandingUpdateRequest
 from app.schemas.tenant import TenantBrandingRead, TenantBrandingUpdate
 from app.services.tenant_branding import build_tenant_branding
+from app.services.tenant_limits import get_tenant_active_users_count
 from app.models.tenant_feature import TenantFeature
 from app.api.deps import require_superuser
 
@@ -51,6 +52,9 @@ def get_my_tenant(
             detail="Tenant not found",
         )
 
+    active_users = get_tenant_active_users_count(db, tenant.id)
+    available_users = max(tenant.max_users - active_users, 0)
+
     return TenantBrandingResponse(
         id=str(tenant.id),
         name=tenant.name,
@@ -61,6 +65,17 @@ def get_my_tenant(
         timezone=tenant.timezone,
         logo_url=tenant.logo_url,
         primary_color=tenant.primary_color,
+
+        tenant_plan=tenant.plan_code or "PRO",
+
+        tenant_plan_label={
+            "BASIC": "DressFlow Basic",
+            "PRO": "DressFlow Pro",
+            "PREMIUM": "DressFlow Premium",
+        }.get(
+            tenant.plan_code or "PRO",
+            "DressFlow Pro",
+        ),
     )
 
 
@@ -102,6 +117,9 @@ def update_my_tenant(
     db.commit()
     db.refresh(tenant)
 
+    active_users = get_tenant_active_users_count(db, tenant.id)
+    available_users = max(tenant.max_users - active_users, 0)
+
     return TenantBrandingResponse(
         id=str(tenant.id),
         name=tenant.name,
@@ -112,6 +130,9 @@ def update_my_tenant(
         timezone=tenant.timezone,
         logo_url=tenant.logo_url,
         primary_color=tenant.primary_color,
+        max_users=tenant.max_users,
+        active_users=active_users,
+        available_users=available_users,
     )
 
 

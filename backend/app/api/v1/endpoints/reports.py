@@ -1617,7 +1617,15 @@ def _build_sales_unified_query(
         params["status"] = status.strip().upper()
 
     if currency:
-        sql += " AND s.currency = :currency"
+        sql += """
+          AND EXISTS (
+            SELECT 1
+            FROM sale_items si_currency
+            WHERE si_currency.sale_id = s.id
+              AND si_currency.tenant_id = s.tenant_id
+              AND UPPER(COALESCE(si_currency.currency, 'ARS')) = :currency
+          )
+        """
         params["currency"] = currency.strip().upper()
 
     if date_from:
@@ -1632,7 +1640,6 @@ def _build_sales_unified_query(
         sql += """
           AND (
             LOWER(COALESCE(s.sale_number, '')) LIKE :search
-            OR LOWER(COALESCE(c.full_name, '')) LIKE :search
             OR LOWER(COALESCE(c.first_name, '')) LIKE :search
             OR LOWER(COALESCE(c.last_name, '')) LIKE :search
             OR LOWER(COALESCE(s.notes, '')) LIKE :search
@@ -1913,129 +1920,58 @@ def sales_unified_report(
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
 ):
-    sql = """
-        SELECT
-            s.id,
-            s.sale_number,
-            s.sale_date,
-            s.customer_id,
-            s.currency,
-            s.status,
-            s.subtotal_amount,
-            s.discount_amount,
-            s.total_amount,
-            s.notes,
-            TRIM(COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')) AS customer_full_name
-        FROM sales s
-        LEFT JOIN customers c
-            ON c.id = s.customer_id
-        WHERE s.tenant_id = :tenant_id
-    """
+    sql, extra_params = _build_sales_unified_query(
+        search=q,
+        status=status,
+        currency=currency,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
-    params: dict[str, object] = {"tenant_id": membership.tenant_id}
+    sales_rows = db.execute(
+        sql,
+        {"tenant_id": membership.tenant_id, **extra_params},
+    ).mappings().all()
 
-    if q:
-        sql += """
-          AND (
-            LOWER(COALESCE(s.sale_number, '')) LIKE :q
-            OR LOWER(COALESCE(s.notes, '')) LIKE :q
-            OR LOWER(COALESCE(c.first_name, '')) LIKE :q
-            OR LOWER(COALESCE(c.last_name, '')) LIKE :q
-          )
-        """
-        params["q"] = f"%{q.strip().lower()}%"
-
-    if status:
-        sql += " AND s.status = :status"
-        params["status"] = status.strip().upper()
-
-    if currency:
-        sql += " AND s.currency = :currency"
-        params["currency"] = currency.strip().upper()
-
-    if date_from:
-        sql += " AND DATE(s.sale_date) >= :date_from"
-        params["date_from"] = date_from
-
-    if date_to:
-        sql += " AND DATE(s.sale_date) <= :date_to"
-        params["date_to"] = date_to
-
-    sql += """
-        ORDER BY s.sale_date DESC, s.created_at DESC
-    """
-
-    sales_rows = db.execute(text(sql), params).mappings().all()
-
-    items = []
-    total_ars = Decimal("0")
-    total_usd = Decimal("0")
+    items: list[dict] = []
+    currency_totals: dict[str, float] = {}
+    payment_totals: dict[str, float] = {}
     mixed_count = 0
 
     for row in sales_rows:
         sale_id = row["id"]
 
-        sale_items = db.execute(
-            text("""
-                SELECT
-                    si.id,
-                    si.item_type,
-                    si.description_snapshot,
-                    si.quantity,
-                    si.unit_price,
-                    COALESCE(si.currency, 'ARS') AS currency,
-                    si.line_total
-                FROM sale_items si
-                WHERE si.sale_id = :sale_id
-                  AND si.tenant_id = :tenant_id
-                ORDER BY si.id
-            """),
-            {"sale_id": sale_id, "tenant_id": membership.tenant_id},
-        ).mappings().all()
+        sale_items = _get_sales_unified_items(db, membership.tenant_id, sale_id)
+        sale_payments = _get_sales_unified_payments(db, membership.tenant_id, sale_id)
 
-        sale_payments = db.execute(
-            text("""
-                SELECT
-                    sp.id,
-                    sp.payment_method,
-                    sp.amount,
-                    COALESCE(sp.currency, 'ARS') AS currency,
-                    sp.reference,
-                    sp.notes
-                FROM sale_payments sp
-                WHERE sp.sale_id = :sale_id
-                  AND sp.tenant_id = :tenant_id
-                ORDER BY sp.id
-            """),
-            {"sale_id": sale_id, "tenant_id": membership.tenant_id},
-        ).mappings().all()
+        items_totals: dict[str, float] = {}
+        paid_totals: dict[str, float] = {}
 
-        items_total_ars = sum(
-            float(item["line_total"] or 0)
-            for item in sale_items
-            if str(item["currency"] or "ARS").upper() == "ARS"
-        )
-        items_total_usd = sum(
-            float(item["line_total"] or 0)
-            for item in sale_items
-            if str(item["currency"] or "ARS").upper() == "USD"
-        )
-        paid_total_ars = sum(
-            float(payment["amount"] or 0)
-            for payment in sale_payments
-            if str(payment["currency"] or "ARS").upper() == "ARS"
-        )
-        paid_total_usd = sum(
-            float(payment["amount"] or 0)
-            for payment in sale_payments
-            if str(payment["currency"] or "ARS").upper() == "USD"
-        )
+        for item in sale_items:
+            currency_value = str(item["currency"] or "ARS").upper()
+            line_total = float(item["line_total"] or 0)
+            items_totals[currency_value] = round(
+                items_totals.get(currency_value, 0) + line_total,
+                2,
+            )
+            currency_totals[currency_value] = round(
+                currency_totals.get(currency_value, 0) + line_total,
+                2,
+            )
 
-        if items_total_ars > 0:
-            total_ars += Decimal(str(items_total_ars))
-        if items_total_usd > 0:
-            total_usd += Decimal(str(items_total_usd))
-        if items_total_ars > 0 and items_total_usd > 0:
+        for payment in sale_payments:
+            currency_value = str(payment["currency"] or "ARS").upper()
+            amount = float(payment["amount"] or 0)
+            paid_totals[currency_value] = round(
+                paid_totals.get(currency_value, 0) + amount,
+                2,
+            )
+            payment_totals[currency_value] = round(
+                payment_totals.get(currency_value, 0) + amount,
+                2,
+            )
+
+        if len([value for value in items_totals.values() if NumberLike(value) > 0]) > 1:
             mixed_count += 1
 
         items.append(
@@ -2050,10 +1986,12 @@ def sales_unified_report(
                 "discount_amount": float(row["discount_amount"] or 0),
                 "total_amount": float(row["total_amount"] or 0),
                 "notes": row["notes"],
-                "items_total_ars": float(items_total_ars),
-                "items_total_usd": float(items_total_usd),
-                "paid_total_ars": float(paid_total_ars),
-                "paid_total_usd": float(paid_total_usd),
+                "items_total_ars": float(items_totals.get("ARS", 0)),
+                "items_total_usd": float(items_totals.get("USD", 0)),
+                "paid_total_ars": float(paid_totals.get("ARS", 0)),
+                "paid_total_usd": float(paid_totals.get("USD", 0)),
+                "items_totals": items_totals,
+                "paid_totals": paid_totals,
                 "items": [
                     {
                         "id": str(item["id"]),
@@ -2061,7 +1999,7 @@ def sales_unified_report(
                         "description_snapshot": item["description_snapshot"],
                         "quantity": int(item["quantity"] or 0),
                         "unit_price": float(item["unit_price"] or 0),
-                        "currency": item["currency"] or "ARS",
+                        "currency": str(item["currency"] or "ARS").upper(),
                         "line_total": float(item["line_total"] or 0),
                     }
                     for item in sale_items
@@ -2071,7 +2009,7 @@ def sales_unified_report(
                         "id": str(payment["id"]),
                         "payment_method": payment["payment_method"],
                         "amount": float(payment["amount"] or 0),
-                        "currency": payment["currency"] or "ARS",
+                        "currency": str(payment["currency"] or "ARS").upper(),
                         "reference": payment["reference"],
                         "notes": payment["notes"],
                     }
@@ -2083,10 +2021,31 @@ def sales_unified_report(
     return {
         "items": items,
         "total": len(items),
-        "total_ars": float(total_ars),
-        "total_usd": float(total_usd),
+        "total_ars": float(currency_totals.get("ARS", 0)),
+        "total_usd": float(currency_totals.get("USD", 0)),
         "mixed_count": mixed_count,
+        "currency_totals": currency_totals,
+        "payment_totals": payment_totals,
     }
+
+
+def _sales_currency_order(currencies: set[str]) -> list[str]:
+    priority = ["ARS", "USD", "EUR"]
+    ordered = [currency for currency in priority if currency in currencies]
+    ordered.extend(sorted(currency for currency in currencies if currency not in priority))
+    return ordered
+
+
+def _sales_money_label(currency: str, amount: Decimal | float | int) -> str:
+    return f"{currency} {float(amount or 0):,.2f}"
+
+
+def NumberLike(value) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
 
 @router.get("/sales-unified/export")
 def export_sales_unified_report(
@@ -2114,95 +2073,85 @@ def export_sales_unified_report(
 
     tr = _tx("sales_unified", lang)
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = tr["sheet"]
-
-    _apply_header_style(ws, tr["headers"])
-
-    total_items_ars = Decimal("0")
-    total_items_usd = Decimal("0")
-    total_paid_ars = Decimal("0")
-    total_paid_usd = Decimal("0")
+    prepared_rows: list[dict] = []
+    currencies: set[str] = set()
+    total_items_by_currency: dict[str, Decimal] = {}
+    total_paid_by_currency: dict[str, Decimal] = {}
 
     for row in rows:
         sale_id = row["id"]
+        item_rows = _get_sales_unified_items(db, membership.tenant_id, sale_id)
+        payment_rows = _get_sales_unified_payments(db, membership.tenant_id, sale_id)
 
-        item_rows = db.execute(
-            text("""
-                SELECT
-                    id,
-                    item_type,
-                    description_snapshot,
-                    quantity,
-                    unit_price,
-                    currency,
-                    line_total
-                FROM sale_items
-                WHERE sale_id = :sale_id
-                ORDER BY created_at ASC, id ASC
-            """),
-            {"sale_id": sale_id},
-        ).mappings().all()
-
-        payment_rows = db.execute(
-            text("""
-                SELECT
-                    id,
-                    payment_method,
-                    amount,
-                    currency,
-                    reference,
-                    notes
-                FROM sale_payments
-                WHERE sale_id = :sale_id
-                ORDER BY created_at ASC, id ASC
-            """),
-            {"sale_id": sale_id},
-        ).mappings().all()
-
-        items_total_ars = Decimal("0")
-        items_total_usd = Decimal("0")
-        paid_total_ars = Decimal("0")
-        paid_total_usd = Decimal("0")
+        items_totals: dict[str, Decimal] = {}
+        paid_totals: dict[str, Decimal] = {}
 
         item_parts: list[str] = []
         for item in item_rows:
             line_total = Decimal(str(item["line_total"] or 0))
-            currency_value = (item["currency"] or "ARS").upper()
+            currency_value = str(item["currency"] or "ARS").upper()
+            currencies.add(currency_value)
 
-            if currency_value == "USD":
-                items_total_usd += line_total
-            else:
-                items_total_ars += line_total
+            items_totals[currency_value] = items_totals.get(currency_value, Decimal("0")) + line_total
+            total_items_by_currency[currency_value] = total_items_by_currency.get(currency_value, Decimal("0")) + line_total
 
             raw_item_type = str(item["item_type"] or "").upper()
             item_type_label = tr["item_types"].get(raw_item_type, tr["item_fallback"])
             item_parts.append(
                 f"{item_type_label}: {item['description_snapshot'] or tr['item_fallback']} · "
-                f"x{int(item['quantity'] or 0)} · {currency_value} {float(line_total):,.2f}"
+                f"x{int(item['quantity'] or 0)} · {_sales_money_label(currency_value, line_total)}"
             )
 
         payment_parts: list[str] = []
         for payment in payment_rows:
             amount = Decimal(str(payment["amount"] or 0))
-            currency_value = (payment["currency"] or "ARS").upper()
+            currency_value = str(payment["currency"] or "ARS").upper()
+            currencies.add(currency_value)
 
-            if currency_value == "USD":
-                paid_total_usd += amount
-            else:
-                paid_total_ars += amount
+            paid_totals[currency_value] = paid_totals.get(currency_value, Decimal("0")) + amount
+            total_paid_by_currency[currency_value] = total_paid_by_currency.get(currency_value, Decimal("0")) + amount
 
             reference_text = f" · {payment['reference']}" if payment["reference"] else ""
             payment_parts.append(
                 f"{_payment_method_label(payment['payment_method'], lang)}: "
-                f"{currency_value} {float(amount):,.2f}{reference_text}"
+                f"{_sales_money_label(currency_value, amount)}{reference_text}"
             )
 
-        total_items_ars += items_total_ars
-        total_items_usd += items_total_usd
-        total_paid_ars += paid_total_ars
-        total_paid_usd += paid_total_usd
+        prepared_rows.append(
+            {
+                "row": row,
+                "items_totals": items_totals,
+                "paid_totals": paid_totals,
+                "item_parts": item_parts,
+                "payment_parts": payment_parts,
+            }
+        )
+
+    ordered_currencies = _sales_currency_order(currencies or {"ARS"})
+
+    base_headers = tr["headers"][:5]
+    tail_headers = tr["headers"][-3:]
+    dynamic_headers = (
+        base_headers
+        + [f"Total ítems {currency}" if _lang(lang) == "es" else f"Items total {currency}" for currency in ordered_currencies]
+        + [f"Pagado {currency}" if _lang(lang) == "es" else f"Paid {currency}" for currency in ordered_currencies]
+        + tail_headers
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = tr["sheet"]
+
+    _apply_header_style(ws, dynamic_headers)
+
+    item_start_col = 6
+    paid_start_col = item_start_col + len(ordered_currencies)
+    text_start_col = paid_start_col + len(ordered_currencies)
+
+    for prepared in prepared_rows:
+        row = prepared["row"]
+        items_totals = prepared["items_totals"]
+        paid_totals = prepared["paid_totals"]
 
         ws.append(
             [
@@ -2211,19 +2160,17 @@ def export_sales_unified_report(
                 row["customer_full_name"] or "",
                 row["currency"] or "ARS",
                 _sale_status_label(row["status"], lang),
-                float(items_total_ars),
-                float(items_total_usd),
-                float(paid_total_ars),
-                float(paid_total_usd),
-                " | ".join(item_parts),
-                " | ".join(payment_parts),
+                *[float(items_totals.get(currency, Decimal("0"))) for currency in ordered_currencies],
+                *[float(paid_totals.get(currency, Decimal("0"))) for currency in ordered_currencies],
+                " | ".join(prepared["item_parts"]),
+                " | ".join(prepared["payment_parts"]),
                 row["notes"] or "",
             ]
         )
 
         current_row = ws.max_row
 
-        for col in (6, 7, 8, 9):
+        for col in range(item_start_col, text_start_col):
             cell = ws.cell(row=current_row, column=col)
             cell.number_format = "#,##0.00"
             cell.alignment = Alignment(horizontal="right", vertical="center")
@@ -2233,9 +2180,8 @@ def export_sales_unified_report(
         status_cell.font = _sale_status_font(row["status"])
         status_cell.alignment = Alignment(horizontal="center", vertical="center")
 
-        ws.cell(row=current_row, column=10).alignment = Alignment(wrap_text=True, vertical="top")
-        ws.cell(row=current_row, column=11).alignment = Alignment(wrap_text=True, vertical="top")
-        ws.cell(row=current_row, column=12).alignment = Alignment(wrap_text=True, vertical="top")
+        for col in range(text_start_col, text_start_col + 3):
+            ws.cell(row=current_row, column=col).alignment = Alignment(wrap_text=True, vertical="top")
 
     total_row_idx = ws.max_row + 2
 
@@ -2243,35 +2189,40 @@ def export_sales_unified_report(
     ws.cell(row=total_row_idx, column=5).font = Font(bold=True)
     ws.cell(row=total_row_idx, column=5).alignment = Alignment(horizontal="right", vertical="center")
 
-    ws.cell(row=total_row_idx, column=6, value=float(total_items_ars))
-    ws.cell(row=total_row_idx, column=7, value=float(total_items_usd))
-    ws.cell(row=total_row_idx, column=8, value=float(total_paid_ars))
-    ws.cell(row=total_row_idx, column=9, value=float(total_paid_usd))
+    for index, currency_value in enumerate(ordered_currencies):
+        col = item_start_col + index
+        cell = ws.cell(row=total_row_idx, column=col, value=float(total_items_by_currency.get(currency_value, Decimal("0"))))
+        cell.font = Font(bold=True)
+        cell.number_format = "#,##0.00"
+        cell.alignment = Alignment(horizontal="right", vertical="center")
 
-    for col in (6, 7, 8, 9):
-        cell = ws.cell(row=total_row_idx, column=col)
+    for index, currency_value in enumerate(ordered_currencies):
+        col = paid_start_col + index
+        cell = ws.cell(row=total_row_idx, column=col, value=float(total_paid_by_currency.get(currency_value, Decimal("0"))))
         cell.font = Font(bold=True)
         cell.number_format = "#,##0.00"
         cell.alignment = Alignment(horizontal="right", vertical="center")
 
     total_fill = PatternFill("solid", fgColor="F4F1F5")
-    for col in range(5, 10):
+    for col in range(5, text_start_col):
         ws.cell(row=total_row_idx, column=col).fill = total_fill
 
     ws.freeze_panes = "A2"
-    ws.auto_filter.ref = f"A1:L{ws.max_row}"
+    last_column_letter = ws.cell(row=1, column=text_start_col + 2).column_letter
+    ws.auto_filter.ref = f"A1:{last_column_letter}{ws.max_row}"
 
     ws.column_dimensions["A"].width = 16
     ws.column_dimensions["B"].width = 20
     ws.column_dimensions["C"].width = 28
     ws.column_dimensions["D"].width = 16
     ws.column_dimensions["E"].width = 16
-    ws.column_dimensions["F"].width = 16
-    ws.column_dimensions["G"].width = 16
-    ws.column_dimensions["H"].width = 16
-    ws.column_dimensions["I"].width = 16
-    ws.column_dimensions["J"].width = 52
-    ws.column_dimensions["K"].width = 42
-    ws.column_dimensions["L"].width = 30
+
+    for col in range(item_start_col, text_start_col):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 18
+
+    ws.column_dimensions[ws.cell(row=1, column=text_start_col).column_letter].width = 52
+    ws.column_dimensions[ws.cell(row=1, column=text_start_col + 1).column_letter].width = 42
+    ws.column_dimensions[ws.cell(row=1, column=text_start_col + 2).column_letter].width = 30
 
     return _excel_response(wb, tr["filename"])
+

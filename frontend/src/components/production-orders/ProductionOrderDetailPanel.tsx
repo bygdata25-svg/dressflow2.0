@@ -3,6 +3,7 @@ import { api } from "../../lib/api";
 import { useTranslation } from "react-i18next";
 import ProductionOrderOperationTab from "./ProductionOrderOperationTab";
 import ProductionOrderFinanceTab from "./ProductionOrderFinanceTab";
+import "../../styles/production-orders.css";
 
 type Props = {
   orderId: string;
@@ -2105,49 +2106,179 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     return <div className="po-error">{t("production-orders:messages.notFound", "Orden no encontrada")}</div>;
   }
 
+  const progressPercent = Math.max(
+    0,
+    Math.min(
+      100,
+      order.planned_quantity > 0
+        ? Math.round((order.produced_quantity / order.planned_quantity) * 100)
+        : 0
+    )
+  );
+
+  const locale = i18n.language === "en" ? "en-US" : "es-AR";
+
+  const garmentMeta = [
+    order.target_dress_code
+      ? `${t("production-orders:fields.codeShort", "Cód.")} ${order.target_dress_code}`
+      : null,
+    order.target_size
+      ? `${t("production-orders:fields.size", "Talle")} ${order.target_size}`
+      : null,
+    order.target_color || null,
+  ].filter(Boolean);
+
   return (
-    <div className="po-detail-panel">
+    <div className="po-detail-panel po-detail-panel--editorial">
       <style>{`
-        .po-hero {
+        .po-detail-panel--editorial {
+          display: grid;
+          gap: 18px;
+        }
+
+        .po-editorial-hero {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid rgba(216, 207, 195, 0.78);
+          border-radius: 30px;
+          background:
+            radial-gradient(circle at top right, rgba(212, 175, 55, 0.16), transparent 34%),
+            linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(249, 245, 239, 0.94));
+          box-shadow: 0 24px 64px rgba(52, 41, 58, 0.11);
+        }
+
+        .po-editorial-hero__bg {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            linear-gradient(120deg, rgba(32, 26, 40, 0.04), transparent 45%),
+            radial-gradient(circle at 16% 22%, rgba(139, 92, 62, 0.08), transparent 22%);
+        }
+
+        .po-editorial-hero__inner {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+          gap: 20px;
+          padding: 18px;
+        }
+
+        .po-editorial-hero__visual {
+          min-height: 270px;
+          border: 1px solid rgba(216, 207, 195, 0.9);
+          border-radius: 26px;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at top, rgba(255,255,255,.92), transparent 44%),
+            linear-gradient(180deg, rgba(245, 239, 232, 0.96), rgba(235, 226, 216, 0.92));
+          display: grid;
+          place-items: center;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+        }
+
+        .po-editorial-hero__visual img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .po-editorial-hero__visual-empty {
+          display: grid;
+          place-items: center;
+          gap: 8px;
+          color: #8b7763;
+          text-align: center;
+          padding: 24px;
+        }
+
+        .po-editorial-hero__visual-empty span {
+          width: 54px;
+          height: 54px;
+          border-radius: 999px;
+          display: grid;
+          place-items: center;
+          background: rgba(255,255,255,.72);
+          border: 1px solid rgba(216, 207, 195, 0.9);
+          font-size: 24px;
+          color: #34293a;
+        }
+
+        .po-editorial-hero__visual-empty strong {
+          font-size: 13px;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+        }
+
+        .po-editorial-hero__content {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 18px;
+        }
+
+        .po-editorial-hero__top {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 20px;
-          margin-bottom: 18px;
-          padding: 6px 0 2px;
+          gap: 16px;
         }
 
-        .po-hero__main {
-          display: grid;
-          gap: 4px;
-        }
-
-        .po-hero__eyebrow {
+        .po-editorial-hero__eyebrow {
+          margin: 0;
           font-size: 11px;
+          font-weight: 900;
+          letter-spacing: .18em;
           text-transform: uppercase;
-          letter-spacing: 0.14em;
-          color: #8a7f73;
-          font-weight: 700;
+          color: #9a7c61;
         }
 
-        .po-hero__title {
-          margin: 0;
-          font-size: 26px;
-          line-height: 1;
-          letter-spacing: -0.04em;
-          color: #2f2940;
+        .po-editorial-hero__number {
+          margin: 7px 0 0;
+          font-size: 34px;
+          line-height: .95;
+          letter-spacing: -.07em;
+          color: #251f2f;
+          font-weight: 950;
         }
 
-        .po-hero__subtitle {
-          margin: 0;
-          font-size: 15px;
-          color: #6f687b;
+        .po-editorial-hero__title {
+          margin: 9px 0 0;
+          color: #4d4659;
+          font-size: 19px;
+          line-height: 1.16;
+          letter-spacing: -.035em;
         }
 
-        .po-hero__actions {
+        .po-editorial-hero__meta {
           display: flex;
-          gap: 10px;
           flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .po-editorial-chip {
+          display: inline-flex;
+          align-items: center;
+          min-height: 30px;
+          border-radius: 999px;
+          padding: 0 11px;
+          border: 1px solid rgba(216, 207, 195, 0.86);
+          background: rgba(255,255,255,.72);
+          color: #6f6259;
+          font-size: 11px;
+          font-weight: 850;
+        }
+
+        .po-editorial-hero__actions {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-shrink: 0;
         }
 
         .po-action-btn {
@@ -2157,8 +2288,8 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           color: #2f2940;
           border-radius: 14px;
           padding: 10px 16px;
-          font-size: 14px;
-          font-weight: 700;
+          font-size: 13px;
+          font-weight: 850;
           cursor: pointer;
           transition: all 0.18s ease;
           box-shadow: 0 8px 18px rgba(20, 20, 20, 0.05);
@@ -2175,43 +2306,173 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           border-color: #171717;
         }
 
+        .po-editorial-hero__bottom {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 16px;
+          align-items: end;
+        }
+
+        .po-editorial-progress {
+          display: grid;
+          gap: 8px;
+        }
+
+        .po-editorial-progress__top {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          color: #746a62;
+          font-size: 12px;
+          font-weight: 850;
+        }
+
+        .po-editorial-progress__top strong {
+          color: #251f2f;
+        }
+
+        .po-editorial-progress__track {
+          height: 10px;
+          border-radius: 999px;
+          overflow: hidden;
+          background: rgba(216, 207, 195, 0.62);
+          box-shadow: inset 0 1px 2px rgba(52,41,58,.08);
+        }
+
+        .po-editorial-progress__fill {
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #201a28, #9a7c61);
+          box-shadow: 0 8px 18px rgba(32,26,40,.18);
+        }
+
+        .po-editorial-due {
+          min-width: 128px;
+          border: 1px solid rgba(216, 207, 195, 0.88);
+          border-radius: 20px;
+          background: rgba(255,255,255,.74);
+          padding: 12px 14px;
+          text-align: right;
+        }
+
+        .po-editorial-due span {
+          display: block;
+          color: #9a8d82;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+        }
+
+        .po-editorial-due strong {
+          display: block;
+          margin-top: 4px;
+          color: #251f2f;
+          font-size: 16px;
+          line-height: 1.12;
+        }
+
         .po-meta-compact-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 12px;
-          margin-bottom: 18px;
         }
 
         .po-meta-compact-card {
-          background: #ffffff;
-          border: 1px solid #e3d9ce;
-          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.94);
+          border: 1px solid rgba(227, 217, 206, 0.92);
+          border-radius: 20px;
           padding: 14px 16px;
           min-height: 86px;
           display: flex;
           flex-direction: column;
           justify-content: center;
+          box-shadow: 0 14px 34px rgba(52, 41, 58, 0.055);
         }
 
         .po-meta-compact-card span {
-          font-size: 11px;
+          font-size: 10px;
           text-transform: uppercase;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.14em;
           color: #8a7f73;
-          font-weight: 700;
+          font-weight: 850;
           margin-bottom: 8px;
         }
 
         .po-meta-compact-card strong {
-          font-size: 16px;
+          font-size: 15px;
           line-height: 1.2;
           color: #4d4659;
         }
 
+        .po-detail-tabs {
+          position: sticky;
+          top: 0;
+          z-index: 5;
+          display: flex;
+          gap: 8px;
+          padding: 8px;
+          border: 1px solid rgba(216, 207, 195, 0.72);
+          border-radius: 999px;
+          background: rgba(255,255,255,.84);
+          backdrop-filter: blur(16px);
+          box-shadow: 0 18px 38px rgba(52, 41, 58, 0.07);
+        }
+
+        .po-detail-tab {
+          flex: 1;
+          min-height: 40px;
+          border: 0;
+          border-radius: 999px;
+          background: transparent;
+          color: #746a62;
+          font-size: 13px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all .18s ease;
+        }
+
+        .po-detail-tab:hover {
+          color: #251f2f;
+          background: rgba(250, 247, 243, 0.92);
+        }
+
+        .po-detail-tab--active {
+          color: #fff;
+          background: linear-gradient(135deg, #171717 0%, #34293a 100%);
+          box-shadow: 0 12px 22px rgba(32,26,40,.16);
+        }
+
+        .po-tab-content {
+          display: grid;
+          gap: 16px;
+        }
+
+        @media (max-width: 1120px) {
+          .po-editorial-hero__inner {
+            grid-template-columns: 1fr;
+          }
+
+          .po-editorial-hero__visual {
+            min-height: 220px;
+          }
+        }
+
         @media (max-width: 980px) {
-          .po-hero {
+          .po-editorial-hero__top,
+          .po-editorial-hero__bottom {
+            grid-template-columns: 1fr;
             flex-direction: column;
             align-items: stretch;
+          }
+
+          .po-editorial-hero__actions {
+            justify-content: flex-start;
+          }
+
+          .po-editorial-due {
+            text-align: left;
+            width: fit-content;
           }
 
           .po-meta-compact-grid {
@@ -2220,57 +2481,146 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         }
 
         @media (max-width: 640px) {
+          .po-editorial-hero__inner {
+            padding: 14px;
+          }
+
+          .po-editorial-hero__number {
+            font-size: 28px;
+          }
+
           .po-meta-compact-grid {
             grid-template-columns: 1fr;
+          }
+
+          .po-detail-tabs {
+            border-radius: 22px;
+            flex-direction: column;
           }
         }
       `}</style>
 
-      <div className="po-hero">
-        <div className="po-hero__main">
-          <span className="po-hero__eyebrow">{t("production-orders:detailTitle", "Orden de producción")}</span>
-          <h2 className="po-hero__title">{order.order_number}</h2>
-          <p className="po-hero__subtitle">{order.target_dress_name}</p>
-        </div>
+      <section className="po-editorial-hero">
+        <div className="po-editorial-hero__bg" />
 
-        <div className="po-hero__actions">
-          <button
-            className="po-action-btn po-action-btn--primary"
-            onClick={() => downloadPdf("operation")}
-            type="button"
-          >
-            PDF Taller
-          </button>
+        <div className="po-editorial-hero__inner">
+          <div className="po-editorial-hero__visual">
+            {designPhoto ? (
+              <img src={designPhoto} alt={order.target_dress_name} />
+            ) : (
+              <div className="po-editorial-hero__visual-empty">
+                <span>✦</span>
+                <strong>
+                  {t("production-orders:design.noReference", "Sin imagen")}
+                </strong>
+              </div>
+            )}
+          </div>
 
-          <button
-            className="po-action-btn"
-            onClick={() => downloadPdf("finance")}
-            type="button"
-          >
-            PDF Costos
-          </button>
+          <div className="po-editorial-hero__content">
+            <div className="po-editorial-hero__top">
+              <div>
+                <p className="po-editorial-hero__eyebrow">
+                  {t("production-orders:detailTitle", "Orden de producción")}
+                </p>
+
+                <h2 className="po-editorial-hero__number">{order.order_number}</h2>
+
+                <h3 className="po-editorial-hero__title">
+                  {order.target_dress_name}
+                </h3>
+
+                <div className="po-editorial-hero__meta">
+                  {garmentMeta.length > 0 ? (
+                    garmentMeta.map((item) => (
+                      <span key={String(item)} className="po-editorial-chip">
+                        {item}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="po-editorial-chip">
+                      {t(
+                        "production-orders:fields.noGarmentDetails",
+                        "Sin detalles de prenda"
+                      )}
+                    </span>
+                  )}
+
+                  <span className="po-editorial-chip">
+                    {translateOrderStatus(t, order.status)}
+                  </span>
+
+                  <span className="po-editorial-chip">
+                    {translatePriority(t, order.priority)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="po-editorial-hero__actions">
+                <button
+                  className="po-action-btn po-action-btn--primary"
+                  onClick={() => downloadPdf("operation")}
+                  type="button"
+                >
+                  {t("production-orders:actions.workshopPdf", "PDF Taller")}
+                </button>
+
+                <button
+                  className="po-action-btn"
+                  onClick={() => downloadPdf("finance")}
+                  type="button"
+                >
+                  {t("production-orders:actions.costPdf", "PDF Costos")}
+                </button>
+              </div>
+            </div>
+
+            <div className="po-editorial-hero__bottom">
+              <div className="po-editorial-progress">
+                <div className="po-editorial-progress__top">
+                  <span>
+                    {t("production-orders:fields.progress", "Avance")} ·{" "}
+                    {order.produced_quantity} / {order.planned_quantity}
+                  </span>
+                  <strong>{progressPercent}%</strong>
+                </div>
+
+                <div className="po-editorial-progress__track">
+                  <div
+                    className="po-editorial-progress__fill"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="po-editorial-due">
+                <span>{t("production-orders:fields.dueDate", "Entrega")}</span>
+                <strong>{formatDate(order.due_date, locale)}</strong>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="po-meta-compact-grid">
-        <div className="po-meta-compact-card">
-          <span>{t("production-orders:fields.status", "Estado")}</span>
-          <strong>{translateOrderStatus(t, order.status)}</strong>
-        </div>
-
-        <div className="po-meta-compact-card">
-          <span>{t("production-orders:fields.priority", "Prioridad")}</span>
-          <strong>{translatePriority(t, order.priority)}</strong>
-        </div>
-
         <div className="po-meta-compact-card">
           <span>{t("production-orders:fields.workshop", "Taller")}</span>
           <strong>{order.workshop_supplier_name || "-"}</strong>
         </div>
 
         <div className="po-meta-compact-card">
-          <span>{t("production-orders:fields.dueDate", "Entrega")}</span>
-          <strong>{formatDate(order.due_date, i18n.language === "en" ? "en-US" : "es-AR")}</strong>
+          <span>{t("production-orders:fields.plannedQuantity", "Planificado")}</span>
+          <strong>{order.planned_quantity}</strong>
+        </div>
+
+        <div className="po-meta-compact-card">
+          <span>{t("production-orders:fields.producedQuantity", "Producido")}</span>
+          <strong>{order.produced_quantity}</strong>
+        </div>
+
+        <div className="po-meta-compact-card">
+          <span>{t("production-orders:costs.currency", "Moneda")}</span>
+          <strong>{order.currency || costSummary?.currency || "USD"}</strong>
         </div>
       </div>
 
@@ -2280,7 +2630,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           className={`po-detail-tab ${activeTab === "operation" ? "po-detail-tab--active" : ""}`}
           onClick={() => setActiveTab("operation")}
         >
-          Operación
+          {t("production-orders:tabs.operation", "Operación")}
         </button>
 
         <button
@@ -2288,7 +2638,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           className={`po-detail-tab ${activeTab === "finance" ? "po-detail-tab--active" : ""}`}
           onClick={() => setActiveTab("finance")}
         >
-          Costos
+          {t("production-orders:tabs.finance", "Costos")}
         </button>
 
         <button
@@ -2296,7 +2646,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           className={`po-detail-tab ${activeTab === "events" ? "po-detail-tab--active" : ""}`}
           onClick={() => setActiveTab("events")}
         >
-          Movimientos
+          {t("production-orders:tabs.events", "Movimientos")}
         </button>
       </div>
 

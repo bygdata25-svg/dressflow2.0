@@ -12,6 +12,12 @@ type Supplier = {
   name: string;
 };
 
+type TenantCurrencyOption = {
+  currency_code: string;
+  symbol: string;
+  is_base: boolean;
+};
+
 type Trim = {
   id: string;
   code: string;
@@ -23,6 +29,7 @@ type Trim = {
   min_stock: string;
   supplier_id?: string | null;
   unit_cost?: string | null;
+  unit_cost_currency?: string | null;
   photo_url?: string | null;
   photo_public_id?: string | null;
   notes?: string | null;
@@ -44,6 +51,7 @@ type TrimFormState = {
   min_stock: string;
   supplier_id: string;
   unit_cost: string;
+  unit_cost_currency: string;
   notes: string;
   file: File | null;
 };
@@ -59,9 +67,43 @@ const initialForm: TrimFormState = {
   min_stock: "",
   supplier_id: "",
   unit_cost: "",
+  unit_cost_currency: "ARS",
   notes: "",
   file: null,
 };
+
+function currencyLabel(currency: TenantCurrencyOption) {
+  if (!currency.symbol || currency.symbol === currency.currency_code) {
+    return currency.currency_code;
+  }
+
+  return `${currency.currency_code} · ${currency.symbol}`;
+}
+
+function fallbackCurrencyOptions(): TenantCurrencyOption[] {
+  return [
+    {
+      currency_code: "ARS",
+      symbol: "$",
+      is_base: true,
+    },
+  ];
+}
+
+function money(value?: number | string | null, currency = "ARS") {
+  const n = Number(value ?? 0);
+  if (Number.isNaN(n)) return "—";
+
+  try {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toFixed(2)}`;
+  }
+}
 
 function TrashIcon() {
   return (
@@ -86,6 +128,8 @@ export default function TrimsPage() {
 
   const [rows, setRows] = useState<Trim[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [currencyOptions, setCurrencyOptions] = useState<TenantCurrencyOption[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -101,6 +145,30 @@ export default function TrimsPage() {
   const [imagePreview, setImagePreview] = useState("");
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const safeCurrencyOptions = useMemo(() => {
+    return currencyOptions.length > 0 ? currencyOptions : fallbackCurrencyOptions();
+  }, [currencyOptions]);
+
+  const defaultCurrency = useMemo(() => {
+    return (
+      safeCurrencyOptions.find((currency) => currency.is_base)?.currency_code ||
+      safeCurrencyOptions[0]?.currency_code ||
+      "ARS"
+    );
+  }, [safeCurrencyOptions]);
+
+  const loadCurrencies = async () => {
+    try {
+      const response = await api.get<TenantCurrencyOption[]>("/tenant-currencies/options");
+      const options = Array.isArray(response.data) ? response.data : [];
+
+      setCurrencyOptions(options);
+    } catch (err) {
+      console.error("Error loading currencies", err);
+      setCurrencyOptions([]);
+    }
+  };
 
   const loadAll = async () => {
     try {
@@ -137,15 +205,26 @@ export default function TrimsPage() {
     void loadAll();
   }, [page, search]);
 
+  useEffect(() => {
+    void loadCurrencies();
+  }, []);
+
+  const buildEmptyForm = (): TrimFormState => ({
+    ...initialForm,
+    unit_cost_currency: defaultCurrency,
+  });
+
   const resetForm = () => {
-    setForm(initialForm);
+    setForm(buildEmptyForm());
     setImagePreview("");
     setError("");
   };
 
   const handleOpenCreate = () => {
     setEditingId(null);
-    resetForm();
+    setForm(buildEmptyForm());
+    setImagePreview("");
+    setError("");
     setShowModal(true);
   };
 
@@ -167,6 +246,7 @@ export default function TrimsPage() {
       min_stock: row.min_stock ? String(row.min_stock) : "",
       supplier_id: row.supplier_id || "",
       unit_cost: row.unit_cost ? String(row.unit_cost) : "",
+      unit_cost_currency: row.unit_cost_currency || defaultCurrency,
       notes: row.notes || "",
       file: null,
     });
@@ -195,6 +275,7 @@ export default function TrimsPage() {
       formData.append("min_stock", String(Number(form.min_stock || 0)));
       formData.append("supplier_id", form.supplier_id || "");
       formData.append("unit_cost", form.unit_cost ? String(Number(form.unit_cost)) : "");
+      formData.append("unit_cost_currency", form.unit_cost_currency || defaultCurrency);
       formData.append("notes", form.notes || "");
 
       if (form.file) {
@@ -311,7 +392,7 @@ export default function TrimsPage() {
       {
         key: "unit_cost",
         label: t("trims:fields.unitCost"),
-        render: (row) => row.unit_cost || "-",
+        render: (row) => money(row.unit_cost, row.unit_cost_currency || defaultCurrency),
       },
       {
         key: "actions",
@@ -352,10 +433,24 @@ export default function TrimsPage() {
         ),
       },
     ];
-  }, [t]);
+  }, [t, defaultCurrency]);
 
   return (
     <section className="df-pro-page">
+      <style>{`
+        .df-trims-money-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 130px;
+          gap: 10px;
+        }
+
+        @media (max-width: 720px) {
+          .df-trims-money-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
       <header
         className="df-pro-page__hero"
         style={{
@@ -544,14 +639,34 @@ export default function TrimsPage() {
 
           <div style={{ gridColumn: "span 3" }}>
             <label className="df-pro-label">{t("trims:fields.unitCost")}</label>
-            <input
-              className="df-pro-input"
-              placeholder={t("trims:form.placeholders.unitCost")}
-              type="number"
-              step="0.01"
-              value={form.unit_cost}
-              onChange={(e) => setForm((prev) => ({ ...prev, unit_cost: e.target.value }))}
-            />
+
+            <div className="df-trims-money-grid">
+              <input
+                className="df-pro-input"
+                placeholder={t("trims:form.placeholders.unitCost")}
+                type="number"
+                step="0.01"
+                value={form.unit_cost}
+                onChange={(e) => setForm((prev) => ({ ...prev, unit_cost: e.target.value }))}
+              />
+
+              <select
+                className="df-pro-select"
+                value={form.unit_cost_currency}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    unit_cost_currency: e.target.value,
+                  }))
+                }
+              >
+                {safeCurrencyOptions.map((currency) => (
+                  <option key={currency.currency_code} value={currency.currency_code}>
+                    {currencyLabel(currency)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>

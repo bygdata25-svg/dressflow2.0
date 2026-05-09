@@ -1,3 +1,5 @@
+import "../../styles/production-orders.css";
+
 type ProductionOrder = {
   id: string;
   order_number: string;

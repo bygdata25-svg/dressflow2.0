@@ -5,6 +5,12 @@ import { fetchCapsules, type Capsule } from "../../lib/capsules";
 import { resolveMediaUrl } from "../../lib/media";
 import { FormActions } from "../common/FormActions";
 
+type TenantCurrencyOption = {
+  currency_code: string;
+  symbol: string;
+  is_base: boolean;
+};
+
 type DressPayload = {
   code: string;
   name: string;
@@ -13,7 +19,9 @@ type DressPayload = {
   color: string | null;
   status: string;
   sale_price: number | null;
+  sale_currency: string | null;
   rental_price: number | null;
+  rental_currency: string | null;
   capsule_id: string | null;
 };
 
@@ -25,7 +33,9 @@ type DressFormState = {
   color: string;
   status: string;
   sale_price: string;
+  sale_currency: string;
   rental_price: string;
+  rental_currency: string;
   capsule_id: string;
 };
 
@@ -33,7 +43,9 @@ type DressInitialData = Partial<DressFormState> & {
   id?: string;
   main_image_url?: string | null;
   sale_price?: string | number | null;
+  sale_currency?: string | null;
   rental_price?: string | number | null;
+  rental_currency?: string | null;
   status?: string;
 };
 
@@ -60,7 +72,9 @@ const initialState: DressFormState = {
   color: "",
   status: "AVAILABLE",
   sale_price: "",
+  sale_currency: "USD",
   rental_price: "",
+  rental_currency: "USD",
   capsule_id: "",
 };
 
@@ -91,6 +105,24 @@ const textareaStyle: React.CSSProperties = {
   padding: "12px 14px",
   resize: "vertical",
 };
+
+function fallbackSymbol(currencyCode: string) {
+  const code = String(currencyCode || "").toUpperCase();
+
+  if (code === "USD") return "U$S";
+  if (code === "ARS") return "$";
+  if (code === "EUR") return "€";
+
+  return code || "USD";
+}
+
+function formatCurrencyOption(currency: TenantCurrencyOption) {
+  if (!currency.symbol || currency.symbol === currency.currency_code) {
+    return currency.currency_code;
+  }
+
+  return `${currency.currency_code} · ${currency.symbol}`;
+}
 
 function formatStatus(t: any, status: string) {
   const key = String(status || "").toUpperCase();
@@ -140,7 +172,6 @@ function statusAccent(status: string) {
   }
 }
 
-
 function userInitials(user?: string) {
   if (!user) return "?";
   return user
@@ -164,6 +195,8 @@ export function DressForm({
 
   const [form, setForm] = useState<DressFormState>(initialState);
   const [capsules, setCapsules] = useState<Capsule[]>([]);
+  const [currencyOptions, setCurrencyOptions] = useState<TenantCurrencyOption[]>([]);
+
   const [loadingCapsules, setLoadingCapsules] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -175,6 +208,25 @@ export function DressForm({
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const existingImageUrl = resolveMediaUrl(initialData?.main_image_url || null);
+
+  const safeCurrencyOptions = useMemo<TenantCurrencyOption[]>(() => {
+    if (Array.isArray(currencyOptions) && currencyOptions.length > 0) {
+      return currencyOptions;
+    }
+
+    return [
+      {
+        currency_code: "USD",
+        symbol: "U$S",
+        is_base: true,
+      },
+      {
+        currency_code: "ARS",
+        symbol: "$",
+        is_base: false,
+      },
+    ];
+  }, [currencyOptions]);
 
   useEffect(() => {
     const loadCapsules = async () => {
@@ -193,6 +245,44 @@ export function DressForm({
   }, []);
 
   useEffect(() => {
+    const loadCurrencies = async () => {
+      try {
+        const response = await api.get<TenantCurrencyOption[]>(
+          "/tenant-currencies/options"
+        );
+
+        const options = Array.isArray(response.data) ? response.data : [];
+
+        setCurrencyOptions(options);
+
+        const baseCurrency =
+          options.find((currency) => currency.is_base)?.currency_code ||
+          options[0]?.currency_code ||
+          "USD";
+
+        setForm((prev) => ({
+          ...prev,
+          sale_currency:
+            prev.sale_currency &&
+            options.some((currency) => currency.currency_code === prev.sale_currency)
+              ? prev.sale_currency
+              : baseCurrency,
+          rental_currency:
+            prev.rental_currency &&
+            options.some((currency) => currency.currency_code === prev.rental_currency)
+              ? prev.rental_currency
+              : baseCurrency,
+        }));
+      } catch (err) {
+        console.error("Error loading currencies", err);
+        setCurrencyOptions([]);
+      }
+    };
+
+    void loadCurrencies();
+  }, []);
+
+  useEffect(() => {
     if (mode === "edit" && initialData) {
       setForm({
         code: initialData.code || "",
@@ -202,15 +292,15 @@ export function DressForm({
         color: initialData.color || "",
         status: initialData.status || "AVAILABLE",
         sale_price:
-          initialData.sale_price !== undefined &&
-          initialData.sale_price !== null
+          initialData.sale_price !== undefined && initialData.sale_price !== null
             ? String(initialData.sale_price)
             : "",
+        sale_currency: initialData.sale_currency || "USD",
         rental_price:
-          initialData.rental_price !== undefined &&
-          initialData.rental_price !== null
+          initialData.rental_price !== undefined && initialData.rental_price !== null
             ? String(initialData.rental_price)
             : "",
+        rental_currency: initialData.rental_currency || "USD",
         capsule_id: initialData.capsule_id || "",
       });
     } else {
@@ -261,7 +351,9 @@ export function DressForm({
       color: form.color.trim() || null,
       status: form.status,
       sale_price: form.sale_price ? Number(form.sale_price) : null,
+      sale_currency: form.sale_currency || "USD",
       rental_price: form.rental_price ? Number(form.rental_price) : null,
+      rental_currency: form.rental_currency || "USD",
       capsule_id: form.capsule_id || null,
     };
   }, [form]);
@@ -315,15 +407,15 @@ export function DressForm({
         color: initialData.color || "",
         status: initialData.status || "AVAILABLE",
         sale_price:
-          initialData.sale_price !== undefined &&
-          initialData.sale_price !== null
+          initialData.sale_price !== undefined && initialData.sale_price !== null
             ? String(initialData.sale_price)
             : "",
+        sale_currency: initialData.sale_currency || "USD",
         rental_price:
-          initialData.rental_price !== undefined &&
-          initialData.rental_price !== null
+          initialData.rental_price !== undefined && initialData.rental_price !== null
             ? String(initialData.rental_price)
             : "",
+        rental_currency: initialData.rental_currency || "USD",
         capsule_id: initialData.capsule_id || "",
       });
     } else {
@@ -536,7 +628,7 @@ export function DressForm({
                     lineHeight: 1.5,
                   }}
                 >
-                  Sin imagen
+                  {t("dresses:images.noImage", "Sin imagen")}
                 </div>
               )}
             </div>
@@ -689,30 +781,72 @@ export function DressForm({
 
           <div style={{ gridColumn: "span 4" }}>
             <label style={labelStyle}>{t("dresses:fields.purchasePrice")}</label>
-            <input
-              className="df-pro-input"
-              style={inputStyle}
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.sale_price}
-              onChange={handleChange("sale_price")}
-              placeholder={t("dresses:form.placeholders.price", "0.00")}
-            />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 110px",
+                gap: 10,
+              }}
+            >
+              <input
+                className="df-pro-input"
+                style={inputStyle}
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.sale_price}
+                onChange={handleChange("sale_price")}
+                placeholder={t("dresses:form.placeholders.price", "0.00")}
+              />
+
+              <select
+                className="df-pro-select"
+                style={inputStyle}
+                value={form.sale_currency}
+                onChange={handleChange("sale_currency")}
+              >
+                {safeCurrencyOptions.map((currency) => (
+                  <option key={currency.currency_code} value={currency.currency_code}>
+                    {formatCurrencyOption(currency)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div style={{ gridColumn: "span 4" }}>
             <label style={labelStyle}>{t("dresses:fields.rentalPrice")}</label>
-            <input
-              className="df-pro-input"
-              style={inputStyle}
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.rental_price}
-              onChange={handleChange("rental_price")}
-              placeholder={t("dresses:form.placeholders.price", "0.00")}
-            />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 110px",
+                gap: 10,
+              }}
+            >
+              <input
+                className="df-pro-input"
+                style={inputStyle}
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.rental_price}
+                onChange={handleChange("rental_price")}
+                placeholder={t("dresses:form.placeholders.price", "0.00")}
+              />
+
+              <select
+                className="df-pro-select"
+                style={inputStyle}
+                value={form.rental_currency}
+                onChange={handleChange("rental_currency")}
+              >
+                {safeCurrencyOptions.map((currency) => (
+                  <option key={currency.currency_code} value={currency.currency_code}>
+                    {formatCurrencyOption(currency)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
@@ -749,7 +883,7 @@ export function DressForm({
                 color: "#1f2937",
               }}
             >
-              Historial de estado
+              {t("dresses:history.title", "Historial de estado")}
             </h4>
             <p
               style={{
@@ -758,7 +892,7 @@ export function DressForm({
                 color: "#6b7280",
               }}
             >
-              Seguimiento operativo del vestido.
+              {t("dresses:history.subtitle", "Seguimiento operativo del vestido.")}
             </p>
           </div>
 
@@ -772,7 +906,7 @@ export function DressForm({
                 fontSize: 13,
               }}
             >
-              Cargando historial...
+              {t("common:status.loading", "Cargando...")}
             </div>
           ) : statusHistory.length === 0 ? (
             <div
@@ -784,15 +918,12 @@ export function DressForm({
                 fontSize: 13,
               }}
             >
-              Todavía no hay cambios de estado registrados.
+              {t("dresses:history.empty", "Todavía no hay cambios de estado registrados.")}
             </div>
           ) : (
             <div className="df-dress-timeline">
               {statusHistory.map((item, index) => (
-                <div
-                  key={`${item.date}-${index}`}
-                  className="df-dress-timeline__item"
-                >
+                <div key={`${item.date}-${index}`} className="df-dress-timeline__item">
                   <div
                     className="df-dress-timeline__node"
                     style={{
@@ -833,7 +964,9 @@ export function DressForm({
                         fontSize: 11,
                       }}
                     >
-                      {new Date(item.date).toLocaleString(i18n.language === "en" ? "en-US" : "es-AR")}
+                      {new Date(item.date).toLocaleString(
+                        i18n.language === "en" ? "en-US" : "es-AR"
+                      )}
                       {item.user ? ` · ${item.user}` : ""}
                     </div>
                   </div>

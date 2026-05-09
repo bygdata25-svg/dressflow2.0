@@ -1,0 +1,100 @@
+{
+  "title": "Production processes",
+  "subtitle": "Design the atelier operational workflow. Drag and drop processes to define the production flow.",
+  "loading": "Loading processes...",
+  "empty": "No processes configured yet.",
+  "new": "New process",
+  "edit": "Edit process",
+  "close": "Close",
+  "save": "Save",
+  "saving": "Saving...",
+  "cancel": "Cancel",
+  "activate": "Activate",
+  "deactivate": "Deactivate",
+  "active": "Active",
+  "inactive": "Inactive",
+  "preview": "Preview",
+  "workflowDescription": "Define an operational workflow stage.",
+  "orderLabel": "Order {{value}}",
+  "placeholder": {
+    "name": "Ex. Sewing",
+    "code": "Ex. SEWING",
+    "nameFallback": "Process name",
+    "codeFallback": "PROCESS_CODE"
+  },
+  "fields": {
+    "name": "Name",
+    "code": "Code",
+    "sortOrder": "Order",
+    "color": "Color",
+    "icon": "Icon",
+    "status": "Status"
+  },
+  "errors": {
+    "load": "Processes could not be loaded.",
+    "save": "The process could not be saved.",
+    "toggle": "The status could not be updated.",
+    "reorder": "The order could not be updated."
+  },
+  "icons": {
+    "scissors": "Scissors",
+    "shirt": "Dress",
+    "sparkles": "Sparkles",
+    "gem": "Gem",
+    "wand": "Wand",
+    "badgeCheck": "Control",
+    "package": "Package",
+    "needle": "Needle"
+  },
+"templates": {
+  "apply": "Apply template",
+  "title": "Apply workflow template",
+  "subtitle": "Use an optional template to speed up initial setup. It does not replace or delete existing processes.",
+  "applySelected": "Apply template",
+  "applying": "Applying...",
+  "cancel": "Cancel",
+  "alreadyConfigured": "Already configured",
+  "willBeAdded": "Will be added",
+  "success": "Template applied successfully.",
+  "errors": {
+    "apply": "The template could not be applied."
+  },
+  "items": {
+    "hauteCouture": {
+      "title": "Haute couture",
+      "description": "Detailed workflow for premium pieces, embroidery, beading and fine quality control."
+    },
+    "bridal": {
+      "title": "Bridal",
+      "description": "Workflow focused on fittings, alterations, finishing and final control."
+    },
+    "tailoring": {
+      "title": "Tailoring",
+      "description": "Processes for pattern making, cutting, sewing, fitting and alterations."
+    },
+    "streetwear": {
+      "title": "Streetwear",
+      "description": "Agile workflow for small batches, prints and packaging."
+    },
+    "uniforms": {
+      "title": "Uniforms",
+      "description": "Workflow designed for batches, quality control and dispatch."
+    }
+  },
+  "processNames": {
+    "PATTERN_MAKING": "Pattern making",
+    "CUTTING": "Cutting",
+    "SEWING": "Sewing",
+    "EMBROIDERY": "Embroidery",
+    "BEADING": "Beading",
+    "FITTING": "Fitting",
+    "ALTERATIONS": "Alterations",
+    "FINISHING": "Finishing",
+    "QUALITY_CONTROL": "Quality control",
+    "PACKAGING": "Packaging",
+    "DISPATCH": "Dispatch",
+    "PRINTING": "Printing",
+    "SUBLIMATION": "Sublimation"
+  }
+}
+}

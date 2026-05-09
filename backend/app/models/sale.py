@@ -33,6 +33,10 @@ class Sale(Base):
 
     sale_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     currency: Mapped[str] = mapped_column(String(10), nullable=False, default="ARS")
+    exchange_rate: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 4),
+        nullable=True,
+    )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="COMPLETED", index=True)
 
     subtotal_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))

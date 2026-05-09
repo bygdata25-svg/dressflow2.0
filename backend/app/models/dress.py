@@ -32,7 +32,15 @@ class Dress(UUIDMixin, TimestampMixin, Base):
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="AVAILABLE")
     sale_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    sale_currency: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
     rental_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    rental_currency: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
     photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     photo_public_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     deleted_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)

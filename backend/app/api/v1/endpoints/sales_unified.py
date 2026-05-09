@@ -293,13 +293,16 @@ def create_sale(
         if item["item_type"] == "DRESS" or item["item_type"] == "ACCESSORY":
             currency = item.get("currency", payload.currency or "ARS")
 
+            currency = str(currency or "ARS").upper()
+
             if currency == "USD":
+                subtotal_usd += item["line_total"]
+            elif currency == "EUR":
                 subtotal_usd += item["line_total"]
             else:
                 subtotal_ars += item["line_total"]
-
-    paid_ars = Decimal("0.00")
-    paid_usd = Decimal("0.00")
+                paid_ars = Decimal("0.00")
+                paid_usd = Decimal("0.00")
 
     for payment in payload.payments:
         if (payment.currency or "ARS") == "USD":

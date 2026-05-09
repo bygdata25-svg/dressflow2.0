@@ -15,28 +15,38 @@ import {
 import { api } from "../lib/api";
 import "../styles/pro-pages.css";
 
+type CurrencyCode = string;
+
 type MonthlyRow = {
   month: string;
-  total_ars: number;
-  total_usd: number;
+  total_ars?: number;
+  total_usd?: number;
   sales_count: number;
+  totals_by_currency?: Record<string, number>;
 };
 
 type PaymentMethodRow = {
   payment_method: string;
   operations_count: number;
-  total_ars: number;
-  total_usd: number;
+  total_ars?: number;
+  total_usd?: number;
+  totals_by_currency?: Record<string, number>;
 };
 
 type FinancialDashboardResponse = {
   sales_count: number;
-  total_ars: number;
-  total_usd: number;
-  avg_ticket_ars: number;
-  avg_ticket_usd: number;
-  sales_count_ars: number;
-  sales_count_usd: number;
+
+  totals_by_currency?: Record<string, number>;
+  avg_ticket_by_currency?: Record<string, number>;
+  sales_count_by_currency?: Record<string, number>;
+
+  total_ars?: number;
+  total_usd?: number;
+  avg_ticket_ars?: number;
+  avg_ticket_usd?: number;
+  sales_count_ars?: number;
+  sales_count_usd?: number;
+
   monthly: MonthlyRow[];
   payment_methods: PaymentMethodRow[];
 };
@@ -48,7 +58,75 @@ const PAYMENT_COLORS = [
   "#d3b173",
   "#9db28b",
   "#d99aa2",
+  "#8a63d2",
+  "#b7791f",
 ];
+
+const CURRENCY_PRIORITY = ["ARS", "USD", "EUR"];
+
+function normalizeCurrency(value?: string | null) {
+  return String(value || "ARS").toUpperCase();
+}
+
+function currencyOrder(currencies: string[]) {
+  const unique = Array.from(new Set(currencies.map(normalizeCurrency).filter(Boolean)));
+
+  return [
+    ...CURRENCY_PRIORITY.filter((currency) => unique.includes(currency)),
+    ...unique.filter((currency) => !CURRENCY_PRIORITY.includes(currency)).sort(),
+  ];
+}
+
+function legacyTotals(data: FinancialDashboardResponse | null) {
+  if (!data) return {} as Record<string, number>;
+
+  const dynamic = data.totals_by_currency || {};
+  const result: Record<string, number> = { ...dynamic };
+
+  if (data.total_ars !== undefined && result.ARS === undefined) {
+    result.ARS = Number(data.total_ars || 0);
+  }
+
+  if (data.total_usd !== undefined && result.USD === undefined) {
+    result.USD = Number(data.total_usd || 0);
+  }
+
+  return result;
+}
+
+function legacyAverageTickets(data: FinancialDashboardResponse | null) {
+  if (!data) return {} as Record<string, number>;
+
+  const dynamic = data.avg_ticket_by_currency || {};
+  const result: Record<string, number> = { ...dynamic };
+
+  if (data.avg_ticket_ars !== undefined && result.ARS === undefined) {
+    result.ARS = Number(data.avg_ticket_ars || 0);
+  }
+
+  if (data.avg_ticket_usd !== undefined && result.USD === undefined) {
+    result.USD = Number(data.avg_ticket_usd || 0);
+  }
+
+  return result;
+}
+
+function legacySalesCountByCurrency(data: FinancialDashboardResponse | null) {
+  if (!data) return {} as Record<string, number>;
+
+  const dynamic = data.sales_count_by_currency || {};
+  const result: Record<string, number> = { ...dynamic };
+
+  if (data.sales_count_ars !== undefined && result.ARS === undefined) {
+    result.ARS = Number(data.sales_count_ars || 0);
+  }
+
+  if (data.sales_count_usd !== undefined && result.USD === undefined) {
+    result.USD = Number(data.sales_count_usd || 0);
+  }
+
+  return result;
+}
 
 export default function FinancialDashboardPage() {
   const { t, i18n } = useTranslation("financial-dashboard");
@@ -58,21 +136,35 @@ export default function FinancialDashboardPage() {
   const [data, setData] = useState<FinancialDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  function formatMoney(value: number, currency: "ARS" | "USD") {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2,
-    }).format(value || 0);
+  function formatMoney(value: number, currency: CurrencyCode) {
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 2,
+      }).format(value || 0);
+    } catch {
+      return `${currency} ${Number(value || 0).toLocaleString(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
   }
 
-  function compactMoney(value: number, currency: "ARS" | "USD") {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(value || 0);
+  function compactMoney(value: number, currency: CurrencyCode) {
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency,
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(value || 0);
+    } catch {
+      return `${currency} ${Number(value || 0).toLocaleString(locale, {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      })}`;
+    }
   }
 
   function monthLabel(value: string) {
@@ -90,32 +182,62 @@ export default function FinancialDashboardPage() {
     return t("labels.operations", { count });
   }
 
-  function totalHeadline(currentData: FinancialDashboardResponse) {
-    const hasARS = Number(currentData.total_ars || 0) > 0;
-    const hasUSD = Number(currentData.total_usd || 0) > 0;
+  const totalsByCurrency = useMemo(() => legacyTotals(data), [data]);
+  const avgTicketByCurrency = useMemo(() => legacyAverageTickets(data), [data]);
+  const salesCountByCurrency = useMemo(() => legacySalesCountByCurrency(data), [data]);
 
-    if (hasARS && hasUSD) {
+  const activeCurrencies = useMemo(() => {
+    const fromTotals = Object.entries(totalsByCurrency)
+      .filter(([, value]) => Number(value || 0) > 0)
+      .map(([currency]) => currency);
+
+    const fromMonthly = (data?.monthly || []).flatMap((row) =>
+      Object.entries(row.totals_by_currency || {})
+        .filter(([, value]) => Number(value || 0) > 0)
+        .map(([currency]) => currency)
+    );
+
+    const fromPayments = (data?.payment_methods || []).flatMap((row) =>
+      Object.entries(row.totals_by_currency || {})
+        .filter(([, value]) => Number(value || 0) > 0)
+        .map(([currency]) => currency)
+    );
+
+    return currencyOrder([...fromTotals, ...fromMonthly, ...fromPayments]);
+  }, [data, totalsByCurrency]);
+
+  function totalHeadline(currentData: FinancialDashboardResponse) {
+    const entries = activeCurrencies
+      .map((currency) => [currency, Number(totalsByCurrency[currency] || 0)] as const)
+      .filter(([, amount]) => amount > 0);
+
+    if (entries.length > 1) {
       return {
         label: t("headline.mixedTotal"),
-        value: `${formatMoney(currentData.total_usd, "USD")} + ${formatMoney(
-          currentData.total_ars,
-          "ARS"
-        )}`,
+        value: entries
+          .map(([currency, amount]) => formatMoney(amount, currency))
+          .join(" + "),
         subtitle: t("headline.mixedSubtitle"),
       };
     }
 
-    if (hasUSD) {
+    if (entries.length === 1) {
+      const [currency, amount] = entries[0];
+
       return {
-        label: t("headline.usdTotal"),
-        value: formatMoney(currentData.total_usd, "USD"),
-        subtitle: t("headline.usdSubtitle"),
+        label: t(`headline.${currency.toLowerCase()}Total`, {
+          defaultValue: t("headline.arsTotal"),
+        }),
+        value: formatMoney(amount, currency),
+        subtitle: t(`headline.${currency.toLowerCase()}Subtitle`, {
+          defaultValue: currency,
+        }),
       };
     }
 
     return {
       label: t("headline.arsTotal"),
-      value: formatMoney(currentData.total_ars, "ARS"),
+      value: formatMoney(Number(currentData.total_ars || 0), "ARS"),
       subtitle: t("headline.arsSubtitle"),
     };
   }
@@ -139,13 +261,61 @@ export default function FinancialDashboardPage() {
     void loadData();
   }, []);
 
+  const monthlyChartData = useMemo(() => {
+    if (!data) return [];
+
+    return data.monthly.map((row) => {
+      const totals = {
+        ...(row.totals_by_currency || {}),
+      } as Record<string, number>;
+
+      if (row.total_ars !== undefined && totals.ARS === undefined) {
+        totals.ARS = Number(row.total_ars || 0);
+      }
+
+      if (row.total_usd !== undefined && totals.USD === undefined) {
+        totals.USD = Number(row.total_usd || 0);
+      }
+
+      return {
+        ...row,
+        ...Object.fromEntries(
+          Object.entries(totals).map(([currency, amount]) => [
+            `currency_${currency}`,
+            Number(amount || 0),
+          ])
+        ),
+      };
+    });
+  }, [data]);
+
   const paymentChartData = useMemo(() => {
     if (!data) return [];
 
-    return data.payment_methods.map((row) => ({
-      name: paymentMethodLabel(row.payment_method),
-      value: row.operations_count,
-    }));
+    return data.payment_methods.map((row) => {
+      const totals = {
+        ...(row.totals_by_currency || {}),
+      } as Record<string, number>;
+
+      if (row.total_ars !== undefined && totals.ARS === undefined) {
+        totals.ARS = Number(row.total_ars || 0);
+      }
+
+      if (row.total_usd !== undefined && totals.USD === undefined) {
+        totals.USD = Number(row.total_usd || 0);
+      }
+
+      return {
+        name: paymentMethodLabel(row.payment_method),
+        operations_count: Number(row.operations_count || 0),
+        ...Object.fromEntries(
+          Object.entries(totals).map(([currency, amount]) => [
+            `currency_${currency}`,
+            Number(amount || 0),
+          ])
+        ),
+      };
+    });
   }, [data, t]);
 
   const headline = useMemo(() => {
@@ -158,7 +328,7 @@ export default function FinancialDashboardPage() {
     }
 
     return totalHeadline(data);
-  }, [data, t, locale]);
+  }, [data, t, locale, activeCurrencies, totalsByCurrency]);
 
   const hasEnoughMonthlyData = useMemo(() => {
     return (data?.monthly?.length || 0) >= 2;
@@ -202,30 +372,44 @@ export default function FinancialDashboardPage() {
             {operationLabel(data.sales_count)}
           </div>
 
-          <div className="df-fin-hero-inline">
-            <span>ARS</span>
-            <strong>{compactMoney(data.total_ars, "ARS")}</strong>
-          </div>
-
-          <div className="df-fin-hero-inline">
-            <span>USD</span>
-            <strong>{compactMoney(data.total_usd, "USD")}</strong>
-          </div>
+          {activeCurrencies.length === 0 ? (
+            <div className="df-fin-hero-inline">
+              <span>ARS</span>
+              <strong>{compactMoney(0, "ARS")}</strong>
+            </div>
+          ) : (
+            activeCurrencies.map((currency) => (
+              <div key={currency} className="df-fin-hero-inline">
+                <span>{currency}</span>
+                <strong>{compactMoney(Number(totalsByCurrency[currency] || 0), currency)}</strong>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
       <div className="df-financial-grid">
-        <div className="df-fin-card">
-          <span>{t("kpis.salesARS")}</span>
-          <strong>{formatMoney(data.total_ars, "ARS")}</strong>
-          <small>{t("kpis.salesARSSubtitle", { count: data.sales_count_ars })}</small>
-        </div>
-
-        <div className="df-fin-card">
-          <span>{t("kpis.salesUSD")}</span>
-          <strong>{formatMoney(data.total_usd, "USD")}</strong>
-          <small>{t("kpis.salesUSDSubtitle", { count: data.sales_count_usd })}</small>
-        </div>
+        {activeCurrencies.map((currency, index) => (
+          <div
+            key={currency}
+            className={`df-fin-card ${index === 0 ? "highlight" : ""}`}
+          >
+            <span>
+              {t("kpis.salesCurrency", {
+                currency,
+                defaultValue: `${t("kpis.sales")} ${currency}`,
+              })}
+            </span>
+            <strong>{formatMoney(Number(totalsByCurrency[currency] || 0), currency)}</strong>
+            <small>
+              {t("kpis.salesCurrencySubtitle", {
+                currency,
+                count: Number(salesCountByCurrency[currency] || 0),
+                defaultValue: `${operationLabel(Number(salesCountByCurrency[currency] || 0))} · ${currency}`,
+              })}
+            </small>
+          </div>
+        ))}
 
         <div className="df-fin-card">
           <span>{t("kpis.sales")}</span>
@@ -233,17 +417,18 @@ export default function FinancialDashboardPage() {
           <small>{t("kpis.salesSubtitle")}</small>
         </div>
 
-        <div className="df-fin-card highlight">
-          <span>{t("kpis.avgTicketARS")}</span>
-          <strong>{formatMoney(data.avg_ticket_ars, "ARS")}</strong>
-          <small>{t("kpis.avgTicketARSSubtitle")}</small>
-        </div>
-
-        <div className="df-fin-card">
-          <span>{t("kpis.avgTicketUSD")}</span>
-          <strong>{formatMoney(data.avg_ticket_usd, "USD")}</strong>
-          <small>{t("kpis.avgTicketUSDSubtitle")}</small>
-        </div>
+        {activeCurrencies.map((currency) => (
+          <div key={`avg-${currency}`} className="df-fin-card">
+            <span>
+              {t("kpis.avgTicketCurrency", {
+                currency,
+                defaultValue: `${t("kpis.avgTicketARS")} ${currency}`,
+              })}
+            </span>
+            <strong>{formatMoney(Number(avgTicketByCurrency[currency] || 0), currency)}</strong>
+            <small>{t("kpis.avgTicketARSSubtitle")}</small>
+          </div>
+        ))}
       </div>
 
       <div
@@ -268,7 +453,7 @@ export default function FinancialDashboardPage() {
             <div style={{ width: "100%", height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                  data={data.monthly}
+                  data={monthlyChartData}
                   margin={{ top: 10, right: 16, left: 4, bottom: 0 }}
                 >
                   <CartesianGrid
@@ -289,6 +474,10 @@ export default function FinancialDashboardPage() {
                     tickLine={false}
                   />
                   <Tooltip
+                    formatter={(value: any, name: any) => {
+                      const currency = String(name || "").replace("currency_", "");
+                      return [formatMoney(Number(value || 0), currency), currency];
+                    }}
                     contentStyle={{
                       borderRadius: 14,
                       border: "1px solid #e7deef",
@@ -297,34 +486,32 @@ export default function FinancialDashboardPage() {
                     }}
                     labelStyle={{ color: "#35293f", fontWeight: 700 }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="total_ars"
-                    name="ARS"
-                    stroke="#8a63d2"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total_usd"
-                    name="USD"
-                    stroke="#c38c7a"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
+
+                  {activeCurrencies.map((currency, index) => (
+                    <Line
+                      key={currency}
+                      type="monotone"
+                      dataKey={`currency_${currency}`}
+                      name={currency}
+                      stroke={PAYMENT_COLORS[index % PAYMENT_COLORS.length]}
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </div>
           ) : (
             <div className="df-fin-single-period">
-              {data.monthly.map((row) => (
+              {monthlyChartData.map((row: any) => (
                 <div key={row.month} className="df-fin-single-period-card">
                   <strong>{monthLabel(row.month)}</strong>
-                  <div>ARS: {formatMoney(row.total_ars, "ARS")}</div>
-                  <div>USD: {formatMoney(row.total_usd, "USD")}</div>
+                  {activeCurrencies.map((currency) => (
+                    <div key={`${row.month}-${currency}`}>
+                      {currency}: {formatMoney(Number(row[`currency_${currency}`] || 0), currency)}
+                    </div>
+                  ))}
                   <small>{operationLabel(row.sales_count)}</small>
                 </div>
               ))}
@@ -350,35 +537,63 @@ export default function FinancialDashboardPage() {
                 margin={{ left: 12, right: 12 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" />
+                <XAxis
+                  type="number"
+                  tickFormatter={(value) => Number(value || 0).toLocaleString(locale)}
+                />
                 <YAxis type="category" dataKey="name" width={110} />
-                <Tooltip />
-                <Bar dataKey="value" radius={[10, 10, 10, 10]}>
-                  {paymentChartData.map((entry, index) => (
-                    <Cell
-                      key={`${entry.name}-${index}`}
-                      fill={PAYMENT_COLORS[index % PAYMENT_COLORS.length]}
-                    />
-                  ))}
-                </Bar>
+                <Tooltip
+                  formatter={(value: any, name: any) => {
+                    const currency = String(name || "").replace("currency_", "");
+                    return [formatMoney(Number(value || 0), currency), currency];
+                  }}
+                />
+
+                {activeCurrencies.map((currency, index) => (
+                  <Bar
+                    key={currency}
+                    dataKey={`currency_${currency}`}
+                    name={currency}
+                    stackId="currency"
+                    radius={[10, 10, 10, 10]}
+                    fill={PAYMENT_COLORS[index % PAYMENT_COLORS.length]}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="df-fin-methods-list">
-            {data.payment_methods.map((row) => (
-              <div key={row.payment_method} className="df-fin-method-row">
-                <div>
-                  <strong>{paymentMethodLabel(row.payment_method)}</strong>
-                  <small>{operationLabel(row.operations_count)}</small>
-                </div>
+            {data.payment_methods.map((row) => {
+              const totals = {
+                ...(row.totals_by_currency || {}),
+              } as Record<string, number>;
 
-                <div className="df-fin-method-row__totals">
-                  <span>{formatMoney(row.total_ars, "ARS")}</span>
-                  <span>{formatMoney(row.total_usd, "USD")}</span>
+              if (row.total_ars !== undefined && totals.ARS === undefined) {
+                totals.ARS = Number(row.total_ars || 0);
+              }
+
+              if (row.total_usd !== undefined && totals.USD === undefined) {
+                totals.USD = Number(row.total_usd || 0);
+              }
+
+              return (
+                <div key={row.payment_method} className="df-fin-method-row">
+                  <div>
+                    <strong>{paymentMethodLabel(row.payment_method)}</strong>
+                    <small>{operationLabel(row.operations_count)}</small>
+                  </div>
+
+                  <div className="df-fin-method-row__totals">
+                    {activeCurrencies.map((currency) => (
+                      <span key={`${row.payment_method}-${currency}`}>
+                        {formatMoney(Number(totals[currency] || 0), currency)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>

@@ -6,6 +6,12 @@ import { Modal } from "../components/common/Modal";
 import { PrimaryButton } from "../components/common/buttons";
 import "../styles/pro-pages.css";
 
+type TenantCurrencyOption = {
+  currency_code: string;
+  symbol: string;
+  is_base: boolean;
+};
+
 type Accessory = {
   id: string;
   tenant_id: string;
@@ -16,7 +22,9 @@ type Accessory = {
   color?: string | null;
   size?: string | null;
   unit_cost: number;
+  unit_cost_currency?: string | null;
   sale_price: number;
+  sale_price_currency?: string | null;
   stock: number;
   min_stock: number;
   status: string;
@@ -42,7 +50,9 @@ type AccessoryFormState = {
   color: string;
   size: string;
   unit_cost: string;
+  unit_cost_currency: string;
   sale_price: string;
+  sale_price_currency: string;
   stock: string;
   min_stock: string;
   status: string;
@@ -60,7 +70,9 @@ const initialForm: AccessoryFormState = {
   color: "",
   size: "",
   unit_cost: "0",
+  unit_cost_currency: "ARS",
   sale_price: "0",
+  sale_price_currency: "ARS",
   stock: "0",
   min_stock: "0",
   status: "ACTIVE",
@@ -74,15 +86,37 @@ const STATUS_OPTIONS = [
   { value: "INACTIVE", labelKey: "status.INACTIVE" },
 ];
 
-function money(value?: number | string | null) {
+function currencyLabel(currency: TenantCurrencyOption) {
+  if (!currency.symbol || currency.symbol === currency.currency_code) {
+    return currency.currency_code;
+  }
+
+  return `${currency.currency_code} · ${currency.symbol}`;
+}
+
+function fallbackCurrencyOptions(): TenantCurrencyOption[] {
+  return [
+    {
+      currency_code: "ARS",
+      symbol: "$",
+      is_base: true,
+    },
+  ];
+}
+
+function money(value?: number | string | null, currency = "ARS") {
   const n = Number(value ?? 0);
   if (Number.isNaN(n)) return "—";
 
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-  }).format(n);
+  try {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toFixed(2)}`;
+  }
 }
 
 function TrashIcon() {
@@ -126,6 +160,8 @@ export default function AccessoriesPage() {
   const { t: tc } = useTranslation("common");
 
   const [rows, setRows] = useState<Accessory[]>([]);
+  const [currencyOptions, setCurrencyOptions] = useState<TenantCurrencyOption[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -145,6 +181,18 @@ export default function AccessoriesPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const safeCurrencyOptions = useMemo(() => {
+    return currencyOptions.length > 0 ? currencyOptions : fallbackCurrencyOptions();
+  }, [currencyOptions]);
+
+  const defaultCurrency = useMemo(() => {
+    return (
+      safeCurrencyOptions.find((currency) => currency.is_base)?.currency_code ||
+      safeCurrencyOptions[0]?.currency_code ||
+      "ARS"
+    );
+  }, [safeCurrencyOptions]);
+
   const categoryOptions = useMemo(() => {
     const values = Array.from(
       new Set(
@@ -155,7 +203,7 @@ export default function AccessoriesPage() {
     ).sort((a, b) => a.localeCompare(b));
 
     return values;
-  }, [rows, t, tc]);
+  }, [rows]);
 
   const lowStockCount = useMemo(
     () => rows.filter((row) => row.stock > 0 && row.stock <= row.min_stock).length,
@@ -166,6 +214,18 @@ export default function AccessoriesPage() {
     () => rows.filter((row) => row.stock <= 0).length,
     [rows]
   );
+
+  async function loadCurrencies() {
+    try {
+      const response = await api.get<TenantCurrencyOption[]>("/tenant-currencies/options");
+      const options = Array.isArray(response.data) ? response.data : [];
+
+      setCurrencyOptions(options);
+    } catch (err) {
+      console.error("Error loading currencies:", err);
+      setCurrencyOptions([]);
+    }
+  }
 
   async function loadAccessories() {
     try {
@@ -199,6 +259,10 @@ export default function AccessoriesPage() {
     void loadAccessories();
   }, [page, search, statusFilter, categoryFilter]);
 
+  useEffect(() => {
+    void loadCurrencies();
+  }, []);
+
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPage(1);
@@ -213,15 +277,25 @@ export default function AccessoriesPage() {
     setPage(1);
   }
 
+  function emptyForm(): AccessoryFormState {
+    return {
+      ...initialForm,
+      unit_cost_currency: defaultCurrency,
+      sale_price_currency: defaultCurrency,
+    };
+  }
+
   function resetForm() {
-    setForm(initialForm);
+    setForm(emptyForm());
     setImagePreview("");
     setError("");
   }
 
   function handleOpenCreate() {
     setEditingAccessory(null);
-    resetForm();
+    setForm(emptyForm());
+    setImagePreview("");
+    setError("");
     setShowModal(true);
   }
 
@@ -236,7 +310,9 @@ export default function AccessoriesPage() {
       color: accessory.color || "",
       size: accessory.size || "",
       unit_cost: String(accessory.unit_cost ?? 0),
+      unit_cost_currency: accessory.unit_cost_currency || defaultCurrency,
       sale_price: String(accessory.sale_price ?? 0),
+      sale_price_currency: accessory.sale_price_currency || defaultCurrency,
       stock: String(accessory.stock ?? 0),
       min_stock: String(accessory.min_stock ?? 0),
       status: accessory.status || "ACTIVE",
@@ -294,7 +370,9 @@ export default function AccessoriesPage() {
       formData.append("color", form.color.trim());
       formData.append("size", form.size.trim());
       formData.append("unit_cost", String(Number(form.unit_cost || 0)));
+      formData.append("unit_cost_currency", form.unit_cost_currency || defaultCurrency);
       formData.append("sale_price", String(Number(form.sale_price || 0)));
+      formData.append("sale_price_currency", form.sale_price_currency || defaultCurrency);
       formData.append("stock", String(Number(form.stock || 0)));
       formData.append("min_stock", String(Number(form.min_stock || 0)));
       formData.append("status", form.status || "ACTIVE");
@@ -404,12 +482,12 @@ export default function AccessoriesPage() {
       {
         key: "unit_cost",
         label: t("fields.unitCost"),
-        render: (row) => money(row.unit_cost),
+        render: (row) => money(row.unit_cost, row.unit_cost_currency || defaultCurrency),
       },
       {
         key: "sale_price",
         label: t("fields.salePrice"),
-        render: (row) => money(row.sale_price),
+        render: (row) => money(row.sale_price, row.sale_price_currency || defaultCurrency),
       },
       {
         key: "status",
@@ -465,7 +543,7 @@ export default function AccessoriesPage() {
         ),
       },
     ];
-  }, [rows, t, tc]);
+  }, [rows, t, tc, defaultCurrency]);
 
   return (
     <section className="df-pro-page">
@@ -510,6 +588,12 @@ export default function AccessoriesPage() {
           resize: vertical;
         }
 
+        .df-accessories-money-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 130px;
+          gap: 10px;
+        }
+
         .df-accessories-hero-kpis {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -543,6 +627,10 @@ export default function AccessoriesPage() {
           .df-accessories-modal-grid {
             grid-template-columns: 1fr;
           }
+
+          .df-accessories-money-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
 
@@ -560,9 +648,7 @@ export default function AccessoriesPage() {
         <div>
           <p className="df-pro-page__eyebrow">{t("hero.eyebrow")}</p>
           <h1 className="df-pro-page__title">{t("title")}</h1>
-          <p className="df-pro-page__subtitle">
-            {t("hero.subtitle")}
-          </p>
+          <p className="df-pro-page__subtitle">{t("hero.subtitle")}</p>
         </div>
 
         <PrimaryButton onClick={handleOpenCreate} style={{ flexShrink: 0 }}>
@@ -760,24 +846,62 @@ export default function AccessoriesPage() {
 
             <div className="df-accessories-modal-field">
               <label>{t("fields.unitCost")}</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.unit_cost}
-                onChange={(e) => setForm((prev) => ({ ...prev, unit_cost: e.target.value }))}
-              />
+
+              <div className="df-accessories-money-grid">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.unit_cost}
+                  onChange={(e) => setForm((prev) => ({ ...prev, unit_cost: e.target.value }))}
+                />
+
+                <select
+                  value={form.unit_cost_currency}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      unit_cost_currency: e.target.value,
+                    }))
+                  }
+                >
+                  {safeCurrencyOptions.map((currency) => (
+                    <option key={currency.currency_code} value={currency.currency_code}>
+                      {currencyLabel(currency)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="df-accessories-modal-field">
               <label>{t("fields.salePrice")}</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.sale_price}
-                onChange={(e) => setForm((prev) => ({ ...prev, sale_price: e.target.value }))}
-              />
+
+              <div className="df-accessories-money-grid">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.sale_price}
+                  onChange={(e) => setForm((prev) => ({ ...prev, sale_price: e.target.value }))}
+                />
+
+                <select
+                  value={form.sale_price_currency}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      sale_price_currency: e.target.value,
+                    }))
+                  }
+                >
+                  {safeCurrencyOptions.map((currency) => (
+                    <option key={currency.currency_code} value={currency.currency_code}>
+                      {currencyLabel(currency)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="df-accessories-modal-field">
@@ -803,51 +927,51 @@ export default function AccessoriesPage() {
             </div>
 
             <div className="df-accessories-modal-field df-accessories-modal-field--full">
-  <label>{t("fields.image")}</label>
+              <label>{t("fields.image")}</label>
 
-  <input
-    id="accessory-image-file"
-    type="file"
-    accept="image/*"
-    style={{ display: "none" }}
-    onChange={(e) => {
-      const file = e.target.files?.[0] || null;
-      setForm((prev) => ({ ...prev, file }));
+              <input
+                id="accessory-image-file"
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setForm((prev) => ({ ...prev, file }));
 
-      if (file) {
-        const previewUrl = URL.createObjectURL(file);
-        setImagePreview(previewUrl);
-      }
-    }}
-  />
+                  if (file) {
+                    const previewUrl = URL.createObjectURL(file);
+                    setImagePreview(previewUrl);
+                  }
+                }}
+              />
 
-  <label
-    htmlFor="accessory-image-file"
-    style={{
-      minHeight: 42,
-      borderRadius: 14,
-      border: "1px solid #e7dfd6",
-      background: "#fff",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "0 16px",
-      fontSize: 14,
-      fontWeight: 700,
-      color: "#3d3648",
-      cursor: "pointer",
-      width: "fit-content",
-    }}
-  >
-    {t("actions.selectFile")}
-  </label>
+              <label
+                htmlFor="accessory-image-file"
+                style={{
+                  minHeight: 42,
+                  borderRadius: 14,
+                  border: "1px solid #e7dfd6",
+                  background: "#fff",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 16px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#3d3648",
+                  cursor: "pointer",
+                  width: "fit-content",
+                }}
+              >
+                {t("actions.selectFile")}
+              </label>
 
-  {form.file ? (
-    <span style={{ fontSize: 12, color: "#7a7082" }}>
-      {form.file.name}
-    </span>
-  ) : null}
-</div> 
+              {form.file ? (
+                <span style={{ fontSize: 12, color: "#7a7082" }}>
+                  {form.file.name}
+                </span>
+              ) : null}
+            </div>
 
             {imagePreview ? (
               <div className="df-accessories-modal-field df-accessories-modal-field--full">

@@ -1,0 +1,121 @@
+{
+  "title": "Agenda Fashion",
+  "hero": {
+    "eyebrow": "OPERACIONES & CLIENTES",
+    "subtitle": "Pruebas, fittings, showroom y entregas.",
+    "upcoming": "Próximos eventos",
+    "filteredTotal": "de {{total}} eventos"
+  },
+  "stats": {
+    "today": "Hoy",
+    "fittings": "Fittings",
+    "deliveries": "Entregas",
+    "returns": "Devoluciones",
+    "overdue": "Vencidos"
+  },
+  "side": {
+    "nextTitle": "Próximo evento",
+    "noNextTitle": "Sin próximos eventos",
+    "noNextSubtitle": "No hay pendientes activos.",
+    "quickFilters": "Filtros rápidos",
+    "distribution": "Distribución"
+  },
+  "types": {
+    "FITTING": "Fitting",
+    "SHOWROOM": "Showroom",
+    "DELIVERY": "Entrega",
+    "RETURN": "Devolución",
+    "PRODUCTION": "Producción",
+    "TASK": "Tarea",
+    "PRODUCTION_STAGE": "Etapa de producción"
+  },
+  "statuses": {
+    "SCHEDULED": "Programado",
+    "CONFIRMED": "Confirmado",
+    "COMPLETED": "Completado",
+    "CANCELLED": "Cancelado",
+    "NO_SHOW": "No asistió",
+    "OVERDUE": "Vencido"
+  },
+  "modal": {
+    "eyebrow": "NUEVO EVENTO",
+    "title": "Crear evento",
+    "subtitle": "Agendá pruebas, entregas, reuniones o tareas de producción.",
+    "detailEyebrow": "DETALLE DEL EVENTO"
+  },
+  "fields": {
+    "customer": "Cliente",
+    "dress": "Vestido",
+    "responsible": "Responsable",
+    "title": "Título",
+    "type": "Tipo",
+    "status": "Estado",
+    "startAt": "Inicio",
+    "endAt": "Fin",
+    "description": "Descripción",
+    "notes": "Notas",
+    "priority": "Prioridad"
+  },
+  "placeholders": {
+    "title": "Ej. Prueba vestido Bridal Noir",
+    "description": "Detalle del evento",
+    "notes": "Notas internas",
+    "customer": "Seleccionar cliente",
+    "dress": "Seleccionar vestido"
+  },
+  "states": {
+    "loading": "Cargando agenda...",
+    "emptyTitle": "No hay eventos próximos",
+    "emptySubtitle": "Las pruebas, reuniones y tareas aparecerán aquí."
+  },
+  "labels": {
+    "noDescription": "Sin descripción",
+    "unnamedCustomer": "Cliente sin nombre",
+    "unnamedDress": "Vestido sin nombre",
+    "eventsCount": "{{count}} evento",
+    "eventsCount_plural": "{{count}} eventos",
+    "to": "a",
+    "allDay": "Todo el día"
+  },
+  "actions": {
+    "view": "Ver detalle",
+    "new": "Nuevo evento",
+    "cancel": "Cancelar",
+    "create": "Crear evento",
+    "saving": "Guardando...",
+    "close": "Cerrar"
+  },
+  "scope": {
+    "mine": "Mi agenda",
+    "general": "Agenda general",
+    "all": "Agenda general"
+  },
+  "filters": {
+    "title": "Filtros",
+    "today": "Hoy",
+    "week": "Semana",
+    "overdue": "Vencidos",
+    "date": "Fecha",
+    "type": "Tipo",
+    "status": "Estado",
+    "allDates": "Todas",
+    "allTypes": "Todos",
+    "allStatuses": "Todos",
+    "clear": "Limpiar",
+    "searchPlaceholder": "Buscar por cliente, vestido, fitting o responsable...",
+    "ALL": "Todos",
+    "URGENT": "Urgentes",
+    "FITTING": "Fittings",
+    "PRODUCTION": "Producción"
+  },
+  "views": {
+    "timeline": "Timeline",
+    "compact": "Compacta"
+  },
+  "priority": {
+    "LOW": "Baja",
+    "MEDIUM": "Media",
+    "HIGH": "Alta",
+    "URGENT": "Urgente"
+  }
+}

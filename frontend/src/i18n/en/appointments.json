@@ -1,0 +1,121 @@
+{
+  "title": "Fashion Calendar",
+  "hero": {
+    "eyebrow": "OPERATIONS & CLIENTS",
+    "subtitle": "Fittings, showroom, deliveries and meetings.",
+    "upcoming": "Upcoming events",
+    "filteredTotal": "of {{total}} events"
+  },
+  "stats": {
+    "today": "Today",
+    "fittings": "Fittings",
+    "deliveries": "Deliveries",
+    "returns": "Returns",
+    "overdue": "Overdue"
+  },
+  "side": {
+    "nextTitle": "Next event",
+    "noNextTitle": "No upcoming events",
+    "noNextSubtitle": "There are no active pending events.",
+    "quickFilters": "Quick filters",
+    "distribution": "Distribution"
+  },
+  "types": {
+    "FITTING": "Fitting",
+    "SHOWROOM": "Showroom",
+    "DELIVERY": "Delivery",
+    "RETURN": "Return",
+    "PRODUCTION": "Production",
+    "TASK": "Task",
+    "PRODUCTION_STAGE": "Production stage"
+  },
+  "statuses": {
+    "SCHEDULED": "Scheduled",
+    "CONFIRMED": "Confirmed",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
+    "NO_SHOW": "No show",
+    "OVERDUE": "Overdue"
+  },
+  "modal": {
+    "eyebrow": "NEW EVENT",
+    "title": "Create event",
+    "subtitle": "Schedule fittings, deliveries, meetings or production tasks.",
+    "detailEyebrow": "EVENT DETAIL"
+  },
+  "fields": {
+    "customer": "Customer",
+    "dress": "Dress",
+    "responsible": "Responsible",
+    "title": "Title",
+    "type": "Type",
+    "status": "Status",
+    "startAt": "Start",
+    "endAt": "End",
+    "description": "Description",
+    "notes": "Notes",
+    "priority": "Priority"
+  },
+  "placeholders": {
+    "title": "Ex. Bridal Noir dress fitting",
+    "description": "Event details",
+    "notes": "Internal notes",
+    "customer": "Select customer",
+    "dress": "Select dress"
+  },
+  "states": {
+    "loading": "Loading calendar...",
+    "emptyTitle": "No upcoming events",
+    "emptySubtitle": "Fittings, meetings and tasks will appear here."
+  },
+  "labels": {
+    "noDescription": "No description",
+    "unnamedCustomer": "Unnamed customer",
+    "unnamedDress": "Unnamed dress",
+    "eventsCount": "{{count}} event",
+    "eventsCount_plural": "{{count}} events",
+    "to": "to",
+    "allDay": "All day"
+  },
+  "actions": {
+    "view": "View detail",
+    "new": "New event",
+    "cancel": "Cancel",
+    "close": "Close",
+    "create": "Create event",
+    "saving": "Saving..."
+  },
+  "scope": {
+    "mine": "My agenda",
+    "general": "Team agenda",
+    "all": "Team agenda"
+  },
+  "filters": {
+    "title": "Filters",
+    "today": "Today",
+    "week": "Week",
+    "overdue": "Overdue",
+    "date": "Date",
+    "type": "Type",
+    "status": "Status",
+    "allDates": "All",
+    "allTypes": "All",
+    "allStatuses": "All",
+    "clear": "Clear",
+    "searchPlaceholder": "Search by customer, dress, fitting or responsible...",
+    "ALL": "All",
+    "URGENT": "Urgent",
+    "FITTING": "Fittings",
+    "PRODUCTION": "Production"
+  },
+  "views": {
+    "timeline": "Timeline",
+    "compact": "Compact"
+  },
+  "priority": {
+    "LOW": "Low",
+    "MEDIUM": "Medium",
+    "HIGH": "High",
+    "URGENT": "Urgent"
+  }
+}

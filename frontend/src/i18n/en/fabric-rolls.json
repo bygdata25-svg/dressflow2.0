@@ -39,7 +39,9 @@
     "RESERVED": "Reserved",
     "USED": "Used",
     "EMPTY": "Empty",
-    "DEPLETED": "Depleted"
+    "DEPLETED": "Depleted",
+    "LOW_STOCK": "Low stock",
+    "RESERVED": "Reserved"
   },
 
   "units": {

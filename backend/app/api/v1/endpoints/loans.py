@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time, timezone
 from uuid import UUID as UUIDType
 
 from fastapi import APIRouter, Depends, Query
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_roles
 from app.core.database import get_db
 from app.core.exceptions import AppException
+from app.models.appointment import Appointment
 from app.models.customer import Customer
 from app.models.dress import Dress
 from app.models.loan import Loan
@@ -46,6 +47,14 @@ def build_loan_response(db: Session, loan: Loan) -> LoanResponse:
     )
 
 
+def build_return_appointment_start_at(expected_return_date: date) -> datetime:
+    return datetime.combine(
+        expected_return_date,
+        time(hour=18, minute=0),
+        tzinfo=timezone.utc,
+    )
+
+
 @router.get("")
 def list_loans(
     db: Session = Depends(get_db),
@@ -55,6 +64,7 @@ def list_loans(
     status: str | None = None,
     search: str | None = None,
     loan_type: str | None = None,
+    dress_id: UUIDType | None = None,
 ):
     query = select(Loan).where(
         Loan.tenant_id == membership.tenant_id,
@@ -66,6 +76,9 @@ def list_loans(
 
     if loan_type:
         query = query.where(Loan.loan_type == loan_type.strip().upper())
+
+    if dress_id:
+        query = query.where(Loan.dress_id == dress_id)
 
     if search:
         like_value = f"%{search}%"
@@ -203,6 +216,26 @@ def create_loan(
         },
     )
 
+    if loan.expected_return_date:
+        appointment = Appointment(
+            tenant_id=membership.tenant_id,
+            title=dress.code or dress.name or "Dress",
+            description=None,
+            appointment_type="RETURN",
+            status="SCHEDULED",
+            start_at=build_return_appointment_start_at(loan.expected_return_date),
+            end_at=None,
+            customer_id=loan.customer_id,
+            dress_id=loan.dress_id,
+            loan_id=loan.id,
+            production_order_id=None,
+            assigned_user_id=None,
+            color=None,
+            notes=None,
+        )
+
+        db.add(appointment)
+
     db.commit()
     db.refresh(loan)
 
@@ -241,7 +274,7 @@ def return_loan(
         raise AppException(404, "Dress not found", "DRESS_NOT_FOUND")
 
     loan.status = "RETURNED"
-    loan.actual_return_date = date.today()
+    loan.actual_return_date = datetime.now(timezone.utc)
     dress.status = "AVAILABLE"
 
     create_audit_log(

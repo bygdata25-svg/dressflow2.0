@@ -652,6 +652,23 @@ def add_fabric_material(
     if not roll:
         raise AppException(404, "Fabric roll not found", "FABRIC_ROLL_NOT_FOUND")
 
+    planned_quantity = _decimal(payload.planned_quantity)
+    available_quantity = _decimal(roll.current_length) - _decimal(roll.reserved_length)
+
+    if planned_quantity <= 0:
+        raise AppException(
+            400,
+            "Planned quantity must be greater than zero",
+            "INVALID_PLANNED_QUANTITY",
+        )
+
+    if planned_quantity > available_quantity:
+        raise AppException(
+            400,
+            "Not enough available roll stock",
+            "FABRIC_ROLL_NOT_ENOUGH_AVAILABLE",
+        )
+
     unit_cost_snapshot = getattr(roll, "price_per_meter", None)
 
     material = ProductionOrderMaterial(
@@ -660,7 +677,7 @@ def add_fabric_material(
         material_type="FABRIC_ROLL",
         fabric_roll_id=payload.fabric_roll_id,
         description_snapshot=f"Rollo {roll.roll_code}",
-        planned_quantity=payload.planned_quantity,
+        planned_quantity=planned_quantity,
         delivered_quantity=Decimal("0"),
         consumed_quantity=Decimal("0"),
         returned_quantity=Decimal("0"),
@@ -754,6 +771,89 @@ def add_trim_material(
     db.commit()
     db.refresh(material)
     return build_material_response(db, material)
+
+
+@router.delete("/{order_id}/materials/{material_id}")
+def delete_production_order_material(
+    order_id: UUIDType,
+    material_id: UUIDType,
+    db: Session = Depends(get_db),
+    membership=Depends(require_roles("admin", "manager")),
+):
+    order = _get_order_or_404(db, membership.tenant_id, order_id)
+
+    material = db.execute(
+        select(ProductionOrderMaterial).where(
+            ProductionOrderMaterial.id == material_id,
+            ProductionOrderMaterial.production_order_id == order_id,
+            ProductionOrderMaterial.tenant_id == membership.tenant_id,
+        )
+    ).scalar_one_or_none()
+
+    if not material:
+        raise AppException(
+            404,
+            "Material not found",
+            "PRODUCTION_ORDER_MATERIAL_NOT_FOUND",
+        )
+
+    if _decimal(material.delivered_quantity) > 0:
+        raise AppException(
+            400,
+            "Issued materials cannot be deleted. Register a return instead.",
+            "ISSUED_MATERIAL_CANNOT_BE_DELETED",
+        )
+
+    if material.material_type == "FABRIC_ROLL" and material.fabric_roll_id:
+        roll = db.execute(
+            select(FabricRoll).where(
+                FabricRoll.id == material.fabric_roll_id,
+                FabricRoll.tenant_id == membership.tenant_id,
+            )
+        ).scalar_one_or_none()
+
+        if roll and _decimal(material.planned_quantity) > 0:
+            reserved_to_release = min(
+                _decimal(roll.reserved_length),
+                _decimal(material.planned_quantity),
+            )
+            roll.reserved_length = _decimal(roll.reserved_length) - reserved_to_release
+
+    if material.material_type == "TRIM" and material.trim_id:
+        trim = db.execute(
+            select(Trim).where(
+                Trim.id == material.trim_id,
+                Trim.tenant_id == membership.tenant_id,
+            )
+        ).scalar_one_or_none()
+
+        if trim and _decimal(material.planned_quantity) > 0:
+            reserved_to_release = min(
+                _decimal(trim.reserved_stock),
+                _decimal(material.planned_quantity),
+            )
+            trim.reserved_stock = _decimal(trim.reserved_stock) - reserved_to_release
+
+    create_order_event(
+        db=db,
+        tenant_id=membership.tenant_id,
+        production_order_id=order_id,
+        created_by_user_id=membership.user_id,
+        event_type="MATERIAL_REMOVED",
+        payload={
+            "material_id": str(material.id),
+            "material_type": material.material_type,
+            "planned_quantity": str(material.planned_quantity),
+        },
+    )
+
+    db.delete(material)
+
+    sync_order_totals(db, order)
+
+    db.commit()
+
+    return {"message": "Material deleted successfully"}
 
 
 @router.post("/{order_id}/materials/{material_id}/reserve")
@@ -877,7 +977,12 @@ def issue_material(
                 type="OUT",
                 quantity=planned,
                 reference=f"Production Order {order.order_number}",
-                notes=f"Issue fabric to production order material {material_id}",
+                notes="fabricMovements.notes.productionIssue",
+                notes_key="fabricMovements.notes.productionIssue",
+                notes_params={
+                    "orderNumber": order.order_number,
+                    "rollCode": roll.roll_code,
+                },
                 production_order_id=order_id,
                 movement_reason="PRODUCTION_ISSUE",
             )
@@ -906,7 +1011,12 @@ def issue_material(
                 type="OUT",
                 quantity=planned,
                 reference=f"Production Order {order.order_number}",
-                notes=f"Issue trim to production order material {material_id}",
+                notes="trimMovements.notes.productionIssue",
+                notes_key="trimMovements.notes.productionIssue",
+                notes_params={
+                    "orderNumber": order.order_number,
+                    "trimCode": trim.code,
+                },
                 production_order_id=order_id,
                 movement_reason="PRODUCTION_ISSUE",
                 created_at=_now_utc(),
@@ -996,7 +1106,12 @@ def return_material(
                 type="IN",
                 quantity=new_return,
                 reference=f"Production Order {order.order_number}",
-                notes=f"Return fabric from production order material {material_id}",
+                notes="fabricMovements.notes.productionReturn",
+                notes_key="fabricMovements.notes.productionReturn",
+                notes_params={
+                    "orderNumber": order.order_number,
+                    "rollCode": roll.roll_code,
+                },
                 production_order_id=order_id,
                 movement_reason="PRODUCTION_RETURN",
             )
@@ -1019,7 +1134,12 @@ def return_material(
                 type="IN",
                 quantity=new_return,
                 reference=f"Production Order {order.order_number}",
-                notes=f"Return trim from production order material {material_id}",
+                notes="trimMovements.notes.productionReturn",
+                notes_key="trimMovements.notes.productionReturn",
+                notes_params={
+                    "orderNumber": order.order_number,
+                    "trimCode": trim.code,
+                },
                 production_order_id=order_id,
                 movement_reason="PRODUCTION_RETURN",
                 created_at=_now_utc(),

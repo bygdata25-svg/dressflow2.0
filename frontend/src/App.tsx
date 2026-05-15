@@ -46,6 +46,7 @@ import { getTenantSlugFromHostname } from "./lib/tenantHost";
 import DressStockValuationReportPage from "./pages/DressStockValuationReportPage";
 import ImportSettingsPage from "./pages/ImportSettingsPage";
 import ProductionProcessTypesPage from "./pages/ProductionProcessTypesPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
 
 import { applyTenantBranding } from "./lib/tenantBranding";
 import { api } from "./lib/api";
@@ -729,6 +730,18 @@ function AppShell({
       });
     }
 
+    if (hasFeature("appointments")) {
+      items.push({
+        to: "/appointments",
+        label: (
+          <>
+            <SidebarIcon><OrderIcon /></SidebarIcon>
+            <span>{t("navigation.appointments")}</span>
+          </>
+        ),
+      });
+    }
+
     if (hasFeature("sales")) {
       items.push({
         to: "/sales",
@@ -1283,6 +1296,7 @@ function AppShell({
             <Route path="/dresses" element={<DressesPage />} />
             <Route path="/dresses/:id" element={<EditDressPage />} />
             <Route path="/loans" element={<LoansPage />} />
+            <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/suppliers" element={<SuppliersPage />} />
             <Route path="/fabrics" element={<FabricsPage />} />

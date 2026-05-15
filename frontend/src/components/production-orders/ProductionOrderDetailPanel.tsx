@@ -87,6 +87,29 @@ type OutputItem = {
   notes?: string | null;
 };
 
+type ProductionOrderAssignment = {
+  id: string;
+  tenant_id: string;
+  production_order_id: string;
+  supplier_id: string;
+  process_type_id: string;
+  appointment_id?: string | null;
+  status: string;
+  estimated_cost?: string | number | null;
+  actual_cost?: string | number | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  deleted_at?: string | null;
+  supplier_name?: string | null;
+  process_code?: string | null;
+  process_name?: string | null;
+  process_color?: string | null;
+  process_icon?: string | null;
+};
+
 type Roll = {
   id: string;
   roll_code: string;
@@ -207,7 +230,10 @@ function normalizePayloadKey(key: string) {
 
 function translateEventType(t: any, value?: string | null) {
   const key = String(value || "").trim().toUpperCase();
-  return t(`production-orders:events.types.${key}`, value || t("production-orders:events.fallback", "Movimiento"));
+
+  return t(`production-orders:events.types.${key}`, {
+    defaultValue: value || t("production-orders:events.fallback"),
+  });
 }
 
 function eventIcon(eventType?: string | null) {
@@ -264,6 +290,40 @@ function translatePriority(t: any, value?: string | null) {
   return t(`production-orders:priority.${key}`, value || "-");
 }
 
+function translateAssignmentStatus(t: any, value?: string | null) {
+  const key = String(value || "").trim().toUpperCase();
+
+  if (!key) {
+    return "-";
+  }
+
+  return t(`production-orders:assignments.status.${key}`, {
+    defaultValue: key,
+  });
+}
+
+function assignmentStatusClass(status?: string | null) {
+  const key = String(status || "").trim().toUpperCase();
+
+  if (!key) {
+    return "po-assignment-badge po-assignment-badge--scheduled";
+  }
+
+  if (key === "COMPLETED" || key === "DONE" || key === "FINISHED") {
+    return "po-assignment-badge po-assignment-badge--completed";
+  }
+
+  if (key === "IN_PROGRESS" || key === "STARTED") {
+    return "po-assignment-badge po-assignment-badge--progress";
+  }
+
+  if (key === "CANCELLED" || key === "CANCELED") {
+    return "po-assignment-badge po-assignment-badge--cancelled";
+  }
+
+  return "po-assignment-badge po-assignment-badge--scheduled";
+}
+
 function translatePayloadKey(t: any, value?: string | null) {
   const key = normalizePayloadKey(String(value || "").trim());
   return t(`production-orders:events.payload.${key}`, key);
@@ -280,13 +340,107 @@ function translatePayloadValue(t: any, key: string, value: unknown) {
 
   if (normalizedKey === "materialType") {
     const raw = String(value || "").trim().toUpperCase();
-    if (raw === "FABRIC_ROLL") return t("production-orders:materials.fabric", "Tela");
-    if (raw === "TRIM") return t("production-orders:materials.trim", "Avío");
+    if (raw === "FABRIC_ROLL") return t("production-orders:materials.fabric");
+    if (raw === "TRIM") return t("production-orders:materials.trim");
   }
 
   return String(value);
 }
 
+
+function getProductionOrderErrorMessage(
+  t: any,
+  code?: string,
+  _fallback?: string
+) {
+  const key = String(code || "").trim().toUpperCase();
+
+  const map: Record<
+    string,
+    {
+      title: string;
+      message: string;
+    }
+  > = {
+    FABRIC_ROLL_NOT_ENOUGH_AVAILABLE: {
+      title: t("production-orders:errors.stockTitle"),
+      message: t(
+        "production-orders:errors.fabricRollNotEnough"
+      ),
+    },
+    FABRIC_ROLL_NOT_ENOUGH_AVAILABLE_TO_RESERVE: {
+      title: t("production-orders:errors.reserveTitle"),
+      message: t(
+        "production-orders:errors.fabricReserveNotEnough"
+      ),
+    },
+    TRIM_NOT_ENOUGH_AVAILABLE_TO_RESERVE: {
+      title: t("production-orders:errors.reserveTitle"),
+      message: t(
+        "production-orders:errors.trimReserveNotEnough"
+      ),
+    },
+    ISSUED_MATERIAL_CANNOT_BE_DELETED: {
+      title: t("production-orders:errors.materialDeleteTitle"),
+      message: t(
+        "production-orders:errors.materialDeleteIssued"
+      ),
+    },
+    INVALID_PLANNED_QUANTITY: {
+      title: t("production-orders:errors.invalidQuantityTitle"),
+      message: t(
+        "production-orders:errors.invalidPlannedQuantity"
+      ),
+    },
+    MISSING_ROLL: {
+      title: t("production-orders:errors.missingRollTitle"),
+      message: t("production-orders:errors.missingRollMessage"),
+    },
+    MISSING_TRIM: {
+      title: t("production-orders:errors.missingTrimTitle"),
+      message: t("production-orders:errors.missingTrimMessage"),
+    },
+  };
+
+  return (
+    map[key] || {
+      title: t("production-orders:errors.genericTitle"),
+      message: t("production-orders:errors.genericMessage"),
+    }
+  );
+}
+
+function extractApiError(err: any, fallback: string) {
+  const detail = err?.response?.data?.detail;
+
+  if (typeof detail === "string") {
+    return {
+      code: err?.response?.data?.code || "",
+      message: detail,
+    };
+  }
+
+  if (Array.isArray(detail)) {
+    return {
+      code: "",
+      message: detail.map((item: any) => item?.msg || String(item)).join(" · "),
+    };
+  }
+
+  return {
+    code:
+      detail?.code ||
+      detail?.error_code ||
+      detail?.type ||
+      err?.response?.data?.code ||
+      "",
+    message:
+      detail?.message ||
+      detail?.detail ||
+      err?.response?.data?.message ||
+      fallback,
+  };
+}
 
 function payloadEntries(t: any, payload?: Record<string, unknown> | null) {
   if (!payload) return [];
@@ -356,152 +510,34 @@ function normalizePrintLang(lang?: string | null): PrintLang {
   return String(lang || "").toLowerCase().startsWith("en") ? "en" : "es";
 }
 
-function printLabel(lang: PrintLang, key: string) {
-  const labels: Record<PrintLang, Record<string, string>> = {
-    es: {
-      workshopTitle: "Ficha Técnica de Producción",
-      costsTitle: "Ficha de Costos de Producción",
-      workshopSubtitle: "Uso taller · Ficha técnica para confección",
-      costsSubtitle: "Uso interno · Control de costos y confección",
-      internal: "Interno",
-      costSummary: "Resumen de costos",
-      totalCosts: "Total de costos",
-      totalCostsHint: "Costo consolidado de materiales, mano de obra y costos adicionales.",
-      currency: "Moneda",
-      produced: "Producido",
-      materialCost: "Costo material",
-      laborOthers: "Mano de obra / otros",
-      total: "Total",
-      noRecords: "No hay registros",
-      priority: "Prioridad",
-      delivery: "Entrega",
-      internalUse: "Uso interno",
-      workshopUse: "Uso taller",
-      order: "Orden",
-      workshop: "Taller",
-      garmentInfo: "Información de la prenda",
-      garment: "Prenda",
-      code: "Código",
-      size: "Talle",
-      color: "Color",
-      planned: "Planificado",
-      delivered: "Entregado",
-      notes: "Observaciones",
-      noNotes: "Sin observaciones.",
-      reception: "Recepción",
-      noReceptionNotes: "Sin notas de recepción.",
-      referenceImage: "Imagen de referencia",
-      noReferenceImage: "Sin imagen de referencia",
-      status: "Estado",
-      assignedFabrics: "Telas asignadas",
-      materials: "Materiales",
-      assignedTrims: "Avíos asignados",
-      accessories: "Accesorios",
-      description: "Descripción",
-      roll: "Rollo",
-      unit: "Unidad",
-      unitCost: "Costo unitario",
-      productionSignature: "Firma responsable de producción",
-      workshopSignature: "Firma taller / recepción",
-      internalCostSheet: "Ficha interna de costos",
-      workshopSheet: "Ficha técnica de taller",
-      draft: "Borrador",
-      materialsReserved: "Materiales reservados",
-      inProduction: "En producción",
-      completed: "Completada",
-      cancelled: "Cancelada",
-      low: "Baja",
-      normal: "Normal",
-      high: "Alta",
-      urgent: "Urgente",
-      approved: "Aprobada",
-    },
-    en: {
-      workshopTitle: "Production Technical Sheet",
-      costsTitle: "Production Cost Sheet",
-      workshopSubtitle: "Workshop use · Technical sheet for garment making",
-      costsSubtitle: "Internal use · Cost and production control",
-      internal: "Internal",
-      costSummary: "Cost summary",
-      totalCosts: "Total costs",
-      totalCostsHint: "Consolidated cost of materials, labor and additional costs.",
-      currency: "Currency",
-      produced: "Produced",
-      materialCost: "Material cost",
-      laborOthers: "Labor / others",
-      total: "Total",
-      noRecords: "No records",
-      priority: "Priority",
-      delivery: "Delivery",
-      internalUse: "Internal use",
-      workshopUse: "Workshop use",
-      order: "Order",
-      workshop: "Workshop",
-      garmentInfo: "Garment information",
-      garment: "Garment",
-      code: "Code",
-      size: "Size",
-      color: "Color",
-      planned: "Planned",
-      delivered: "Delivered",
-      notes: "Notes",
-      noNotes: "No notes.",
-      reception: "Reception",
-      noReceptionNotes: "No reception notes.",
-      referenceImage: "Reference image",
-      noReferenceImage: "No reference image",
-      status: "Status",
-      assignedFabrics: "Assigned fabrics",
-      materials: "Materials",
-      assignedTrims: "Assigned trims",
-      accessories: "Accessories",
-      description: "Description",
-      roll: "Roll",
-      unit: "Unit",
-      unitCost: "Unit cost",
-      productionSignature: "Production manager signature",
-      workshopSignature: "Workshop / reception signature",
-      internalCostSheet: "Internal cost sheet",
-      workshopSheet: "Workshop technical sheet",
-      draft: "Draft",
-      materialsReserved: "Materials reserved",
-      inProduction: "In production",
-      completed: "Completed",
-      cancelled: "Cancelled",
-      low: "Low",
-      normal: "Normal",
-      high: "High",
-      urgent: "Urgent",
-      approved: "Approved",
-    },
-  };
-
-  return labels[lang][key] || key;
+function printLabel(t: any, key: string) {
+  return t(`production-orders:print.${key}`);
 }
 
-function getPrintableStatus(status?: string | null, lang: PrintLang = "es") {
+
+function getPrintableStatus(t: any, status?: string | null) {
   if (!status) return "-";
 
   const map: Record<string, string> = {
-    DRAFT: printLabel(lang, "draft"),
-    MATERIALS_RESERVED: printLabel(lang, "materialsReserved"),
-    IN_PRODUCTION: printLabel(lang, "inProduction"),
-    APPROVED: printLabel(lang, "approved"),
-    COMPLETED: printLabel(lang, "completed"),
-    CANCELLED: printLabel(lang, "cancelled"),
+    DRAFT: printLabel(t, "draft"),
+    MATERIALS_RESERVED: printLabel(t, "materialsReserved"),
+    IN_PRODUCTION: printLabel(t, "inProduction"),
+    APPROVED: printLabel(t, "approved"),
+    COMPLETED: printLabel(t, "completed"),
+    CANCELLED: printLabel(t, "cancelled"),
   };
 
   return map[status] || status;
 }
 
-function getPrintablePriority(priority?: string | null, lang: PrintLang = "es") {
+function getPrintablePriority(t: any, priority?: string | null) {
   if (!priority) return "-";
 
   const map: Record<string, string> = {
-    LOW: printLabel(lang, "low"),
-    NORMAL: printLabel(lang, "normal"),
-    HIGH: printLabel(lang, "high"),
-    URGENT: printLabel(lang, "urgent"),
+    LOW: printLabel(t, "low"),
+    NORMAL: printLabel(t, "normal"),
+    HIGH: printLabel(t, "high"),
+    URGENT: printLabel(t, "urgent"),
   };
 
   return map[priority] || priority;
@@ -517,6 +553,7 @@ function toAbsoluteAssetUrl(url?: string | null) {
 }
 
 function buildPrintDocumentHtml({
+  t,
   mode,
   order,
   costSummary,
@@ -526,6 +563,7 @@ function buildPrintDocumentHtml({
   tenantLogoUrl,
   lang,
 }: {
+  t: any;
   mode: PdfMode;
   order: ProductionOrder;
   costSummary: CostSummary | null;
@@ -540,19 +578,19 @@ function buildPrintDocumentHtml({
 
   const title =
     mode === "finance"
-      ? printLabel(lang, "costsTitle")
-      : printLabel(lang, "workshopTitle");
+      ? printLabel(t, "costsTitle")
+      : printLabel(t, "workshopTitle");
 
   const subtitle =
     mode === "finance"
-      ? printLabel(lang, "costsSubtitle")
-      : printLabel(lang, "workshopSubtitle");
+      ? printLabel(t, "costsSubtitle")
+      : printLabel(t, "workshopSubtitle");
 
   const renderRows = (items: Array<any>, includeCosts: boolean) => {
     if (items.length === 0) {
       return `
         <tr>
-          <td colspan="${includeCosts ? 7 : 6}" class="empty">${printLabel(lang, "noRecords")}</td>
+          <td colspan="${includeCosts ? 7 : 6}" class="empty">${printLabel(t, "noRecords")}</td>
         </tr>
       `;
     }
@@ -610,25 +648,25 @@ function buildPrintDocumentHtml({
       <section class="section section-finance">
         <div class="section-header">
           <div>
-            <span class="section-kicker">${printLabel(lang, "internal")}</span>
-            <h2>${printLabel(lang, "costSummary")}</h2>
+            <span class="section-kicker">${printLabel(t, "internal")}</span>
+            <h2>${printLabel(t, "costSummary")}</h2>
           </div>
         </div>
 
         <div class="finance-hero">
           <div class="finance-main">
-            <span class="finance-label">${printLabel(lang, "totalCosts")}</span>
+            <span class="finance-label">${printLabel(t, "totalCosts")}</span>
             <strong>${safeText(formatPrintMoney(financeTotal, currency))}</strong>
-            <p>${printLabel(lang, "totalCostsHint")}</p>
+            <p>${printLabel(t, "totalCostsHint")}</p>
           </div>
 
           <div class="finance-side">
             <div class="finance-mini finance-mini-dark">
-              <span>${printLabel(lang, "currency")}</span>
+              <span>${printLabel(t, "currency")}</span>
               <strong>${safeText(currency)}</strong>
             </div>
             <div class="finance-mini finance-mini-dark">
-              <span>${printLabel(lang, "produced")}</span>
+              <span>${printLabel(t, "produced")}</span>
               <strong>${safeText(order.produced_quantity)}</strong>
             </div>
           </div>
@@ -636,15 +674,15 @@ function buildPrintDocumentHtml({
 
         <div class="finance-grid finance-grid--compact">
           <div class="finance-card">
-            <span>${printLabel(lang, "materialCost")}</span>
+            <span>${printLabel(t, "materialCost")}</span>
             <strong>${safeText(formatPrintMoney(financeMaterialCost, currency))}</strong>
           </div>
           <div class="finance-card">
-            <span>${printLabel(lang, "laborOthers")}</span>
+            <span>${printLabel(t, "laborOthers")}</span>
             <strong>${safeText(formatPrintMoney(financeLaborAndOther, currency))}</strong>
           </div>
           <div class="finance-card">
-            <span>${printLabel(lang, "total")}</span>
+            <span>${printLabel(t, "total")}</span>
             <strong>${safeText(formatPrintMoney(financeTotal, currency))}</strong>
           </div>
         </div>
@@ -1185,74 +1223,74 @@ function buildPrintDocumentHtml({
             </div>
 
             <div class="chips">
-              <span class="chip">${safeText(getPrintableStatus(order.status, lang))}</span>
-              <span class="chip">${printLabel(lang, "priority")}: ${safeText(
-                getPrintablePriority(order.priority, lang)
+              <span class="chip">${safeText(getPrintableStatus(t, order.status))}</span>
+              <span class="chip">${printLabel(t, "priority")}: ${safeText(
+                getPrintablePriority(t, order.priority)
               )}</span>
-              <span class="chip">${printLabel(lang, "delivery")}: ${safeText(formatDate(order.due_date))}</span>
-              <span class="chip">${mode === "finance" ? printLabel(lang, "internalUse") : printLabel(lang, "workshopUse")}</span>
+              <span class="chip">${printLabel(t, "delivery")}: ${safeText(formatDate(order.due_date))}</span>
+              <span class="chip">${mode === "finance" ? printLabel(t, "internalUse") : printLabel(t, "workshopUse")}</span>
             </div>
           </div>
 
           <div class="order-box">
-            <span class="label">${printLabel(lang, "order")}</span>
+            <span class="label">${printLabel(t, "order")}</span>
             <span class="value">${safeText(order.order_number)}</span>
-            <div class="sub">${printLabel(lang, "workshop")}: ${safeText(order.workshop_supplier_name)}</div>
+            <div class="sub">${printLabel(t, "workshop")}: ${safeText(order.workshop_supplier_name)}</div>
           </div>
         </section>
 
         <section class="hero">
           <div class="card">
-            <div class="card-head">${printLabel(lang, "garmentInfo")}</div>
+            <div class="card-head">${printLabel(t, "garmentInfo")}</div>
             <div class="card-body">
               <div class="meta-grid">
                 <div class="meta-item">
-                  <span>${printLabel(lang, "garment")}</span>
+                  <span>${printLabel(t, "garment")}</span>
                   <strong>${safeText(order.target_dress_name)}</strong>
                 </div>
                 <div class="meta-item">
-                  <span>${printLabel(lang, "code")}</span>
+                  <span>${printLabel(t, "code")}</span>
                   <strong>${safeText(order.target_dress_code)}</strong>
                 </div>
                 <div class="meta-item">
-                  <span>${printLabel(lang, "size")}</span>
+                  <span>${printLabel(t, "size")}</span>
                   <strong>${safeText(order.target_size)}</strong>
                 </div>
                 <div class="meta-item">
-                  <span>${printLabel(lang, "color")}</span>
+                  <span>${printLabel(t, "color")}</span>
                   <strong>${safeText(order.target_color)}</strong>
                 </div>
                 <div class="meta-item">
-                  <span>${printLabel(lang, "planned")}</span>
+                  <span>${printLabel(t, "planned")}</span>
                   <strong>${safeText(order.planned_quantity)}</strong>
                 </div>
                 <div class="meta-item">
-                  <span>${printLabel(lang, "produced")}</span>
+                  <span>${printLabel(t, "produced")}</span>
                   <strong>${safeText(order.produced_quantity)}</strong>
                 </div>
               </div>
 
               <div class="note">
-                <strong>${printLabel(lang, "notes")}</strong>
-                ${safeText(order.notes, printLabel(lang, "noNotes"))}
+                <strong>${printLabel(t, "notes")}</strong>
+                ${safeText(order.notes, printLabel(t, "noNotes"))}
               </div>
 
               <div class="note">
-                <strong>${printLabel(lang, "reception")}</strong>
-                ${safeText(order.received_notes, printLabel(lang, "noReceptionNotes"))}
+                <strong>${printLabel(t, "reception")}</strong>
+                ${safeText(order.received_notes, printLabel(t, "noReceptionNotes"))}
               </div>
             </div>
           </div>
 
           <div class="visual">
             <div class="card">
-              <div class="card-head">${printLabel(lang, "referenceImage")}</div>
+              <div class="card-head">${printLabel(t, "referenceImage")}</div>
               <div class="card-body">
                 <div class="image-box">
                   ${
                     designPhoto
                       ? `<img src="${designPhoto}" alt="${safeText(order.target_dress_name)}" />`
-                      : `<div class="image-empty">${printLabel(lang, "noReferenceImage")}</div>`
+                      : `<div class="image-empty">${printLabel(t, "noReferenceImage")}</div>`
                   }
                 </div>
               </div>
@@ -1260,15 +1298,15 @@ function buildPrintDocumentHtml({
 
             <div class="mini-grid">
               <div class="mini-card">
-                <span>${printLabel(lang, "status")}</span>
-                <strong>${safeText(getPrintableStatus(order.status, lang))}</strong>
+                <span>${printLabel(t, "status")}</span>
+                <strong>${safeText(getPrintableStatus(t, order.status))}</strong>
               </div>
               <div class="mini-card">
-                <span>${printLabel(lang, "priority")}</span>
-                <strong>${safeText(getPrintablePriority(order.priority, lang))}</strong>
+                <span>${printLabel(t, "priority")}</span>
+                <strong>${safeText(getPrintablePriority(t, order.priority))}</strong>
               </div>
               <div class="mini-card">
-                <span>${printLabel(lang, "workshop")}</span>
+                <span>${printLabel(t, "workshop")}</span>
                 <strong>${safeText(order.workshop_supplier_name)}</strong>
               </div>
             </div>
@@ -1277,20 +1315,20 @@ function buildPrintDocumentHtml({
 
         <section class="section section-materials">
           <div class="section-title-row">
-            <h2>${printLabel(lang, "assignedFabrics")}</h2>
-            <span class="section-kicker">${printLabel(lang, "materials")}</span>
+            <h2>${printLabel(t, "assignedFabrics")}</h2>
+            <span class="section-kicker">${printLabel(t, "materials")}</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>${printLabel(lang, "description")}</th>
-                  <th>${printLabel(lang, "roll")}</th>
-                  <th>${printLabel(lang, "planned")}</th>
-                  <th>${printLabel(lang, "delivered")}</th>
-                  <th>${printLabel(lang, "unit")}</th>
-                  <th>${printLabel(lang, "notes")}</th>
-                  ${mode === "finance" ? `<th>${printLabel(lang, "unitCost")}</th>` : ""}
+                  <th>${printLabel(t, "description")}</th>
+                  <th>${printLabel(t, "roll")}</th>
+                  <th>${printLabel(t, "planned")}</th>
+                  <th>${printLabel(t, "delivered")}</th>
+                  <th>${printLabel(t, "unit")}</th>
+                  <th>${printLabel(t, "notes")}</th>
+                  ${mode === "finance" ? `<th>${printLabel(t, "unitCost")}</th>` : ""}
                 </tr>
               </thead>
               <tbody>
@@ -1302,20 +1340,20 @@ function buildPrintDocumentHtml({
 
         <section class="section">
           <div class="section-title-row">
-            <h2>${printLabel(lang, "assignedTrims")}</h2>
-            <span class="section-kicker">${printLabel(lang, "accessories")}</span>
+            <h2>${printLabel(t, "assignedTrims")}</h2>
+            <span class="section-kicker">${printLabel(t, "accessories")}</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>${printLabel(lang, "description")}</th>
-                  <th>${printLabel(lang, "roll")}</th>
-                  <th>${printLabel(lang, "planned")}</th>
-                  <th>${printLabel(lang, "delivered")}</th>
-                  <th>${printLabel(lang, "unit")}</th>
-                  <th>${printLabel(lang, "notes")}</th>
-                  ${mode === "finance" ? `<th>${printLabel(lang, "unitCost")}</th>` : ""}
+                  <th>${printLabel(t, "description")}</th>
+                  <th>${printLabel(t, "roll")}</th>
+                  <th>${printLabel(t, "planned")}</th>
+                  <th>${printLabel(t, "delivered")}</th>
+                  <th>${printLabel(t, "unit")}</th>
+                  <th>${printLabel(t, "notes")}</th>
+                  ${mode === "finance" ? `<th>${printLabel(t, "unitCost")}</th>` : ""}
                 </tr>
               </thead>
               <tbody>
@@ -1328,12 +1366,12 @@ function buildPrintDocumentHtml({
         ${financeBlock}
 
         <section class="signatures">
-          <div>${printLabel(lang, "productionSignature")}</div>
-          <div>${printLabel(lang, "workshopSignature")}</div>
+          <div>${printLabel(t, "productionSignature")}</div>
+          <div>${printLabel(t, "workshopSignature")}</div>
         </section>
 
         <div class="footer">
-          ${safeText(tenantName)} · ${mode === "finance" ? printLabel(lang, "internalCostSheet") : printLabel(lang, "workshopSheet")}
+          ${safeText(tenantName)} · ${mode === "finance" ? printLabel(t, "internalCostSheet") : printLabel(t, "workshopSheet")}
         </div>
       </div>
     </body>
@@ -1579,13 +1617,13 @@ function ProductionOrderEventsTab({
       `}</style>
 
       <div className="po-section-head">
-        <h3>{t("production-orders:events.title", "Movimientos")}</h3>
-        <p>{t("production-orders:events.subtitle", "Timeline operativo de la orden, con eventos agrupados visualmente por tipo.")}</p>
+        <h3>{t("production-orders:events.title")}</h3>
+        <p>{t("production-orders:events.subtitle")}</p>
       </div>
 
       <div className="po-events-timeline">
         {latestEvents.length === 0 ? (
-          <div className="po-empty-state">{t("production-orders:events.empty", "Todavía no hay movimientos registrados.")}</div>
+          <div className="po-empty-state">{t("production-orders:events.empty")}</div>
         ) : (
           latestEvents.map((event) => {
             const entries = payloadEntries(t, event.payload);
@@ -1628,7 +1666,7 @@ function ProductionOrderEventsTab({
                           }))
                         }
                       >
-                        {expanded ? t("production-orders:events.hideDetails", "Ocultar detalle") : t("production-orders:events.showDetails", "Ver detalle")}
+                        {expanded ? t("production-orders:events.hideDetails") : t("production-orders:events.showDetails")}
                       </button>
                     ) : null}
                   </div>
@@ -1653,6 +1691,223 @@ function ProductionOrderEventsTab({
   );
 }
 
+function ProductionOrderAssignmentsSection({
+  t,
+  assignments,
+  locale,
+}: {
+  t: any;
+  assignments: ProductionOrderAssignment[];
+  locale: string;
+}) {
+  return (
+    <section className="po-section-card po-assignments-section">
+      <style>{`
+        .po-assignments-section {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .po-assignments-section::before {
+          content: "";
+          position: absolute;
+          inset: 0 0 auto auto;
+          width: 260px;
+          height: 260px;
+          border-radius: 999px;
+          background: radial-gradient(circle, rgba(195, 140, 122, 0.14), transparent 68%);
+          pointer-events: none;
+        }
+
+        .po-assignments-grid {
+          display: grid;
+          gap: 14px;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          position: relative;
+          z-index: 1;
+        }
+
+        .po-assignment-card {
+          border: 1px solid rgba(222, 211, 203, 0.9);
+          border-radius: 22px;
+          padding: 16px;
+          background:
+            radial-gradient(circle at top right, rgba(195, 140, 122, 0.08), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%);
+          box-shadow: 0 14px 30px rgba(52, 41, 58, 0.06);
+          display: grid;
+          gap: 14px;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .po-assignment-card:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 20px 42px rgba(52, 41, 58, 0.09);
+          border-color: rgba(195, 140, 122, 0.42);
+        }
+
+        .po-assignment-card__top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .po-assignment-card__process {
+          display: grid;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .po-assignment-card__process strong {
+          display: block;
+          font-size: 15px;
+          color: #2f2940;
+          line-height: 1.2;
+        }
+
+        .po-assignment-card__process span {
+          color: #85776c;
+          font-size: 13px;
+          line-height: 1.25;
+        }
+
+        .po-assignment-card__icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 16px;
+          display: grid;
+          place-items: center;
+          background: #f7efe8;
+          border: 1px solid rgba(216, 207, 195, 0.95);
+          color: #6f4f70;
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+
+        .po-assignment-card__meta {
+          display: grid;
+          gap: 8px;
+          font-size: 13px;
+          color: #5f5667;
+        }
+
+        .po-assignment-card__meta span {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .po-assignment-card__notes {
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.5;
+          color: #4a4355;
+          border-top: 1px solid rgba(226, 218, 209, 0.9);
+          padding-top: 12px;
+        }
+
+        .po-assignment-badge {
+          display: inline-flex;
+          align-items: center;
+          min-height: 28px;
+          padding: 0 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          white-space: nowrap;
+        }
+
+        .po-assignment-badge--scheduled {
+          background: #f3f0ff;
+          color: #6b4aa0;
+        }
+
+        .po-assignment-badge--progress {
+          background: #edf7fb;
+          color: #2f6d82;
+        }
+
+        .po-assignment-badge--completed {
+          background: #eefaf2;
+          color: #2d754d;
+        }
+
+        .po-assignment-badge--cancelled {
+          background: #fff1f1;
+          color: #9d4040;
+        }
+      `}</style>
+
+      <div className="po-section-head">
+        <h3>{t("production-orders:assignments.title")}</h3>
+        <p>
+          {t("production-orders:assignments.subtitle")}
+        </p>
+      </div>
+
+      <div className="po-assignments-grid">
+        {assignments.length === 0 ? (
+          <div className="po-empty-state">
+            {t("production-orders:assignments.empty")}
+          </div>
+        ) : (
+          assignments.map((assignment) => (
+            <article key={assignment.id} className="po-assignment-card">
+              <div className="po-assignment-card__top">
+                <div style={{ display: "flex", gap: 12, minWidth: 0 }}>
+                  <div
+                    className="po-assignment-card__icon"
+                    style={
+                      assignment.process_color
+                        ? {
+                            background: `${assignment.process_color}18`,
+                            color: assignment.process_color,
+                            borderColor: `${assignment.process_color}42`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {assignment.process_icon || "✂"}
+                  </div>
+
+                  <div className="po-assignment-card__process">
+                    <strong>{assignment.process_name || assignment.process_code || "-"}</strong>
+                    <span>{assignment.supplier_name || "-"}</span>
+                  </div>
+                </div>
+
+                <span className={assignmentStatusClass(assignment.status)}>
+                  {translateAssignmentStatus(t, assignment.status)}
+                </span>
+              </div>
+
+              <div className="po-assignment-card__meta">
+                <span>
+                  📅 {t("production-orders:assignments.startedAt")}: {formatDateTime(assignment.started_at, locale)}
+                </span>
+                <span>
+                  🏁 {t("production-orders:assignments.finishedAt")}: {formatDateTime(assignment.finished_at, locale)}
+                </span>
+                {assignment.appointment_id ? (
+                  <span>
+                    🗓 {t("production-orders:assignments.syncedWithAgenda")}
+                  </span>
+                ) : null}
+              </div>
+
+              {assignment.notes ? (
+                <p className="po-assignment-card__notes">{assignment.notes}</p>
+              ) : null}
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function ProductionOrderDetailPanel({ orderId }: Props) {
   const { t, i18n } = useTranslation(["common", "production-orders"]);
   const [order, setOrder] = useState<ProductionOrder | null>(null);
@@ -1662,10 +1917,16 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
   const [rolls, setRolls] = useState<Roll[]>([]);
   const [trims, setTrims] = useState<Trim[]>([]);
   const [outputs, setOutputs] = useState<OutputItem[]>([]);
+  const [assignments, setAssignments] = useState<ProductionOrderAssignment[]>([]);
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [errorDialog, setErrorDialog] = useState<{
+    title: string;
+    message: string;
+    detail?: string;
+  } | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("operation");
   const [issuingAll, setIssuingAll] = useState(false);
 
@@ -1706,6 +1967,25 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
   const [fabricAvailability, setFabricAvailability] = useState<FabricAvailability | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
+  const showApiError = (err: any, fallback: string) => {
+    const parsedError = extractApiError(err, fallback);
+
+    const mappedError = getProductionOrderErrorMessage(
+      t,
+      parsedError.code,
+      parsedError.message
+    );
+
+    setError("");
+  
+    setErrorDialog({
+      title: mappedError.title,
+      message: mappedError.message,
+    });
+  };
+
+  const closeErrorDialog = () => setErrorDialog(null);
+
 
   useEffect(() => {
     void loadAll();
@@ -1725,6 +2005,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         rollsRes,
         trimsRes,
         outputsRes,
+        assignmentsRes,
       ] = await Promise.all([
         api.get<ProductionOrder>(`/production-orders/${orderId}`),
         api.get<CostSummary>(`/production-orders/${orderId}/cost-summary`),
@@ -1738,6 +2019,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           params: { page: 1, page_size: 100 },
         }),
         api.get<OutputItem[]>(`/production-orders/${orderId}/outputs`),
+        api.get<ProductionOrderAssignment[]>(`/production-orders/${orderId}/assignments`),
       ]);
 
       setOrder(orderRes.data);
@@ -1748,6 +2030,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       setRolls(Array.isArray(rollsRes.data?.items) ? rollsRes.data.items : []);
       setTrims(Array.isArray(trimsRes.data?.items) ? trimsRes.data.items : []);
       setOutputs(Array.isArray(outputsRes.data) ? outputsRes.data : []);
+      setAssignments(Array.isArray(assignmentsRes.data) ? assignmentsRes.data : []);
 
 
       setCostForm((prev) => ({
@@ -1758,7 +2041,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         exchange_rate: prev.exchange_rate || "1000",
       }));
     } catch (err: any) {
-      setError(err?.response?.data?.detail?.message || t("production-orders:messages.detailLoadError", "No se pudo cargar la orden."));
+      setError(err?.response?.data?.detail?.message || t("production-orders:messages.detailLoadError"));
     } finally {
       setLoading(false);
     }
@@ -1805,7 +2088,10 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       });
       await loadAll();
     } catch (err: any) {
-      setError(err?.response?.data?.detail?.message || t("production-orders:costs.saveError", "No se pudieron guardar los costos."));
+      showApiError(
+        err,
+        t("production-orders:costs.saveError")
+      );
     }
   };
 
@@ -1813,7 +2099,20 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     event.preventDefault();
     try {
       if (!fabricForm.fabric_roll_id) {
-        setError(t("production-orders:materials.selectRollRequired", "Seleccioná un rollo"));
+        setError("");
+        setErrorDialog({
+          title: t("production-orders:errors.missingRollTitle"),
+          message: t("production-orders:errors.missingRollMessage"),
+        });
+        return;
+      }
+
+      if (Number(fabricForm.planned_quantity || 0) <= 0) {
+        setError("");
+        setErrorDialog({
+          title: t("production-orders:errors.invalidQuantityTitle"),
+          message: t("production-orders:errors.invalidPlannedQuantity"),
+        });
         return;
       }
 
@@ -1835,13 +2134,34 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       setFabricAvailability(null);
       await loadAll();
     } catch (err: any) {
-      setError(err?.response?.data?.detail?.message || t("production-orders:materials.addFabricError", "No se pudo agregar la tela."));
+      showApiError(
+        err,
+        t("production-orders:materials.addFabricError")
+      );
     }
   };
 
   const addTrimMaterial = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
+      if (!trimForm.trim_id) {
+        setError("");
+        setErrorDialog({
+          title: t("production-orders:errors.missingTrimTitle"),
+          message: t("production-orders:errors.missingTrimMessage"),
+        });
+        return;
+      }
+
+      if (Number(trimForm.planned_quantity || 0) <= 0) {
+        setError("");
+        setErrorDialog({
+          title: t("production-orders:errors.invalidQuantityTitle"),
+          message: t("production-orders:errors.invalidPlannedQuantity"),
+        });
+        return;
+      }
+
       await api.post(`/production-orders/${orderId}/materials/trim`, null, {
         params: {
           trim_id: trimForm.trim_id,
@@ -1852,7 +2172,10 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       setTrimForm({ trim_id: "", planned_quantity: "", notes: "" });
       await loadAll();
     } catch (err: any) {
-      setError(err?.response?.data?.detail?.message || t("production-orders:materials.addTrimError", "No se pudo agregar el avío."));
+      showApiError(
+        err,
+        t("production-orders:materials.addTrimError")
+      );
     }
   };
 
@@ -1861,19 +2184,25 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       await api.post(`/production-orders/${orderId}/materials/${materialId}/reserve`);
       await loadAll();
     } catch (err: any) {
-      setError(String(err?.response?.data?.detail || t("production-orders:materials.reserveError", "No se pudo reservar el material.")));
+      showApiError(
+        err,
+        t("production-orders:materials.reserveError")
+      );
     }
   };
 
   const removeMaterial = async (materialId: string) => {
-    const confirmed = window.confirm(t("production-orders:materials.confirmRemove", "¿Querés quitar este material de la orden?"));
+    const confirmed = window.confirm(t("production-orders:materials.confirmRemove"));
     if (!confirmed) return;
 
     try {
       await api.delete(`/production-orders/${orderId}/materials/${materialId}`);
       await loadAll();
     } catch (err: any) {
-      setError(String(err?.response?.data?.detail || t("production-orders:materials.removeError", "No se pudo eliminar el material.")));
+      showApiError(
+        err,
+        t("production-orders:materials.removeError")
+      );
     }
   };
 
@@ -1882,18 +2211,21 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       await api.post(`/production-orders/${orderId}/materials/${materialId}/issue`);
       await loadAll();
     } catch (err: any) {
-      setError(String(err?.response?.data?.detail || t("production-orders:materials.issueError", "No se pudo entregar el material.")));
+      showApiError(
+        err,
+        t("production-orders:materials.issueError")
+      );
     }
   };
 
   const issueAllMaterials = async () => {
     const pending = materialCards.filter((m) => m.canIssue);
     if (pending.length === 0) {
-      setError(t("production-orders:materials.noMaterialsToIssue", "No hay materiales reservados listos para entregar."));
+      setError(t("production-orders:materials.noMaterialsToIssue"));
       return;
     }
 
-    const confirmed = window.confirm(t("production-orders:materials.confirmIssueAll", "¿Entregar todos los materiales reservados al taller?"));
+    const confirmed = window.confirm(t("production-orders:materials.confirmIssueAll"));
     if (!confirmed) return;
 
     try {
@@ -1903,7 +2235,10 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       }
       await loadAll();
     } catch (err: any) {
-      setError(String(err?.response?.data?.detail || t("production-orders:materials.issueAllError", "No se pudieron entregar todos los materiales.")));
+      showApiError(
+        err,
+        t("production-orders:materials.issueAllError")
+      );
     } finally {
       setIssuingAll(false);
     }
@@ -1938,16 +2273,10 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       await loadAll();
   
     } catch (err: any) {
-      const detail = err?.response?.data?.detail;
-
-      const message =
-        typeof detail === "string"
-          ? detail
-          : Array.isArray(detail)
-            ? detail.map((d: any) => d.msg).join(" · ")
-            : "No se pudo registrar la producción";
-
-      setError(message);
+      showApiError(
+        err,
+        t("production-orders:outputs.createError")
+      );
     }
   };
 
@@ -2032,6 +2361,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     if (!order) return;
 
     const html = buildPrintDocumentHtml({
+      t,
       mode,
       order,
       costSummary,
@@ -2064,7 +2394,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     const doc = win?.document;
 
     if (!doc || !win) {
-      setError(t("production-orders:print.error", "No se pudo generar la impresión."));
+      setError(t("production-orders:print.error"));
       iframe.remove();
       return;
     }
@@ -2099,11 +2429,11 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
   };
 
   if (loading) {
-    return <div className="po-loading">{t("production-orders:messages.loading", "Cargando orden...")}</div>;
+    return <div className="po-loading">{t("production-orders:messages.loading")}</div>;
   }
 
   if (!order) {
-    return <div className="po-error">{t("production-orders:messages.notFound", "Orden no encontrada")}</div>;
+    return <div className="po-error">{t("production-orders:messages.notFound")}</div>;
   }
 
   const progressPercent = Math.max(
@@ -2120,10 +2450,10 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
 
   const garmentMeta = [
     order.target_dress_code
-      ? `${t("production-orders:fields.codeShort", "Cód.")} ${order.target_dress_code}`
+      ? `${t("production-orders:fields.codeShort")} ${order.target_dress_code}`
       : null,
     order.target_size
-      ? `${t("production-orders:fields.size", "Talle")} ${order.target_size}`
+      ? `${t("production-orders:fields.size")} ${order.target_size}`
       : null,
     order.target_color || null,
   ].filter(Boolean);
@@ -2134,6 +2464,111 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         .po-detail-panel--editorial {
           display: grid;
           gap: 18px;
+        }
+
+        .po-error-modal-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          display: grid;
+          place-items: center;
+          padding: 24px;
+          background: rgba(29, 23, 34, 0.36);
+          backdrop-filter: blur(10px);
+        }
+
+        .po-error-modal-card {
+          width: min(520px, 100%);
+          overflow: hidden;
+          border: 1px solid rgba(216, 207, 195, 0.96);
+          border-radius: 28px;
+          background:
+            radial-gradient(circle at top right, rgba(195, 140, 122, 0.13), transparent 36%),
+            linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%);
+          box-shadow: 0 30px 80px rgba(35, 26, 44, 0.22);
+        }
+
+        .po-error-modal-header {
+          padding: 24px 26px 16px;
+          border-bottom: 1px solid rgba(226, 218, 209, 0.9);
+        }
+
+        .po-error-modal-header h2 {
+          margin: 0;
+          color: #2f2940;
+          font-size: 24px;
+          line-height: 1.05;
+          letter-spacing: -0.04em;
+        }
+
+        .po-error-modal-header p {
+          margin: 8px 0 0;
+          color: #83786f;
+          font-size: 14px;
+          line-height: 1.45;
+        }
+
+        .po-error-modal-body {
+          padding: 22px 26px;
+        }
+
+        .po-error-dialog {
+          display: flex;
+          gap: 18px;
+          align-items: flex-start;
+        }
+
+        .po-error-dialog__icon {
+          width: 54px;
+          height: 54px;
+          border-radius: 18px;
+          background: #fff4eb;
+          color: #c56d2d;
+          display: grid;
+          place-items: center;
+          font-size: 24px;
+          flex-shrink: 0;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+        }
+
+        .po-error-dialog__content {
+          display: grid;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .po-error-dialog__content strong {
+          color: #2f2940;
+          font-size: 15px;
+          line-height: 1.45;
+        }
+
+        .po-error-dialog__content p {
+          margin: 0;
+          color: #7b7284;
+          font-size: 13px;
+          line-height: 1.5;
+          word-break: break-word;
+        }
+
+        .po-error-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 16px 26px 24px;
+        }
+
+        .po-error-modal-button {
+          border: 1px solid rgba(216, 207, 195, 0.95);
+          border-radius: 14px;
+          min-height: 40px;
+          padding: 0 18px;
+          background: linear-gradient(135deg, #171717 0%, #2f2940 100%);
+          color: #fff;
+          font-size: 13px;
+          font-weight: 850;
+          cursor: pointer;
+          box-shadow: 0 12px 26px rgba(47, 41, 64, 0.16);
         }
 
         .po-editorial-hero {
@@ -2511,7 +2946,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
               <div className="po-editorial-hero__visual-empty">
                 <span>✦</span>
                 <strong>
-                  {t("production-orders:design.noReference", "Sin imagen")}
+                  {t("production-orders:design.noReference")}
                 </strong>
               </div>
             )}
@@ -2521,7 +2956,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
             <div className="po-editorial-hero__top">
               <div>
                 <p className="po-editorial-hero__eyebrow">
-                  {t("production-orders:detailTitle", "Orden de producción")}
+                  {t("production-orders:detailTitle")}
                 </p>
 
                 <h2 className="po-editorial-hero__number">{order.order_number}</h2>
@@ -2539,10 +2974,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
                     ))
                   ) : (
                     <span className="po-editorial-chip">
-                      {t(
-                        "production-orders:fields.noGarmentDetails",
-                        "Sin detalles de prenda"
-                      )}
+                      {t("production-orders:fields.noGarmentDetails")}
                     </span>
                   )}
 
@@ -2562,7 +2994,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
                   onClick={() => downloadPdf("operation")}
                   type="button"
                 >
-                  {t("production-orders:actions.workshopPdf", "PDF Taller")}
+                  {t("production-orders:actions.workshopPdf")}
                 </button>
 
                 <button
@@ -2570,7 +3002,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
                   onClick={() => downloadPdf("finance")}
                   type="button"
                 >
-                  {t("production-orders:actions.costPdf", "PDF Costos")}
+                  {t("production-orders:actions.costPdf")}
                 </button>
               </div>
             </div>
@@ -2579,7 +3011,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
               <div className="po-editorial-progress">
                 <div className="po-editorial-progress__top">
                   <span>
-                    {t("production-orders:fields.progress", "Avance")} ·{" "}
+                    {t("production-orders:fields.progress")} ·{" "}
                     {order.produced_quantity} / {order.planned_quantity}
                   </span>
                   <strong>{progressPercent}%</strong>
@@ -2594,7 +3026,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
               </div>
 
               <div className="po-editorial-due">
-                <span>{t("production-orders:fields.dueDate", "Entrega")}</span>
+                <span>{t("production-orders:fields.dueDate")}</span>
                 <strong>{formatDate(order.due_date, locale)}</strong>
               </div>
             </div>
@@ -2604,22 +3036,22 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
 
       <div className="po-meta-compact-grid">
         <div className="po-meta-compact-card">
-          <span>{t("production-orders:fields.workshop", "Taller")}</span>
+          <span>{t("production-orders:fields.workshop")}</span>
           <strong>{order.workshop_supplier_name || "-"}</strong>
         </div>
 
         <div className="po-meta-compact-card">
-          <span>{t("production-orders:fields.plannedQuantity", "Planificado")}</span>
+          <span>{t("production-orders:fields.plannedQuantity")}</span>
           <strong>{order.planned_quantity}</strong>
         </div>
 
         <div className="po-meta-compact-card">
-          <span>{t("production-orders:fields.producedQuantity", "Producido")}</span>
+          <span>{t("production-orders:fields.producedQuantity")}</span>
           <strong>{order.produced_quantity}</strong>
         </div>
 
         <div className="po-meta-compact-card">
-          <span>{t("production-orders:costs.currency", "Moneda")}</span>
+          <span>{t("production-orders:costs.currency")}</span>
           <strong>{order.currency || costSummary?.currency || "USD"}</strong>
         </div>
       </div>
@@ -2630,7 +3062,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           className={`po-detail-tab ${activeTab === "operation" ? "po-detail-tab--active" : ""}`}
           onClick={() => setActiveTab("operation")}
         >
-          {t("production-orders:tabs.operation", "Operación")}
+          {t("production-orders:tabs.operation")}
         </button>
 
         <button
@@ -2638,7 +3070,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           className={`po-detail-tab ${activeTab === "finance" ? "po-detail-tab--active" : ""}`}
           onClick={() => setActiveTab("finance")}
         >
-          {t("production-orders:tabs.finance", "Costos")}
+          {t("production-orders:tabs.finance")}
         </button>
 
         <button
@@ -2646,7 +3078,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           className={`po-detail-tab ${activeTab === "events" ? "po-detail-tab--active" : ""}`}
           onClick={() => setActiveTab("events")}
         >
-          {t("production-orders:tabs.events", "Movimientos")}
+          {t("production-orders:tabs.events")}
         </button>
       </div>
 
@@ -2654,33 +3086,41 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
 
       <div className="po-tab-content">
         {activeTab === "operation" ? (
-          <ProductionOrderOperationTab
-            t={t}
-            order={order}
-            fabrics={fabrics}
-            fabricForm={fabricForm}
-            setFabricForm={setFabricForm}
-            trimForm={trimForm}
-            setTrimForm={setTrimForm}
-            outputForm={outputForm}
-            setOutputForm={setOutputForm}
-            fabricAvailability={fabricAvailability}
-            checkingAvailability={checkingAvailability}
-            availableRollOptions={availableRollOptions}
-            trims={trims}
-            fabricMaterials={fabricMaterials}
-            trimMaterials={trimMaterials}
-            outputs={outputs}
-            addFabricMaterial={addFabricMaterial}
-            addTrimMaterial={addTrimMaterial}
-            reserveMaterial={reserveMaterial}
-            removeMaterial={removeMaterial}
-            issueMaterial={issueMaterial}
-            issueAllMaterials={issueAllMaterials}
-            issuingAll={issuingAll}
-            createOutput={createOutput}
-            materialStatusClass={materialStatusClass}
-          />
+          <>
+            <ProductionOrderOperationTab
+              t={t}
+              order={order}
+              fabrics={fabrics}
+              fabricForm={fabricForm}
+              setFabricForm={setFabricForm}
+              trimForm={trimForm}
+              setTrimForm={setTrimForm}
+              outputForm={outputForm}
+              setOutputForm={setOutputForm}
+              fabricAvailability={fabricAvailability}
+              checkingAvailability={checkingAvailability}
+              availableRollOptions={availableRollOptions}
+              trims={trims}
+              fabricMaterials={fabricMaterials}
+              trimMaterials={trimMaterials}
+              outputs={outputs}
+              addFabricMaterial={addFabricMaterial}
+              addTrimMaterial={addTrimMaterial}
+              reserveMaterial={reserveMaterial}
+              removeMaterial={removeMaterial}
+              issueMaterial={issueMaterial}
+              issueAllMaterials={issueAllMaterials}
+              issuingAll={issuingAll}
+              createOutput={createOutput}
+              materialStatusClass={materialStatusClass}
+            />
+
+            <ProductionOrderAssignmentsSection
+              t={t}
+              assignments={assignments}
+              locale={locale}
+            />
+          </>
         ) : activeTab === "finance" ? (
           <ProductionOrderFinanceTab
             t={t}
@@ -2701,6 +3141,48 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           />
         )}
       </div>
+
+      {errorDialog ? (
+        <div
+          className="po-error-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="production-order-error-title"
+        >
+          <div className="po-error-modal-card">
+            <div className="po-error-modal-header">
+              <h2 id="production-order-error-title">{errorDialog.title}</h2>
+              <p>
+                {t("production-orders:errors.subtitle")}
+              </p>
+            </div>
+
+            <div className="po-error-modal-body">
+              <div className="po-error-dialog">
+                <div className="po-error-dialog__icon" aria-hidden="true">
+                  ⚠
+                </div>
+
+                <div className="po-error-dialog__content">
+                  <strong>{errorDialog.message}</strong>
+
+                  {errorDialog.detail ? <p>{errorDialog.detail}</p> : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="po-error-modal-footer">
+              <button
+                type="button"
+                className="po-error-modal-button"
+                onClick={closeErrorDialog}
+              >
+                {t("common:actions.close")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

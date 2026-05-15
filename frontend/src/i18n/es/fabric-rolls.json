@@ -24,7 +24,9 @@
    },
   "status": {
     "AVAILABLE": "Disponible",
-    "DEPLETED": "Agotado"
+    "DEPLETED": "Agotado",
+    "LOW_STOCK": "Stock bajo",
+    "RESERVED": "Reservado"
   },
   "filters": {
     "search": "Buscar",

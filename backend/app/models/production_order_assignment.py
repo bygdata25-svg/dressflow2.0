@@ -84,3 +84,10 @@ class ProductionOrderAssignment(UUIDMixin, TimestampMixin, Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
+    appointment_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("appointments.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )

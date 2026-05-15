@@ -16,6 +16,26 @@ from app.schemas.fabric_roll import (
 router = APIRouter(prefix="/fabric-rolls", tags=["fabric-rolls"])
 
 
+def calculate_roll_status(
+    current_length,
+    reserved_length,
+) -> str:
+    current = float(current_length or 0)
+    reserved = float(reserved_length or 0)
+    available_length = max(current - reserved, 0)
+
+    if current <= 0:
+        return "DEPLETED"
+
+    if available_length <= 0:
+        return "RESERVED"
+
+    if available_length <= 3:
+        return "LOW_STOCK"
+
+    return "AVAILABLE"
+
+
 def build_roll_response(
     roll: FabricRoll,
     fabric_name: str | None = None,
@@ -176,7 +196,10 @@ def create_fabric_roll(
         current_length=payload.initial_length,
         reserved_length=0,
         unit=payload.unit,
-        status="AVAILABLE",
+        status=calculate_roll_status(
+            payload.initial_length,
+            0,
+        ),
         price_per_meter=payload.price_per_meter,
         currency=payload.currency,
         purchase_date=payload.purchase_date,
@@ -273,6 +296,10 @@ def update_fabric_roll(
     roll.legacy_slot = payload.legacy_slot
     roll.initial_length = payload.initial_length
     roll.current_length = current_length
+    roll.status = calculate_roll_status(
+        current_length,
+        reserved_length,
+    )
     roll.unit = payload.unit
     roll.price_per_meter = payload.price_per_meter
     roll.currency = payload.currency

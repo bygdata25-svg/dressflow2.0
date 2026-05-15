@@ -9,6 +9,8 @@ type Roll = {
   roll_code: string;
   fabric_name?: string | null;
   status: string;
+  current_length?: number | string | null;
+  reserved_length?: number | string | null;
 };
 
 type Movement = {
@@ -56,6 +58,23 @@ export default function FabricMovementsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const selectableRolls = useMemo(() => {
+    return rolls.filter((roll) => {
+      const status = String(roll.status || "").toUpperCase();
+      const current = Number(roll.current_length || 0);
+
+      if (!["AVAILABLE", "LOW_STOCK", "RESERVED", "DEPLETED"].includes(status)) {
+        return false;
+      }
+
+      if (form.type === "OUT" && current <= 0) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [rolls, form.type]);
+
   const loadAll = async () => {
     try {
       setLoading(true);
@@ -71,7 +90,10 @@ export default function FabricMovementsPage() {
           },
         }),
         api.get<PaginatedResponse<Roll>>("/fabric-rolls", {
-          params: { page: 1, page_size: 100, status: "AVAILABLE" },
+          params: {
+            page: 1,
+            page_size: 100,
+          },
         }),
       ]);
 
@@ -186,7 +208,7 @@ export default function FabricMovementsPage() {
               }
             >
               <option value="">{t("fabric-movements:form.placeholders.roll")}</option>
-              {rolls.map((roll) => (
+              {selectableRolls.map((roll) => (
                 <option key={roll.id} value={roll.id}>
                   {roll.roll_code} - {roll.fabric_name}
                 </option>

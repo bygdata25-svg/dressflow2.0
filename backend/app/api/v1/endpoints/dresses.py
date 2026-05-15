@@ -69,6 +69,24 @@ def build_dress_response(db: Session, dress: Dress) -> DressResponse:
         ).scalar_one_or_none()
         capsule_name = capsule.name if capsule else None
 
+    active_loan = db.execute(
+        select(Loan).where(
+            Loan.dress_id == dress.id,
+            Loan.tenant_id == dress.tenant_id,
+            Loan.status == "ACTIVE",
+            Loan.deleted_at.is_(None),
+        )
+    ).scalar_one_or_none()
+
+    resolved_status = dress.status
+
+    if active_loan:
+        resolved_status = (
+            "RENTED"
+            if active_loan.loan_type == "RENTAL"
+            else "LOANED"
+        )
+
     return DressResponse(
         id=dress.id,
         tenant_id=dress.tenant_id,
@@ -81,7 +99,7 @@ def build_dress_response(db: Session, dress: Dress) -> DressResponse:
         sale_currency=dress.sale_currency,
         rental_price=dress.rental_price,
         rental_currency=dress.rental_currency,
-        status=dress.status,
+        status=resolved_status,
         main_image_url=main_image.file_url if main_image else dress.photo_url,
         capsule_id=getattr(dress, "capsule_id", None),
         capsule_name=capsule_name,
@@ -140,7 +158,33 @@ def list_dresses(
         )
 
     if status:
-        query = query.where(Dress.status == status)
+        normalized_status = status.strip().upper()
+
+        if normalized_status in {"LOANED", "RENTED"}:
+            loan_type = "RENTAL" if normalized_status == "RENTED" else "LOAN"
+
+            query = query.where(
+                Dress.id.in_(
+                    select(Loan.dress_id).where(
+                        Loan.tenant_id == membership.tenant_id,
+                        Loan.status == "ACTIVE",
+                        Loan.loan_type == loan_type,
+                        Loan.deleted_at.is_(None),
+                    )
+                )
+            )
+
+        else:
+            active_loan_dress_ids = select(Loan.dress_id).where(
+                Loan.tenant_id == membership.tenant_id,
+                Loan.status == "ACTIVE",
+                Loan.deleted_at.is_(None),
+            )
+
+            query = query.where(
+                Dress.status == normalized_status,
+                Dress.id.not_in(active_loan_dress_ids),
+            )
 
     if capsule_id:
         query = query.where(Dress.capsule_id == capsule_id)

@@ -2,8 +2,8 @@ import uuid
 from decimal import Decimal
 from datetime import datetime
 
-from sqlalchemy import String, Text, Numeric, DateTime, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import String, Text, Numeric, DateTime, ForeignKey, Column
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -27,6 +27,8 @@ class TrimMovement(UUIDMixin, Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes_key = Column(String(160), nullable=True)
+    notes_params = Column(JSONB, nullable=True)
     production_order_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("production_orders.id", ondelete="SET NULL"),

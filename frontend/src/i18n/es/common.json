@@ -29,7 +29,8 @@
     "branding": "Branding",
     "fieldSettings": "Configuración de campos",
     "imports": "Importaciones",
-    "productionProcessTypes": "Procesos de producción"
+    "productionProcessTypes": "Procesos de producción",
+    "appointments": "Agenda"
   },
   "home": {
     "title": "DressFlow v2",
@@ -64,7 +65,8 @@
     "print": "Imprimir",
     "selectFile": "Seleccionar archivo",
     "exportExcel": "Exportar a Excel",
-    "select": "Seleccionar"
+    "select": "Seleccionar",
+    "close": "Cerrar"
   },
   "viewMode": {
     "table": "Tabla",

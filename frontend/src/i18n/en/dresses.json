@@ -51,8 +51,8 @@
     "removeImage": "Remove image"
   },
   "history": {
-    "title": "Loan history",
-    "empty": "There are no loans for this dress yet.",
+    "title": "Operational history",
+    "empty": "There are no movements for this dress yet.",
     "customer": "Customer",
     "start": "Start",
     "expectedReturn": "Expected return",
@@ -163,5 +163,25 @@
     "messages": {
       "createError": "Could not create customer."
     }
-  }
+  },
+
+    "loanHistory": {
+      "title": "Loan/Rentals history",
+      "subtitle": "Track loans and rentals for this dress.",
+      "empty": "There are no loans for this dress yet.",
+      "noCustomer": "Customer",
+      "startDate": "Start",
+      "expectedReturn": "Expected return",
+      "actualReturn": "Returned at",
+      "amount": "Amount",
+      "types": {
+        "LOAN": "Loan",
+        "RENTAL": "Rental"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "RETURNED": "Returned",
+        "LATE": "Late"
+      }
+    }
 }

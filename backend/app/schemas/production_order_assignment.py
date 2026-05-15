@@ -45,6 +45,7 @@ class ProductionOrderAssignmentOut(ProductionOrderAssignmentBase):
     id: UUID
     tenant_id: UUID
     production_order_id: UUID
+    appointment_id: UUID | None = None
 
     created_at: datetime
     updated_at: datetime

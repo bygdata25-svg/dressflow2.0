@@ -56,6 +56,17 @@ type DressStatusHistoryItem = {
   user?: string;
 };
 
+type DressLoanHistoryItem = {
+  id: string;
+  loan_type: string;
+  status: string;
+  start_date: string;
+  expected_return_date?: string | null;
+  actual_return_date?: string | null;
+  amount?: number | string | null;
+  customer_full_name?: string | null;
+};
+
 type DressFormProps = {
   mode?: "create" | "edit";
   initialData?: DressInitialData;
@@ -174,6 +185,47 @@ function userInitials(user?: string) {
     .toUpperCase();
 }
 
+function formatLoanType(t: any, value: string) {
+  const key = String(value || "").toUpperCase();
+
+  if (key === "RENTAL") {
+    return t("dresses:loanHistory.types.RENTAL", "Alquiler");
+  }
+
+  return t("dresses:loanHistory.types.LOAN", "Préstamo");
+}
+
+function formatLoanStatus(t: any, value: string) {
+  const key = String(value || "").toUpperCase();
+
+  return t(`dresses:loanHistory.status.${key}`, value || "—");
+}
+
+function formatDateByLocale(value: string | null | undefined, language?: string) {
+  if (!value) return "—";
+
+  try {
+    return new Date(value).toLocaleDateString(
+      String(language || "").startsWith("en") ? "en-US" : "es-AR"
+    );
+  } catch {
+    return value;
+  }
+}
+
+function formatLoanAmount(value?: number | string | null) {
+  if (value === undefined || value === null || value === "") return "";
+
+  const numberValue = Number(value);
+
+  if (Number.isNaN(numberValue) || numberValue <= 0) return "";
+
+  return numberValue.toLocaleString("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function DressForm({
   mode = "create",
   initialData,
@@ -196,6 +248,9 @@ export function DressForm({
 
   const [statusHistory, setStatusHistory] = useState<DressStatusHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const [loanHistory, setLoanHistory] = useState<DressLoanHistoryItem[]>([]);
+  const [loadingLoanHistory, setLoadingLoanHistory] = useState(false);
 
   const existingImageUrl = resolveMediaUrl(initialData?.main_image_url || null);
 
@@ -330,6 +385,40 @@ export function DressForm({
     };
 
     void loadStatusHistory();
+  }, [mode, initialData?.id]);
+
+  useEffect(() => {
+    const loadLoanHistory = async () => {
+      if (mode !== "edit" || !initialData?.id) {
+        setLoanHistory([]);
+        return;
+      }
+
+      try {
+        setLoadingLoanHistory(true);
+
+        const response = await api.get("/loans", {
+          params: {
+            dress_id: initialData.id,
+            page: 1,
+            page_size: 50,
+          },
+        });
+
+        const items = Array.isArray(response.data?.items)
+          ? response.data.items
+          : [];
+
+        setLoanHistory(items);
+      } catch (err) {
+        console.error("Error loading dress loan history", err);
+        setLoanHistory([]);
+      } finally {
+        setLoadingLoanHistory(false);
+      }
+    };
+
+    void loadLoanHistory();
   }, [mode, initialData?.id]);
 
   const payload = useMemo<DressPayload>(() => {
@@ -565,6 +654,72 @@ export function DressForm({
           margin-top: 6px;
           font-size: 12px;
           color: #6b7280;
+        }
+
+        .df-dress-timeline__status {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 3px 8px;
+          background: #eefaf2;
+          color: #2d754d;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .df-history-empty {
+          padding: 12px 14px;
+          border-radius: 14px;
+          background: #f8fafc;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .df-dress-timeline--compact {
+          gap: 10px;
+        }
+
+        .df-dress-timeline--compact::before {
+          left: 8px;
+          top: 8px;
+          bottom: 8px;
+          width: 1px;
+        }
+
+        .df-dress-timeline--compact .df-dress-timeline__item {
+          grid-template-columns: 18px 30px 1fr;
+          gap: 10px;
+        }
+
+        .df-dress-timeline--compact .df-dress-timeline__node {
+          width: 18px;
+          height: 18px;
+          font-size: 10px;
+          margin-top: 5px;
+          animation: none;
+        }
+
+        .df-dress-timeline--compact .df-dress-timeline__avatar {
+          width: 24px;
+          height: 24px;
+          font-size: 10px;
+        }
+
+        .df-dress-timeline--compact .df-dress-timeline__card {
+          padding: 10px 12px;
+          border-radius: 14px;
+          box-shadow: 0 8px 18px rgba(20, 17, 28, 0.03);
+        }
+
+        .df-dress-timeline--compact .df-dress-timeline__title {
+          font-size: 13px;
+          gap: 6px;
+        }
+
+        .df-dress-timeline--compact .df-dress-timeline__meta {
+          margin-top: 5px;
+          font-size: 11px;
+          opacity: 0.75;
         }
       `}</style>
 
@@ -873,7 +1028,7 @@ export function DressForm({
                 color: "#1f2937",
               }}
             >
-              {t("dresses:history.title", "Historial de estado")}
+              {t("dresses:loanHistory.title")}
             </h4>
             <p
               style={{
@@ -882,7 +1037,129 @@ export function DressForm({
                 color: "#6b7280",
               }}
             >
-              {t("dresses:history.subtitle", "Seguimiento operativo del vestido.")}
+              {t("dresses:loanHistory.subtitle")}
+            </p>
+          </div>
+
+          {loadingLoanHistory ? (
+            <div className="df-history-empty">
+              {t("common:status.loading", "Cargando...")}
+            </div>
+          ) : loanHistory.length === 0 ? (
+            <div className="df-history-empty">
+              {t("dresses:loanHistory.empty")}
+            </div>
+          ) : (
+            <div className="df-dress-timeline">
+              {loanHistory.map((loan) => {
+                const isRental = String(loan.loan_type || "").toUpperCase() === "RENTAL";
+                const customerName =
+                  loan.customer_full_name ||
+                  t("dresses:loanHistory.noCustomer");
+
+                return (
+                  <div key={loan.id} className="df-dress-timeline__item">
+                    <div
+                      className="df-dress-timeline__node"
+                      style={{
+                        border: `2px solid ${isRental ? "#b54708" : "#7a5af8"}`,
+                        color: isRental ? "#b54708" : "#7a5af8",
+                      }}
+                    >
+                      {isRental ? "👗" : "📦"}
+                    </div>
+
+                    <div
+                      className="df-dress-timeline__avatar"
+                      style={{
+                        background: "#f8fafc",
+                        color: "#6b7280",
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      {userInitials(customerName)}
+                    </div>
+
+                    <div className="df-dress-timeline__card">
+                      <div className="df-dress-timeline__title">
+                        <span>
+                          {formatLoanType(t, loan.loan_type)}
+                        </span>
+
+                        <span className="df-dress-timeline__arrow">·</span>
+
+                        <span>{customerName}</span>
+
+                        <span className="df-dress-timeline__status">
+                          {formatLoanStatus(t, loan.status)}
+                        </span>
+                      </div>
+
+                      <div className="df-dress-timeline__meta">
+                        {t("dresses:loanHistory.startDate")}:{" "}
+                        {formatDateByLocale(loan.start_date, i18n.language)}
+
+                        {loan.expected_return_date
+                          ? ` · ${t("dresses:loanHistory.expectedReturn")}: ${formatDateByLocale(
+                              loan.expected_return_date,
+                              i18n.language
+                            )}`
+                          : ""}
+
+                        {loan.actual_return_date
+                          ? ` · ${t("dresses:loanHistory.actualReturn")}: ${formatDateByLocale(
+                              loan.actual_return_date,
+                              i18n.language
+                            )}`
+                          : ""}
+
+                        {formatLoanAmount(loan.amount)
+                          ? ` · ${t("dresses:loanHistory.amount")}: ${formatLoanAmount(loan.amount)}`
+                          : ""}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+
+      {mode === "edit" && (
+        <section
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 20,
+            padding: 12,
+            background: "#fff",
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <div>
+            <h4
+              style={{
+                margin: 0,
+                fontSize: 15,
+                fontWeight: 800,
+                color: "#1f2937",
+              }}
+            >
+              {t("dresses:activityHistory.title", "Actividad reciente")}
+            </h4>
+            <p
+              style={{
+                margin: "6px 0 0",
+                fontSize: 12,
+                color: "#6b7280",
+              }}
+            >
+              {t(
+                "dresses:activityHistory.subtitle",
+                "Cambios automáticos de estado y trazabilidad."
+              )}
             </p>
           </div>
 
@@ -908,10 +1185,13 @@ export function DressForm({
                 fontSize: 13,
               }}
             >
-              {t("dresses:history.empty", "Todavía no hay cambios de estado registrados.")}
+              {t(
+                "dresses:activityHistory.empty",
+                "Todavía no hay actividad reciente para este vestido."
+              )}
             </div>
           ) : (
-            <div className="df-dress-timeline">
+            <div className="df-dress-timeline df-dress-timeline--compact">
               {statusHistory.map((item, index) => (
                 <div key={`${item.date}-${index}`} className="df-dress-timeline__item">
                   <div
@@ -966,6 +1246,7 @@ export function DressForm({
           )}
         </section>
       )}
+
 
       {error && (
         <div

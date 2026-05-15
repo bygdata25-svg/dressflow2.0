@@ -79,6 +79,9 @@ import importsEN from "./en/imports.json";
 import esProductionProcessTypes from "./es/production-process-types.json";
 import enProductionProcessTypes from "./en/production-process-types.json";
 
+import appointmentsEs from "./es/appointments.json";
+import appointmentsEn from "./en/appointments.json";
+
 i18n.use(initReactI18next).init({
   resources: {
     es: {
@@ -108,6 +111,7 @@ i18n.use(initReactI18next).init({
       users: esUsers,
       imports: importsES,
       "production-process-types": esProductionProcessTypes,
+      appointments: appointmentsEs,
     },
     en: {
       common: enCommon,
@@ -136,6 +140,7 @@ i18n.use(initReactI18next).init({
       users: enUsers,
       imports: importsEN,
       "production-process-types": enProductionProcessTypes,
+      appointments: appointmentsEn,
     }
   },
   lng: "es",

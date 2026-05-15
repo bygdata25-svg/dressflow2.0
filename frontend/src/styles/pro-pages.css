@@ -152,6 +152,18 @@
   color: var(--df-status-success-text);
 }
 
+.df-status-badge--low_stock {
+  background: #fff6e8;
+  color: #b7791f;
+  border: 1px solid #f4d7a1;
+}
+
+.df-status-badge--reserved {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
 .df-status-badge--loaned,
 .df-status-badge--depleted,
 .df-status-badge--out {

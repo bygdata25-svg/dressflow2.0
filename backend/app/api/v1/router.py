@@ -34,6 +34,7 @@ from app.api.v1.endpoints import (
     tenant_currency_rules,
     superadmin_tenant_limits,
     superadmin_tenant_currency_rules,
+    appointments,
 )
 
 api_router = APIRouter()
@@ -70,3 +71,4 @@ api_router.include_router(tenant_currencies.router)
 api_router.include_router(tenant_currency_rules.router)
 api_router.include_router(superadmin_tenant_limits.router)
 api_router.include_router(superadmin_tenant_currency_rules.router)
+api_router.include_router(appointments.router)

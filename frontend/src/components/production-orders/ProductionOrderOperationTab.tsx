@@ -607,7 +607,7 @@ function ProcessTimeline({
 
           <div>
             <label className="df-pro-label">
-              {tr(t, "production-orders:assignments.status", "Estado")}
+              {tr(t, "production-orders:assignments.statusLabel", "Estado")}
             </label>
             <select
               className="df-pro-select"

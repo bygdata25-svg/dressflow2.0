@@ -423,8 +423,25 @@ export default function FabricRollsPage() {
               }}
             >
               <option value="">{t("fabric-rolls:filters.allStatuses")}</option>
-              <option value="AVAILABLE">{t("fabric-rolls:status.AVAILABLE")}</option>
-              <option value="DEPLETED">{t("fabric-rolls:status.DEPLETED")}</option>
+              <option value="">
+                {t("fabric-rolls:filters.allStatuses")}
+              </option>
+
+              <option value="AVAILABLE">
+                {t("fabric-rolls:status.AVAILABLE")}
+              </option>
+
+              <option value="LOW_STOCK">
+                {t("fabric-rolls:status.LOW_STOCK")}
+              </option>
+
+              <option value="RESERVED">
+                {t("fabric-rolls:status.RESERVED")}
+              </option>
+
+              <option value="DEPLETED">
+                {t("fabric-rolls:status.DEPLETED")}
+              </option>
             </select>
           </div>
 

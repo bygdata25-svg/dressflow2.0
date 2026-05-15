@@ -51,8 +51,8 @@
     "removeImage": "Quitar imagen"
   },
   "history": {
-    "title": "Historial de préstamos",
-    "empty": "Todavía no hay préstamos para este vestido.",
+    "title": "Historial Operativo",
+    "empty": "Todavía no hay movimientos para este vestido.",
     "customer": "Cliente",
     "start": "Inicio",
     "expectedReturn": "Devolución esperada",
@@ -163,5 +163,25 @@
     "messages": {
       "createError": "No se pudo crear el cliente."
     }
-  }
+  },
+
+   "loanHistory": {
+     "title": "Historial de Préstamos/Alquileres",
+     "subtitle": "Seguimiento de préstamos y alquileres del vestido.",
+     "empty": "Todavía no hay préstamos para este vestido.",
+     "noCustomer": "Cliente",
+     "startDate": "Inicio",
+     "expectedReturn": "Devolución esperada",
+     "actualReturn": "Devolución real",
+     "amount": "Valor",
+     "types": {
+       "LOAN": "Préstamo",
+       "RENTAL": "Alquiler"
+     },
+     "status": {
+       "ACTIVE": "Activo",
+       "RETURNED": "Devuelto",
+       "LATE": "Vencido"
+     }
+   }
 }

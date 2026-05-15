@@ -309,7 +309,8 @@ export default function LoansPage() {
         key: "actions",
         label: t("common:actions.actions", "Acciones"),
         render: (row) =>
-          row.status === "ACTIVE" ? (
+          !row.actual_return_date &&
+          row.status !== "RETURNED" ? (
             <button type="button" onClick={() => returnLoan(row.id)}>
               {t("loans:actions.return")}
             </button>

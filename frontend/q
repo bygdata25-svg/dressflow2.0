@@ -1,0 +1,8 @@
+       email        |                        password_hash                         |  first_name  | last_name | is_active | is_superuser | deleted_at | must_change_password |                  id                  |          created_at           |          updated_at           | preferred_language 
+--------------------+--------------------------------------------------------------+--------------+-----------+-----------+--------------+------------+----------------------+--------------------------------------+-------------------------------+-------------------------------+--------------------
+ admin@dressflow.ai | $2b$12$kzB9paftjrykVAeacFE/YuYYoG2DmDHp7ZdoZZ287lgQFKVIByypq | Admin        | User      | t         | t            |            | f                    | 049eae69-0599-44bf-be22-39afbb3b55a5 | 2026-04-21 19:14:54.211277+00 | 2026-04-21 19:14:54.211277+00 | 
+ maria@gorof.com    | $2b$12$J99B0o1cgJlLm7MaJoAFsuPqR6YkNewF.y64.NBsmmDPnQWIrNF.6 | María        | Gorof     | t         | f            |            | f                    | 257a1c5a-323b-4a18-8866-f580c6dd7a7a | 2026-04-22 19:14:57.231401+00 | 2026-04-22 19:20:26.766665+00 | 
+ agustina@gorof.com | $2b$12$6eH4riyMuZNepbLZI45eluWXBdh3C2B2MzOnJz9G.6WDCiigWvU6q | Agustina     | Bernardez | t         | f            |            | f                    | 5e757b11-c3e2-425c-9807-7fa03ac2f553 | 2026-04-22 19:21:45.620396+00 | 2026-05-05 15:51:20.862146+00 | es
+ emilia@gorof.com   | $2b$12$ltJPURFkFfVLS4tKytwEleAYLOmr2L4vn/cfoUo3Y6XXQrsaXZ5Vm | Maria Emilia | Cattaneo  | t         | f            |            | f                    | 6a367e14-3961-41bb-99d9-05bf91a54e1e | 2026-05-15 22:57:28.496517+00 | 2026-05-15 22:57:28.496517+00 | 
+(4 filas)
+

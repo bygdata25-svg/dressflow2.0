@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
 from app.core.database import get_db
+from app.core.currency import format_money
 from app.models.dress import Dress
 from app.models.fabric_roll import FabricRoll
 from app.models.fabric_movement import FabricMovement
@@ -449,7 +450,10 @@ def get_profitability_insights(db: Session, tenant_id):
                 "type": f"PROFITABILITY_{currency}",
                 "title": f"Rentabilidad {currency}",
                 "value": f"{margin:.1f}%",
-                "description": f"Ingresos {revenue:,.2f} {currency} vs costos {cost:,.2f} {currency}.",
+                "description": (
+                    f"Ingresos {format_money(revenue, currency)} "
+                    f"vs costos {format_money(cost, currency)}."
+                ),
                 "tone": "success" if margin >= 25 else "warning" if margin > 0 else "danger",
             }
         )

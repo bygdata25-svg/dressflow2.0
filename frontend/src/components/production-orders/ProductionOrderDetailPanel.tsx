@@ -3,6 +3,7 @@ import { api } from "../../lib/api";
 import { useTranslation } from "react-i18next";
 import ProductionOrderOperationTab from "./ProductionOrderOperationTab";
 import ProductionOrderFinanceTab from "./ProductionOrderFinanceTab";
+import { formatCurrencyAmount, getCurrencySymbol } from "../../utils/currency";
 import "../../styles/production-orders.css";
 
 type Props = {
@@ -168,14 +169,25 @@ function toNumber(value?: string | null) {
   return Number(value ?? 0);
 }
 
-function formatMoney(value?: string | number | null, currency = "USD") {
-  const n = Number(value ?? 0);
-  const safe = Number.isFinite(n) ? n : 0;
+function normalizeCurrencyCode(currency?: string | null) {
+  return String(currency || "USD").toUpperCase().trim();
+}
 
-  return `${new Intl.NumberFormat("es-AR", {
+function currencyLabel(currency?: string | null) {
+  const currencyCode = normalizeCurrencyCode(currency);
+  return `${getCurrencySymbol(currencyCode)} ${currencyCode}`;
+}
+
+function formatMoney(value?: string | number | null, currency = "USD", locale = "es-AR") {
+  const currencyCode = normalizeCurrencyCode(currency);
+
+  return formatCurrencyAmount(value ?? 0, {
+    locale,
+    currencyCode,
+    symbol: getCurrencySymbol(currencyCode),
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(safe)} ${currency}`;
+  });
 }
 
 function calculateSuggestedPrice(
@@ -322,6 +334,44 @@ function assignmentStatusClass(status?: string | null) {
   }
 
   return "po-assignment-badge po-assignment-badge--scheduled";
+}
+
+
+
+function assignmentIcon(icon?: string | null, code?: string | null, name?: string | null) {
+  const normalizedIcon = String(icon || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ");
+
+  const normalizedCode = String(code || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[_-]+/g, " ");
+
+  const normalizedName = String(name || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ");
+
+  const signature = `${normalizedIcon} ${normalizedCode.toLowerCase()} ${normalizedName}`;
+
+  if (/scissors|scissor|cutting|cut|corte/.test(signature)) return "✂";
+  if (/sewing|shirt|confeccion|costura|sew/.test(signature)) return "◈";
+  if (/sparkles|sparkle|embroidery|embroider|bordado|bordar/.test(signature)) return "✦";
+  if (/gem|beading|bead|pedreria|perla|beads/.test(signature)) return "◆";
+  if (/wand|finishing|finish|terminacion|acabado|iron/.test(signature)) return "✧";
+  if (/badge check|badgecheck|quality|control calidad|quality control|check/.test(signature)) return "✓";
+  if (/packaging|package|empaque|packing/.test(signature)) return "□";
+
+  const trimmedIcon = String(icon || "").trim();
+  if (trimmedIcon && !/[a-zA-Z]{3,}/.test(trimmedIcon) && trimmedIcon.length <= 3) {
+    return trimmedIcon;
+  }
+
+  return "•";
 }
 
 function translatePayloadKey(t: any, value?: string | null) {
@@ -476,14 +526,9 @@ function safeText(value?: unknown, fallback = "-") {
   return text ? escapeHtml(text) : fallback;
 }
 
-function formatPrintMoney(value?: string | number | null, currency = "USD") {
-  const n = Number(value ?? 0);
-  const safe = Number.isFinite(n) ? n : 0;
-
-  return `${new Intl.NumberFormat("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(safe)} ${currency}`;
+function formatPrintMoney(value?: string | number | null, currency = "USD", lang: PrintLang = "es") {
+  const locale = lang === "en" ? "en-US" : "es-AR";
+  return formatMoney(value, currency, locale);
 }
 
 function translatePrintUnit(unit?: string | null) {
@@ -607,7 +652,7 @@ function buildPrintDocumentHtml({
           <td>${safeText(item.notes)}</td>
           ${
             includeCosts
-              ? `<td>${safeText(formatPrintMoney(item.unit_cost_snapshot, currency))}</td>`
+              ? `<td>${safeText(formatPrintMoney(item.unit_cost_snapshot, currency, lang))}</td>`
               : ""
           }
         </tr>
@@ -656,14 +701,14 @@ function buildPrintDocumentHtml({
         <div class="finance-hero">
           <div class="finance-main">
             <span class="finance-label">${printLabel(t, "totalCosts")}</span>
-            <strong>${safeText(formatPrintMoney(financeTotal, currency))}</strong>
+            <strong>${safeText(formatPrintMoney(financeTotal, currency, lang))}</strong>
             <p>${printLabel(t, "totalCostsHint")}</p>
           </div>
 
           <div class="finance-side">
             <div class="finance-mini finance-mini-dark">
               <span>${printLabel(t, "currency")}</span>
-              <strong>${safeText(currency)}</strong>
+              <strong>${safeText(currencyLabel(currency))}</strong>
             </div>
             <div class="finance-mini finance-mini-dark">
               <span>${printLabel(t, "produced")}</span>
@@ -675,15 +720,15 @@ function buildPrintDocumentHtml({
         <div class="finance-grid finance-grid--compact">
           <div class="finance-card">
             <span>${printLabel(t, "materialCost")}</span>
-            <strong>${safeText(formatPrintMoney(financeMaterialCost, currency))}</strong>
+            <strong>${safeText(formatPrintMoney(financeMaterialCost, currency, lang))}</strong>
           </div>
           <div class="finance-card">
             <span>${printLabel(t, "laborOthers")}</span>
-            <strong>${safeText(formatPrintMoney(financeLaborAndOther, currency))}</strong>
+            <strong>${safeText(formatPrintMoney(financeLaborAndOther, currency, lang))}</strong>
           </div>
           <div class="finance-card">
             <span>${printLabel(t, "total")}</span>
-            <strong>${safeText(formatPrintMoney(financeTotal, currency))}</strong>
+            <strong>${safeText(formatPrintMoney(financeTotal, currency, lang))}</strong>
           </div>
         </div>
       </section>
@@ -1464,7 +1509,7 @@ function ProductionOrderEventsTab({
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 16px;
+          gap: 12px;
         }
 
         .po-event-card__main {
@@ -1781,7 +1826,9 @@ function ProductionOrderAssignmentsSection({
           background: #f7efe8;
           border: 1px solid rgba(216, 207, 195, 0.95);
           color: #6f4f70;
-          font-size: 18px;
+          font-size: 16px;
+          line-height: 1;
+          overflow: hidden;
           flex-shrink: 0;
         }
 
@@ -1869,7 +1916,9 @@ function ProductionOrderAssignmentsSection({
                         : undefined
                     }
                   >
-                    {assignment.process_icon || "✂"}
+                    <span className="po-process-icon-glyph" aria-hidden="true">
+                      {assignmentIcon(assignment.process_icon, assignment.process_code, assignment.process_name)}
+                    </span>
                   </div>
 
                   <div className="po-assignment-card__process">
@@ -2044,6 +2093,25 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
       setError(err?.response?.data?.detail?.message || t("production-orders:messages.detailLoadError"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshAssignments = async () => {
+    try {
+      const response = await api.get<ProductionOrderAssignment[]>(
+        `/production-orders/${orderId}/assignments`
+      );
+
+      setAssignments(Array.isArray(response.data) ? response.data : []);
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail?.message ||
+          err?.response?.data?.detail ||
+          t(
+            "production-orders:assignments.loadError",
+            "No se pudieron cargar los procesos de la orden."
+          )
+      );
     }
   };
 
@@ -2458,6 +2526,34 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
     order.target_color || null,
   ].filter(Boolean);
 
+  const sortedAssignments = [...assignments].sort((a, b) => {
+    const aCreated = new Date(a.created_at || a.updated_at || 0).getTime();
+    const bCreated = new Date(b.created_at || b.updated_at || 0).getTime();
+    return aCreated - bCreated;
+  });
+
+  const visibleAssignments = sortedAssignments.slice(0, 6);
+  const visibleMaterials = materialCards.slice(0, 5);
+  const visibleEvents = latestEvents.slice(0, 4);
+  const effectiveCurrency = costSummary?.currency || order.currency || "USD";
+  const estimatedTotalCost = toNumber(costSummary?.estimated_total_cost || order.estimated_total_cost);
+  const actualTotalCost = toNumber(costSummary?.actual_total_cost || order.actual_total_cost);
+  const visibleActualCost = actualTotalCost > 0 ? actualTotalCost : estimatedTotalCost;
+  const costVariation = estimatedTotalCost > 0
+    ? ((visibleActualCost - estimatedTotalCost) / estimatedTotalCost) * 100
+    : 0;
+  const completedAssignments = sortedAssignments.filter((item) => {
+    const status = String(item.status || "").toUpperCase();
+    return status === "COMPLETED" || status === "DONE" || status === "FINISHED";
+  }).length;
+  const activeAssignments = sortedAssignments.filter((item) => {
+    const status = String(item.status || "").toUpperCase();
+    return status === "IN_PROGRESS" || status === "STARTED";
+  }).length;
+  const pendingQuantity = Math.max(0, Number(order.planned_quantity || 0) - Number(order.produced_quantity || 0));
+  const nextEvent = visibleEvents[0];
+  const notesText = order.notes || order.received_notes || t("production-orders:detailOverview.noNotes");
+
   return (
     <div className="po-detail-panel po-detail-panel--editorial">
       <style>{`
@@ -2595,15 +2691,15 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           position: relative;
           z-index: 1;
           display: grid;
-          grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
-          gap: 20px;
-          padding: 18px;
+          grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+          gap: 16px;
+          padding: 14px;
         }
 
         .po-editorial-hero__visual {
-          min-height: 270px;
+          min-height: 220px;
           border: 1px solid rgba(216, 207, 195, 0.9);
-          border-radius: 26px;
+          border-radius: 22px;
           overflow: hidden;
           background:
             radial-gradient(circle at top, rgba(255,255,255,.92), transparent 44%),
@@ -2652,14 +2748,14 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          gap: 18px;
+          gap: 14px;
         }
 
         .po-editorial-hero__top {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 16px;
+          gap: 12px;
         }
 
         .po-editorial-hero__eyebrow {
@@ -2673,7 +2769,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
 
         .po-editorial-hero__number {
           margin: 7px 0 0;
-          font-size: 34px;
+          font-size: 30px;
           line-height: .95;
           letter-spacing: -.07em;
           color: #251f2f;
@@ -2681,9 +2777,9 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         }
 
         .po-editorial-hero__title {
-          margin: 9px 0 0;
+          margin: 6px 0 0;
           color: #4d4659;
-          font-size: 19px;
+          font-size: 17px;
           line-height: 1.16;
           letter-spacing: -.035em;
         }
@@ -2691,16 +2787,16 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         .po-editorial-hero__meta {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 12px;
+          gap: 7px;
+          margin-top: 9px;
         }
 
         .po-editorial-chip {
           display: inline-flex;
           align-items: center;
-          min-height: 30px;
+          min-height: 28px;
           border-radius: 999px;
-          padding: 0 11px;
+          padding: 0 10px;
           border: 1px solid rgba(216, 207, 195, 0.86);
           background: rgba(255,255,255,.72);
           color: #6f6259;
@@ -2722,8 +2818,8 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           background: #fff;
           color: #2f2940;
           border-radius: 14px;
-          padding: 10px 16px;
-          font-size: 13px;
+          padding: 9px 14px;
+          font-size: 12px;
           font-weight: 850;
           cursor: pointer;
           transition: all 0.18s ease;
@@ -2744,7 +2840,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         .po-editorial-hero__bottom {
           display: grid;
           grid-template-columns: minmax(0, 1fr) auto;
-          gap: 16px;
+          gap: 12px;
           align-items: end;
         }
 
@@ -2767,7 +2863,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         }
 
         .po-editorial-progress__track {
-          height: 10px;
+          height: 8px;
           border-radius: 999px;
           overflow: hidden;
           background: rgba(216, 207, 195, 0.62);
@@ -2782,11 +2878,11 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         }
 
         .po-editorial-due {
-          min-width: 128px;
+          min-width: 118px;
           border: 1px solid rgba(216, 207, 195, 0.88);
-          border-radius: 20px;
+          border-radius: 18px;
           background: rgba(255,255,255,.74);
-          padding: 12px 14px;
+          padding: 10px 12px;
           text-align: right;
         }
 
@@ -2810,15 +2906,15 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         .po-meta-compact-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
+          gap: 10px;
         }
 
         .po-meta-compact-card {
           background: rgba(255, 255, 255, 0.94);
           border: 1px solid rgba(227, 217, 206, 0.92);
-          border-radius: 20px;
-          padding: 14px 16px;
-          min-height: 86px;
+          border-radius: 18px;
+          padding: 11px 13px;
+          min-height: 68px;
           display: flex;
           flex-direction: column;
           justify-content: center;
@@ -2831,12 +2927,12 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
           letter-spacing: 0.14em;
           color: #8a7f73;
           font-weight: 850;
-          margin-bottom: 8px;
+          margin-bottom: 5px;
         }
 
         .po-meta-compact-card strong {
-          font-size: 15px;
-          line-height: 1.2;
+          font-size: 14px;
+          line-height: 1.16;
           color: #4d4659;
         }
 
@@ -2880,7 +2976,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
 
         .po-tab-content {
           display: grid;
-          gap: 16px;
+          gap: 12px;
         }
 
         @media (max-width: 1120px) {
@@ -3056,6 +3152,182 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
         </div>
       </div>
 
+      <section className="po-premium-dashboard" aria-label={t("production-orders:detailOverview.title")}>
+        <article className="po-premium-card po-premium-card--summary">
+          <div className="po-premium-card__head">
+            <span>1</span>
+            <div>
+              <h3>{t("production-orders:detailOverview.summaryTitle")}</h3>
+              <p>{t("production-orders:detailOverview.summarySubtitle")}</p>
+            </div>
+          </div>
+
+          <dl className="po-premium-summary-list">
+            <div>
+              <dt>{t("production-orders:fields.orderNumber")}</dt>
+              <dd>{order.order_number}</dd>
+            </div>
+            <div>
+              <dt>{t("production-orders:fields.targetDressName")}</dt>
+              <dd>{order.target_dress_name}</dd>
+            </div>
+            <div>
+              <dt>{t("production-orders:fields.status")}</dt>
+              <dd>{translateOrderStatus(t, order.status)}</dd>
+            </div>
+            <div>
+              <dt>{t("production-orders:fields.priority")}</dt>
+              <dd>{translatePriority(t, order.priority)}</dd>
+            </div>
+            <div>
+              <dt>{t("production-orders:detailOverview.pendingQuantity")}</dt>
+              <dd>{pendingQuantity}</dd>
+            </div>
+            <div>
+              <dt>{t("production-orders:detailOverview.activeProcesses")}</dt>
+              <dd>{activeAssignments}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article className="po-premium-card po-premium-card--timeline">
+          <div className="po-premium-card__head">
+            <span>2</span>
+            <div>
+              <h3>{t("production-orders:detailOverview.timelineTitle")}</h3>
+              <p>
+                {completedAssignments} / {sortedAssignments.length || 0} {t("production-orders:detailOverview.completedProcesses")}
+              </p>
+            </div>
+          </div>
+
+          <div className="po-premium-process-line">
+            {visibleAssignments.length > 0 ? (
+              visibleAssignments.map((assignment, index) => {
+                const statusClass = assignmentStatusClass(assignment.status);
+                return (
+                  <div className="po-premium-process-line__item" key={assignment.id}>
+                    <div className={`po-premium-process-line__dot ${statusClass}`}>
+                      {index + 1}
+                    </div>
+                    <strong>{assignment.process_name || assignment.process_code || t("production-orders:assignments.process")}</strong>
+                    <span>{translateAssignmentStatus(t, assignment.status)}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="po-premium-empty-inline">
+                {t("production-orders:detailOverview.noProcesses")}
+              </div>
+            )}
+          </div>
+        </article>
+
+        <article className="po-premium-card po-premium-card--materials">
+          <div className="po-premium-card__head">
+            <span>3</span>
+            <div>
+              <h3>{t("production-orders:detailOverview.materialsTitle")}</h3>
+              <p>{materialCards.length} {t("production-orders:detailOverview.assignedMaterials")}</p>
+            </div>
+          </div>
+
+          <div className="po-premium-table">
+            <div className="po-premium-table__row po-premium-table__row--head">
+              <span>{t("production-orders:fields.material")}</span>
+              <span>{t("production-orders:fields.plannedQuantityMaterial")}</span>
+              <span>{t("production-orders:fields.deliveredQuantity")}</span>
+              <span>{t("production-orders:fields.status")}</span>
+            </div>
+            {visibleMaterials.length > 0 ? (
+              visibleMaterials.map((material) => (
+                <div className="po-premium-table__row" key={material.id}>
+                  <span>{material.description_snapshot || material.roll_code || material.material_type}</span>
+                  <span>{material.planned_quantity} {material.unit}</span>
+                  <span>{material.delivered_quantity} {material.unit}</span>
+                  <span>{material.badgeLabel}</span>
+                </div>
+              ))
+            ) : (
+              <div className="po-premium-empty-inline">
+                {t("production-orders:materials.empty")}
+              </div>
+            )}
+          </div>
+        </article>
+
+        <article className="po-premium-card po-premium-card--costs">
+          <div className="po-premium-card__head">
+            <span>4</span>
+            <div>
+              <h3>{t("production-orders:detailOverview.costsTitle")}</h3>
+              <p>{t("production-orders:detailOverview.costsSubtitle")}</p>
+            </div>
+          </div>
+
+          <div className="po-premium-cost-grid">
+            <div>
+              <span>{t("production-orders:costs.estimatedTotalCost")}</span>
+              <strong>{formatMoney(estimatedTotalCost, effectiveCurrency, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("production-orders:costs.actualTotalCost")}</span>
+              <strong>{formatMoney(visibleActualCost, effectiveCurrency, locale)}</strong>
+            </div>
+            <div>
+              <span>{t("production-orders:detailOverview.variation")}</span>
+              <strong className={costVariation > 0 ? "is-negative" : "is-positive"}>
+                {costVariation.toFixed(1)}%
+              </strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="po-premium-card po-premium-card--people">
+          <div className="po-premium-card__head">
+            <span>5</span>
+            <div>
+              <h3>{t("production-orders:detailOverview.peopleTitle")}</h3>
+              <p>{t("production-orders:detailOverview.peopleSubtitle")}</p>
+            </div>
+          </div>
+
+          <div className="po-premium-people-list">
+            {visibleAssignments.length > 0 ? (
+              visibleAssignments.slice(0, 4).map((assignment) => (
+                <div className="po-premium-person" key={assignment.id}>
+                  <div>
+                    <strong>{assignment.process_name || assignment.process_code || t("production-orders:assignments.process")}</strong>
+                    <span>{assignment.supplier_name || order.workshop_supplier_name || "-"}</span>
+                  </div>
+                  <em>{translateAssignmentStatus(t, assignment.status)}</em>
+                </div>
+              ))
+            ) : (
+              <div className="po-premium-empty-inline">
+                {t("production-orders:detailOverview.noPeople")}
+              </div>
+            )}
+          </div>
+        </article>
+
+        <article className="po-premium-card po-premium-card--notes">
+          <div className="po-premium-card__head">
+            <span>6</span>
+            <div>
+              <h3>{t("production-orders:detailOverview.notesTitle")}</h3>
+              <p>
+                {nextEvent
+                  ? formatDateTime(nextEvent.created_at, locale)
+                  : t("production-orders:detailOverview.noEvents")}
+              </p>
+            </div>
+          </div>
+
+          <div className="po-premium-note-box">{notesText}</div>
+        </article>
+      </section>
+
       <div className="po-detail-tabs">
         <button
           type="button"
@@ -3113,6 +3385,7 @@ export default function ProductionOrderDetailPanel({ orderId }: Props) {
               issuingAll={issuingAll}
               createOutput={createOutput}
               materialStatusClass={materialStatusClass}
+              onWorkflowChanged={refreshAssignments}
             />
 
             <ProductionOrderAssignmentsSection

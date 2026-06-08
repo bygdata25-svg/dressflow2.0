@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
 from app.core.database import get_db
+from app.core.currency import format_money
 from app.core.exceptions import AppException
 from app.models.dress import Dress
 from app.models.fabric_movement import FabricMovement
@@ -388,7 +389,7 @@ def _build_pdf_bytes(
             draw_kv("   Consumido", f"{_fmt_decimal(item.consumed_quantity)} {item.unit or ''}".strip())
             draw_kv("   Devuelto", f"{_fmt_decimal(item.returned_quantity)} {item.unit or ''}".strip())
             draw_kv("   Desperdicio", f"{_fmt_decimal(item.waste_quantity)} {item.unit or ''}".strip())
-            draw_kv("   Costo unitario", f"{costs['currency']} {_fmt_decimal(item.unit_cost_snapshot)}")
+            draw_kv("   Costo unitario", format_money(item.unit_cost_snapshot, costs["currency"]))
             if item.notes:
                 draw_kv("   Notas", item.notes)
             y -= 4
@@ -407,7 +408,7 @@ def _build_pdf_bytes(
             )
             draw_kv("   Talle", output.size or "-")
             draw_kv("   Color", output.color or "-")
-            draw_kv("   Costo unitario", f"{costs['currency']} {_fmt_decimal(output.unit_cost)}")
+            draw_kv("   Costo unitario", format_money(output.unit_cost, costs["currency"]))
             if output.notes:
                 draw_kv("   Notas", output.notes)
             y -= 4
@@ -415,14 +416,14 @@ def _build_pdf_bytes(
     hr()
 
     draw_line("RESUMEN DE COSTOS", size=12, bold=True, gap=18)
-    draw_kv("Costo materiales estimado", f"{costs['currency']} {_fmt_decimal(costs['estimated_material_cost'])}")
-    draw_kv("Costo materiales real", f"{costs['currency']} {_fmt_decimal(costs['actual_material_cost'])}")
-    draw_kv("Mano de obra", f"{costs['currency']} {_fmt_decimal(costs['labor_cost'])}")
-    draw_kv("Costos adicionales", f"{costs['currency']} {_fmt_decimal(costs['additional_cost'])}")
-    draw_kv("Costo total estimado", f"{costs['currency']} {_fmt_decimal(costs['estimated_total_cost'])}")
-    draw_kv("Costo total real", f"{costs['currency']} {_fmt_decimal(costs['actual_total_cost'])}")
-    draw_kv("Costo unitario estimado", f"{costs['currency']} {_fmt_decimal(costs['estimated_unit_cost'])}")
-    draw_kv("Costo unitario real", f"{costs['currency']} {_fmt_decimal(costs['actual_unit_cost'])}")
+    draw_kv("Costo materiales estimado", format_money(costs["estimated_material_cost"], costs["currency"]))
+    draw_kv("Costo materiales real", format_money(costs["actual_material_cost"], costs["currency"]))
+    draw_kv("Mano de obra", format_money(costs["labor_cost"], costs["currency"]))
+    draw_kv("Costos adicionales", format_money(costs["additional_cost"], costs["currency"]))
+    draw_kv("Costo total estimado", format_money(costs["estimated_total_cost"], costs["currency"]))
+    draw_kv("Costo total real", format_money(costs["actual_total_cost"], costs["currency"]))
+    draw_kv("Costo unitario estimado", format_money(costs["estimated_unit_cost"], costs["currency"]))
+    draw_kv("Costo unitario real", format_money(costs["actual_unit_cost"], costs["currency"]))
 
     pdf.save()
     buffer.seek(0)

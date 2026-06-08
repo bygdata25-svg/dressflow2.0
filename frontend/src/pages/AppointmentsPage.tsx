@@ -24,7 +24,7 @@ import "../styles/pro-pages.css";
 import "./AppointmentsPage.css";
 
 type AppointmentScope = "mine" | "general";
-type AppointmentViewMode = "timeline" | "compact";
+type AppointmentViewMode = "timeline" | "compact" | "day";
 type AppointmentDateFilter = "all" | "today" | "week" | "overdue";
 
 type Appointment = {
@@ -191,6 +191,25 @@ function addDays(value: Date, amount: number) {
   return date;
 }
 
+function toDatetimeLocalInputValue(value: Date) {
+  const date = new Date(value);
+  date.setHours(date.getHours(), date.getMinutes(), 0, 0);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function defaultAppointmentDateTime(value: Date) {
+  const date = new Date(value);
+  date.setHours(9, 0, 0, 0);
+  return toDatetimeLocalInputValue(date);
+}
+
 function dateKey(value: Date | string) {
   const date = typeof value === "string" ? new Date(value) : value;
 
@@ -243,7 +262,7 @@ export default function AppointmentsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [currentWeek, setCurrentWeek] = useState(new Date());
 
@@ -303,8 +322,16 @@ export default function AppointmentsPage() {
     setForm(emptyForm);
   }
 
-  function openCreateModal() {
-    resetForm();
+  function openCreateModal(prefilledDate?: Date) {
+    if (prefilledDate) {
+      setForm({
+        ...emptyForm,
+        start_at: defaultAppointmentDateTime(prefilledDate),
+      });
+    } else {
+      resetForm();
+    }
+
     setShowModal(true);
   }
 
@@ -565,6 +592,21 @@ export default function AppointmentsPage() {
     return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   }, [currentWeek]);
 
+  const selectedDayAppointments = useMemo(() => {
+    const selectedKey = dateKey(currentWeek);
+    return filteredAppointments.filter(
+      (appointment) => dateKey(appointment.start_at) === selectedKey
+    );
+  }, [currentWeek, filteredAppointments]);
+
+  const selectedDayLabel = useMemo(() => {
+    return new Intl.DateTimeFormat(locale, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(currentWeek);
+  }, [currentWeek, locale]);
+
   const monthCalendarDays = useMemo(
     () => getMonthCalendarDays(currentWeek),
     [currentWeek]
@@ -583,18 +625,29 @@ export default function AppointmentsPage() {
   const weekRangeLabel = useMemo(() => {
     const firstDay = currentWeekDays[0];
     const lastDay = currentWeekDays[currentWeekDays.length - 1];
+    const isEnglish = locale.toLowerCase().startsWith("en");
+    const sameMonth =
+      firstDay.getMonth() === lastDay.getMonth() &&
+      firstDay.getFullYear() === lastDay.getFullYear();
+    const sameYear = firstDay.getFullYear() === lastDay.getFullYear();
 
-    const firstLabel = new Intl.DateTimeFormat(locale, {
-      day: "2-digit",
-      month: "short",
-    }).format(firstDay);
+    const startDay = new Intl.DateTimeFormat(locale, { day: "numeric" }).format(firstDay);
+    const endDay = new Intl.DateTimeFormat(locale, { day: "numeric" }).format(lastDay);
+    const startMonth = new Intl.DateTimeFormat(locale, { month: "short" })
+      .format(firstDay)
+      .replace(/\.$/, "");
+    const endMonth = new Intl.DateTimeFormat(locale, { month: "short" })
+      .format(lastDay)
+      .replace(/\.$/, "");
+    const fullMonth = new Intl.DateTimeFormat(locale, { month: "long" }).format(firstDay);
 
-    const lastLabel = new Intl.DateTimeFormat(locale, {
-      day: "2-digit",
-      month: "short",
-    }).format(lastDay);
+    if (isEnglish) {
+      if (sameMonth) return `${startMonth} ${startDay}–${endDay}`;
+      return `${startMonth} ${startDay} – ${endMonth} ${endDay}${sameYear ? "" : `, ${lastDay.getFullYear()}`}`;
+    }
 
-    return `${firstLabel} — ${lastLabel}`;
+    if (sameMonth) return `${startDay}–${endDay} de ${fullMonth}`;
+    return `${startDay} ${startMonth} – ${endDay} ${endMonth}${sameYear ? "" : ` ${lastDay.getFullYear()}`}`;
   }, [currentWeekDays, locale]);
 
   function formatWeekday(value: Date) {
@@ -615,39 +668,66 @@ export default function AppointmentsPage() {
     const color = appointment.color || config.color;
     const overdue = isOverdue(appointment);
     const allDay = isAllDayAppointment(appointment);
+    const referenceMatch =
+      appointment.title.match(/\b(?:DEMO-)?OP-\d+\b/i) ||
+      dressName.match(/\b(?:DEMO-)?OP-\d+\b/i);
+    const orderReference = referenceMatch?.[0] || "";
+    const shortOrderReference = orderReference.replace(/^DEMO-/i, "");
+    const displayTitle =
+      appointment.title
+        .replace(/\s*[-·]\s*\b(?:DEMO-)?OP-\d+\b.*$/i, "")
+        .trim() || appointment.title;
 
     return (
       <button
         key={appointment.id}
         type="button"
-        className={`appointments__week-event${
+        className={`appointments__week-event appointments__week-event--${String(appointment.appointment_type || "event").toLowerCase()}${
           overdue ? " appointments__week-event--overdue" : ""
         }`}
         style={{
           borderColor: `${color}33`,
+          borderLeftColor: color,
           background: `${color}14`,
+          ["--appointment-color" as any]: color,
         }}
-        onClick={() => setSelectedAppointment(appointment)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setSelectedAppointment(appointment);
+        }}
       >
-        <span className="appointments__week-event-time">
-          <span style={{ background: color }} />
-          {allDay ? t("labels.allDay") : formatHour(appointment.start_at)}
-        </span>
+        <div className="appointments__week-event-topline">
+          <span className="appointments__week-event-time">
+            <span style={{ background: color }} />
+            <span>{allDay ? t("labels.allDay") : formatHour(appointment.start_at)}</span>
+          </span>
+        </div>
 
-        <strong>{appointment.title}</strong>
+        <strong className="appointments__week-event-title">{displayTitle}</strong>
 
-        {(customerName || dressName) && (
+        {(customerName || dressName) && !shortOrderReference ? (
           <small>
             {[customerName, dressName].filter(Boolean).join(" · ")}
           </small>
-        )}
+        ) : null}
+
+        <div className="appointments__week-event-foot">
+          {shortOrderReference ? (
+            <span className="appointments__week-event-ref">{shortOrderReference}</span>
+          ) : null}
+
+          <span className={`appointments__week-event-status appointments__week-event-status--${appointment.status.toLowerCase()}`}>
+            {t(`statuses.${appointment.status}`, {
+              defaultValue: appointment.status,
+            })}
+          </span>
+        </div>
       </button>
     );
   }
 
   function renderAppointmentCard(appointment: Appointment, compact = false) {
     const config = TYPE_CONFIG[appointment.appointment_type] || TYPE_CONFIG.FITTING;
-    const Icon = config.icon;
     const customerName = appointmentCustomerName(appointment);
     const dressName = appointmentDressName(appointment);
     const responsibleName = appointmentResponsibleName(appointment);
@@ -818,7 +898,7 @@ export default function AppointmentsPage() {
           <button
             type="button"
             className="appointments__new-btn"
-            onClick={openCreateModal}
+            onClick={() => openCreateModal()}
           >
             {t("actions.new")}
           </button>
@@ -830,7 +910,7 @@ export default function AppointmentsPage() {
           <div className="appointments__mini-calendar-card">
             <div className="appointments__mini-calendar-head">
               <CalendarDays size={16} strokeWidth={2} />
-              <strong>{formatMonthYear(today)}</strong>
+              <strong>{formatMonthYear(currentWeek)}</strong>
             </div>
 
             <div className="appointments__mini-calendar-weekdays">
@@ -944,11 +1024,11 @@ export default function AppointmentsPage() {
           </div>
         </aside>
 
-        <main className="appointments__apple-main">
+        <main className={`appointments__apple-main${showFilters ? " has-filters" : " is-compact"}`}>
           <section className="appointments__apple-toolbar">
             <div>
               <p>{t("calendar.week", { defaultValue: "Semana" })}</p>
-              <h2>{weekRangeLabel}</h2>
+              <h2 className="appointments__week-range">{weekRangeLabel}</h2>
                  <div className="appointments__week-nav">
                    <button type="button" onClick={goToPreviousWeek}>‹</button>
                    <button type="button" onClick={goToToday}>
@@ -993,6 +1073,18 @@ export default function AppointmentsPage() {
                   title={t("views.timeline", { defaultValue: "Calendario" })}
                 >
                   <LayoutGrid size={16} strokeWidth={2} />
+                </button>
+
+                <button
+                  type="button"
+                  className={viewMode === "day" ? "is-active" : ""}
+                  onClick={() => {
+                    setCurrentWeek(new Date());
+                    setViewMode("day");
+                  }}
+                  title={t("views.day", { defaultValue: "Hoy" })}
+                >
+                  <CalendarDays size={16} strokeWidth={2} />
                 </button>
 
                 <button
@@ -1066,6 +1158,41 @@ export default function AppointmentsPage() {
               <strong>{t("states.emptyTitle")}</strong>
               <span>{t("states.emptySubtitle")}</span>
             </div>
+          ) : viewMode === "day" ? (
+            <section className="appointments__day-agenda">
+              <div className="appointments__day-agenda-head">
+                <div>
+                  <p>{t("calendar.todayAgenda", { defaultValue: "Agenda del día" })}</p>
+                  <h3>{selectedDayLabel}</h3>
+                </div>
+
+                <button
+                  type="button"
+                  className="appointments__day-add-btn"
+                  onClick={() => openCreateModal(currentWeek)}
+                >
+                  {t("actions.addForDay", { defaultValue: "Agregar en este día" })}
+                </button>
+              </div>
+
+              {selectedDayAppointments.length ? (
+                <div className="appointments__day-list">
+                  {selectedDayAppointments.map((appointment) =>
+                    renderAppointmentCard(appointment, false)
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="appointments__day-empty"
+                  onClick={() => openCreateModal(currentWeek)}
+                >
+                  <CalendarDays size={26} strokeWidth={1.8} />
+                  <strong>{t("calendar.noEventsForDay")}</strong>
+                  <span>{t("calendar.clickToCreate")}</span>
+                </button>
+              )}
+            </section>
           ) : viewMode === "compact" ? (
             <section className="appointments__apple-list">
               {filteredAppointments.map((appointment) =>
@@ -1079,22 +1206,44 @@ export default function AppointmentsPage() {
                 const dayEvents = weekAppointmentsByDay[key] || [];
                 const isToday = isSameDay(day, today);
 
+                const visibleEvents = dayEvents.slice(0, 2);
+                const hiddenEventsCount = Math.max(0, dayEvents.length - visibleEvents.length);
+
                 return (
                   <article
                     key={key}
                     className={`appointments__week-day${isToday ? " is-today" : ""}`}
+                    onClick={() => openCreateModal(day)}
                   >
                     <header className="appointments__week-day-head">
                       <span>{formatWeekday(day)}</span>
                       <strong>{day.getDate()}</strong>
+                      <em>{dayEvents.length}</em>
                     </header>
 
                     <div className="appointments__week-day-events">
                       {dayEvents.length ? (
-                        dayEvents.map(renderCalendarEvent)
+                        <>
+                          {visibleEvents.map(renderCalendarEvent)}
+
+                          {hiddenEventsCount > 0 ? (
+                            <button
+                              type="button"
+                              className="appointments__week-more"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setCurrentWeek(day);
+                                setViewMode("day");
+                              }}
+                            >
+                              {t("calendar.moreEvents", { count: hiddenEventsCount })}
+                            </button>
+                          ) : null}
+                        </>
                       ) : (
                         <div className="appointments__week-empty">
-                          {t("calendar.noEvents", { defaultValue: "Sin eventos" })}
+                          <span>{t("calendar.noEvents")}</span>
+                          <strong>{t("calendar.createEvent")}</strong>
                         </div>
                       )}
                     </div>

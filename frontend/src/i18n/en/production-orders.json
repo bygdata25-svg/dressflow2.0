@@ -40,7 +40,8 @@
     "name": "Name",
     "workshopAssigned": "Workshop assigned",
     "progress": "Progress",
-    "designImage": "Design image"
+    "designImage": "Design image",
+    "noGarmentDetails": "No garment details"
   },
   "status": {
     "DRAFT": "Draft",
@@ -121,7 +122,12 @@
     "available": "Available",
     "checkingAvailability": "Checking availability...",
     "noFabrics": "No fabrics assigned.",
-    "noTrims": "No trims assigned."
+    "noTrims": "No trims assigned.",
+    "confirmIssueAll": "Do you confirm issuing all reserved materials to the workshop?",
+    "confirmRemove": "Do you confirm removing this material from the order?",
+    "noMaterialsToIssue": "There are no reserved materials ready to issue.",
+    "issueAllError": "Could not issue all reserved materials.",
+    "removeError": "Could not remove the material."
   },
   "receive": {
     "title": "Production receipt",
@@ -277,7 +283,9 @@
   "messages": {
     "loadError": "Could not load production orders.",
     "detailLoadError": "Could not load order detail.",
-    "emptyFiltered": "No orders match the current filters."
+    "emptyFiltered": "No orders match the current filters.",
+    "loading": "Loading order...",
+    "notFound": "Order not found."
   },
   "actions": {
     "reserve": "Reserve",
@@ -296,7 +304,8 @@
     "costsPdf": "Costs PDF",
     "selectFile": "Select file",
     "refresh": "Refresh",
-    "new": "New order"
+    "new": "New order",
+    "costPdf": "Costs PDF"
   },
   "assignments": {
     "title": "Operational workflow",
@@ -419,5 +428,29 @@
     "IN_PRODUCTION": "Production in progress",
     "COMPLETED": "Order completed",
     "CANCELLED": "Order cancelled"
+  },
+  "design": {
+    "noReference": "No reference image"
+  },
+  "detailOverview": {
+    "title": "Premium order overview",
+    "summaryTitle": "General summary",
+    "summarySubtitle": "Key information for quick follow-up.",
+    "timelineTitle": "Process timeline",
+    "completedProcesses": "completed processes",
+    "materialsTitle": "Materials and actual consumption",
+    "assignedMaterials": "assigned materials",
+    "costsTitle": "Estimated vs actual costs",
+    "costsSubtitle": "Consolidated financial control for the order.",
+    "peopleTitle": "People involved",
+    "peopleSubtitle": "Processes, workshop and operational status.",
+    "notesTitle": "Internal notes",
+    "pendingQuantity": "Pending",
+    "activeProcesses": "Active processes",
+    "variation": "Variation",
+    "noProcesses": "No processes assigned yet.",
+    "noPeople": "No assignees assigned yet.",
+    "noNotes": "No internal notes recorded.",
+    "noEvents": "No movements recorded"
   }
 }

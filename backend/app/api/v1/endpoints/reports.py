@@ -123,8 +123,8 @@ REPORTS_I18N = {
             "sheet": "Ventas unificadas",
             "filename": "ventas_unificadas.xlsx",
             "headers": [
-                "N° Venta", "Fecha", "Cliente", "Moneda cabecera", "Estado", "Total ítems ARS",
-                "Total ítems USD", "Pagado ARS", "Pagado USD", "Ítems", "Pagos", "Notas",
+                "N° Venta", "Fecha", "Cliente", "Moneda cabecera", "Estado", "Total moneda local",
+                "Total moneda extranjera", "Pagado moneda local", "Pagado moneda extranjera", "Ítems", "Pagos", "Notas",
             ],
             "total": "TOTALES",
             "item_types": {"DRESS": "Vestido", "ACCESSORY": "Accesorio", "TRIM": "Avío"},
@@ -200,8 +200,8 @@ REPORTS_I18N = {
             "sheet": "Unified sales",
             "filename": "unified_sales.xlsx",
             "headers": [
-                "Sale #", "Date", "Customer", "Header currency", "Status", "Items total ARS",
-                "Items total USD", "Paid ARS", "Paid USD", "Items", "Payments", "Notes",
+                "Sale #", "Date", "Customer", "Header currency", "Status", "Local currency total",
+                "Foreign currency total", "Local currency paid", "Foreign currency paid", "Items", "Payments", "Notes",
             ],
             "total": "TOTALS",
             "item_types": {"DRESS": "Dress", "ACCESSORY": "Accessory", "TRIM": "Trim"},

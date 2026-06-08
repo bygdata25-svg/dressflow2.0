@@ -194,6 +194,12 @@ function ProductionOrderWorkflowCard({
   const percent = getProgressPercent(row);
   const overdue = isOverdue(row);
   const photoUrl = resolveDesignPhotoUrl(row.design_photo_url);
+  const normalizedStatus = String(row.status || "unknown")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
+  const normalizedPriority = String(row.priority || "normal")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
 
   const metaParts = [
     row.target_dress_code
@@ -208,7 +214,7 @@ function ProductionOrderWorkflowCard({
   return (
     <button
       type="button"
-      className={`po-workflow-card ${selected ? "po-workflow-card--active" : ""}`}
+      className={`po-workflow-card po-workflow-card--status-${normalizedStatus} po-workflow-card--priority-${normalizedPriority} ${overdue ? "po-workflow-card--overdue" : ""} ${selected ? "po-workflow-card--active" : ""}`}
       onClick={onSelect}
     >
       <div className="po-workflow-card__main">
@@ -216,7 +222,9 @@ function ProductionOrderWorkflowCard({
           {photoUrl ? (
             <img src={photoUrl} alt={row.target_dress_name} />
           ) : (
-            <span>{getOperationalIcon(row.status)}</span>
+            <span className="po-workflow-card__visual-icon">
+              {getOperationalIcon(row.status)}
+            </span>
           )}
         </div>
 

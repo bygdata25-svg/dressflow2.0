@@ -40,7 +40,8 @@
     "name": "Nombre",
     "workshopAssigned": "Taller asignado",
     "progress": "Avance",
-    "designImage": "Imagen diseño"
+    "designImage": "Imagen diseño",
+    "noGarmentDetails": "Sin detalles de prenda"
   },
   "status": {
     "DRAFT": "Borrador",
@@ -122,7 +123,12 @@
     "available": "Disponible",
     "checkingAvailability": "Validando disponibilidad...",
     "noFabrics": "No hay telas asignadas.",
-    "noTrims": "No hay avíos asignados."
+    "noTrims": "No hay avíos asignados.",
+    "confirmIssueAll": "Confirmás entregar todos los materiales reservados al taller?",
+    "confirmRemove": "Confirmás quitar este material de la orden?",
+    "noMaterialsToIssue": "No hay materiales reservados listos para entregar.",
+    "issueAllError": "No se pudieron entregar todos los materiales reservados.",
+    "removeError": "No se pudo quitar el material."
   },
   "receive": {
     "title": "Recepción de producción",
@@ -278,7 +284,9 @@
   "messages": {
     "loadError": "No se pudieron cargar las órdenes.",
     "detailLoadError": "No se pudo cargar el detalle de la orden.",
-    "emptyFiltered": "No hay órdenes para los filtros actuales."
+    "emptyFiltered": "No hay órdenes para los filtros actuales.",
+    "loading": "Cargando orden...",
+    "notFound": "No se encontró la orden."
   },
   "actions": {
     "reserve": "Reservar",
@@ -427,5 +435,29 @@
     "IN_PRODUCTION": "Producción en curso",
     "COMPLETED": "Orden finalizada",
     "CANCELLED": "Orden cancelada"
+  },
+  "design": {
+    "noReference": "Sin imagen de referencia"
+  },
+  "detailOverview": {
+    "title": "Resumen premium de la orden",
+    "summaryTitle": "Resumen general",
+    "summarySubtitle": "Información principal para seguimiento rápido.",
+    "timelineTitle": "Línea de tiempo del proceso",
+    "completedProcesses": "procesos completados",
+    "materialsTitle": "Materiales y consumo real",
+    "assignedMaterials": "materiales asignados",
+    "costsTitle": "Costos estimados vs reales",
+    "costsSubtitle": "Control financiero consolidado de la orden.",
+    "peopleTitle": "Personas involucradas",
+    "peopleSubtitle": "Procesos, taller y estado operativo.",
+    "notesTitle": "Notas internas",
+    "pendingQuantity": "Pendiente",
+    "activeProcesses": "Procesos activos",
+    "variation": "Variación",
+    "noProcesses": "No hay procesos asignados todavía.",
+    "noPeople": "No hay responsables asignados todavía.",
+    "noNotes": "Sin notas internas registradas.",
+    "noEvents": "Sin movimientos registrados"
   }
 }

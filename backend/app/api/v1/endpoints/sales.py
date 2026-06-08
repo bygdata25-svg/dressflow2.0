@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, model_validator
 router = APIRouter(prefix="/sales", tags=["sales"])
 
 VALID_ITEM_TYPES = {"dress", "accessory"}
-VALID_CURRENCIES = {"ARS", "USD", "EUR" }
+VALID_CURRENCIES = {"ARS", "USD", "EUR", "CLP", "MXN"}
 VALID_PAYMENT_METHODS = {
     "cash",
     "transfer",
@@ -39,7 +39,7 @@ class SaleItemCreate(BaseModel):
             raise ValueError("item_type debe ser 'dress' o 'accessory'")
 
         if self.currency not in VALID_CURRENCIES:
-            raise ValueError("currency debe ser 'ARS' o 'USD'")
+            raise ValueError("currency debe ser una moneda habilitada para el tenant")
 
         if self.item_type == "dress":
             if not self.dress_id:
@@ -71,7 +71,7 @@ class SalePaymentCreate(BaseModel):
             raise ValueError("payment_method inválido")
 
         if self.currency not in VALID_CURRENCIES:
-            raise ValueError("currency debe ser 'ARS' o 'USD'")
+            raise ValueError("currency debe ser una moneda habilitada para el tenant")
 
         return self
 
@@ -91,7 +91,7 @@ class SaleCreate(BaseModel):
         self.currency = (self.currency or "ARS").strip().upper()
 
         if self.currency not in VALID_CURRENCIES:
-            raise ValueError("currency debe ser 'ARS' o 'USD'")
+            raise ValueError("currency debe ser una moneda habilitada para el tenant")
 
         if not self.items:
             raise ValueError("La venta debe tener al menos un item")

@@ -12,6 +12,7 @@ import {
   Bar,
 } from "recharts";
 import { api } from "../lib/api";
+import { formatCurrencyAmount, getCurrencySymbol } from "../utils/currency";
 import "../styles/pro-pages.css";
 
 type CurrencyCode = string;
@@ -61,18 +62,26 @@ const PAYMENT_COLORS = [
   "#b7791f",
 ];
 
-const CURRENCY_PRIORITY = ["ARS", "USD", "EUR"];
+const DEFAULT_BASE_CURRENCY = "ARS";
+const LEGACY_SECONDARY_CURRENCY = "USD";
+const DEFAULT_CURRENCY_PRIORITY = [
+  LEGACY_SECONDARY_CURRENCY,
+  "EUR",
+  DEFAULT_BASE_CURRENCY,
+  "CLP",
+  "MXN",
+];
 
 function normalizeCurrency(value?: string | null) {
-  return String(value || "ARS").toUpperCase();
+  return String(value || DEFAULT_BASE_CURRENCY).toUpperCase();
 }
 
 function currencyOrder(currencies: string[]) {
   const unique = Array.from(new Set(currencies.map(normalizeCurrency).filter(Boolean)));
 
   return [
-    ...CURRENCY_PRIORITY.filter((currency) => unique.includes(currency)),
-    ...unique.filter((currency) => !CURRENCY_PRIORITY.includes(currency)).sort(),
+    ...DEFAULT_CURRENCY_PRIORITY.filter((currency) => unique.includes(currency)),
+    ...unique.filter((currency) => !DEFAULT_CURRENCY_PRIORITY.includes(currency)).sort(),
   ];
 }
 
@@ -82,12 +91,12 @@ function legacyTotals(data: FinancialDashboardResponse | null) {
   const dynamic = data.totals_by_currency || {};
   const result: Record<string, number> = { ...dynamic };
 
-  if (data.total_ars !== undefined && result.ARS === undefined) {
-    result.ARS = Number(data.total_ars || 0);
+  if (data.total_ars !== undefined && result[DEFAULT_BASE_CURRENCY] === undefined) {
+    result[DEFAULT_BASE_CURRENCY] = Number(data.total_ars || 0);
   }
 
-  if (data.total_usd !== undefined && result.USD === undefined) {
-    result.USD = Number(data.total_usd || 0);
+  if (data.total_usd !== undefined && result[LEGACY_SECONDARY_CURRENCY] === undefined) {
+    result[LEGACY_SECONDARY_CURRENCY] = Number(data.total_usd || 0);
   }
 
   return result;
@@ -99,12 +108,12 @@ function legacyAverageTickets(data: FinancialDashboardResponse | null) {
   const dynamic = data.avg_ticket_by_currency || {};
   const result: Record<string, number> = { ...dynamic };
 
-  if (data.avg_ticket_ars !== undefined && result.ARS === undefined) {
-    result.ARS = Number(data.avg_ticket_ars || 0);
+  if (data.avg_ticket_ars !== undefined && result[DEFAULT_BASE_CURRENCY] === undefined) {
+    result[DEFAULT_BASE_CURRENCY] = Number(data.avg_ticket_ars || 0);
   }
 
-  if (data.avg_ticket_usd !== undefined && result.USD === undefined) {
-    result.USD = Number(data.avg_ticket_usd || 0);
+  if (data.avg_ticket_usd !== undefined && result[LEGACY_SECONDARY_CURRENCY] === undefined) {
+    result[LEGACY_SECONDARY_CURRENCY] = Number(data.avg_ticket_usd || 0);
   }
 
   return result;
@@ -116,15 +125,73 @@ function legacySalesCountByCurrency(data: FinancialDashboardResponse | null) {
   const dynamic = data.sales_count_by_currency || {};
   const result: Record<string, number> = { ...dynamic };
 
-  if (data.sales_count_ars !== undefined && result.ARS === undefined) {
-    result.ARS = Number(data.sales_count_ars || 0);
+  if (data.sales_count_ars !== undefined && result[DEFAULT_BASE_CURRENCY] === undefined) {
+    result[DEFAULT_BASE_CURRENCY] = Number(data.sales_count_ars || 0);
   }
 
-  if (data.sales_count_usd !== undefined && result.USD === undefined) {
-    result.USD = Number(data.sales_count_usd || 0);
+  if (data.sales_count_usd !== undefined && result[LEGACY_SECONDARY_CURRENCY] === undefined) {
+    result[LEGACY_SECONDARY_CURRENCY] = Number(data.sales_count_usd || 0);
   }
 
   return result;
+}
+
+
+type CurrencyTooltipPayloadItem = {
+  value?: number | string;
+  dataKey?: string | number;
+  name?: string | number;
+};
+
+function CurrencyTooltip({
+  active,
+  payload,
+  label,
+  formatMoney,
+}: {
+  active?: boolean;
+  payload?: CurrencyTooltipPayloadItem[];
+  label?: string | number;
+  formatMoney: (value: number, currency: CurrencyCode) => string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        borderRadius: 14,
+        border: "1px solid #e7deef",
+        boxShadow: "0 18px 34px rgba(44, 28, 58, 0.12)",
+        background: "#ffffff",
+        padding: "12px 14px",
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      {label ? (
+        <strong style={{ color: "#35293f", fontWeight: 800 }}>{label}</strong>
+      ) : null}
+
+      {payload
+        .filter((item) => Number(item.value || 0) !== 0)
+        .map((item, index) => {
+          const dataKey = String(item.dataKey || item.name || "");
+          const currency = dataKey.replace("currency_", "");
+          return (
+            <div
+              key={`${dataKey}-${index}`}
+              style={{
+                color: "#6f4f70",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {formatMoney(Number(item.value || 0), currency)}
+            </div>
+          );
+        })}
+    </div>
+  );
 }
 
 export default function FinancialDashboardPage() {
@@ -136,34 +203,32 @@ export default function FinancialDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   function formatMoney(value: number, currency: CurrencyCode) {
-    try {
-      return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency,
-        maximumFractionDigits: 2,
-      }).format(value || 0);
-    } catch {
-      return `${currency} ${Number(value || 0).toLocaleString(locale, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`;
-    }
+    const currencyCode = normalizeCurrency(currency);
+
+    return formatCurrencyAmount(value, {
+      locale,
+      currencyCode,
+      symbol: getCurrencySymbol(currencyCode),
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 
   function compactMoney(value: number, currency: CurrencyCode) {
-    try {
-      return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency,
-        notation: "compact",
-        maximumFractionDigits: 1,
-      }).format(value || 0);
-    } catch {
-      return `${currency} ${Number(value || 0).toLocaleString(locale, {
-        notation: "compact",
-        maximumFractionDigits: 1,
-      })}`;
-    }
+    const currencyCode = normalizeCurrency(currency);
+
+    return formatCurrencyAmount(value, {
+      locale,
+      currencyCode,
+      symbol: getCurrencySymbol(currencyCode),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    });
+  }
+
+  function currencyLabel(currency?: CurrencyCode | null) {
+    const currencyCode = normalizeCurrency(currency);
+    return getCurrencySymbol(currencyCode);
   }
 
   function monthLabel(value: string) {
@@ -174,7 +239,28 @@ export default function FinancialDashboardPage() {
 
   function paymentMethodLabel(value?: string) {
     const raw = String(value || "").toUpperCase().trim();
-    return t(`payments.${raw}`, { defaultValue: value || "—" });
+
+    const fallbackMap: Record<string, string> = {
+      CASH: "Efectivo",
+      EFECTIVO: "Efectivo",
+      TRANSFER: "Transferencia",
+      TRANSFERENCIA: "Transferencia",
+      MERCADO_PAGO: "Mercado Pago",
+      CREDIT_CARD: "Tarjeta crédito",
+      TARJETA_CREDITO: "Tarjeta crédito",
+      DEBIT_CARD: "Tarjeta débito",
+      TARJETA_DEBITO: "Tarjeta débito",
+    };
+
+    return t(`payments.${raw}`, {
+      defaultValue:
+        fallbackMap[raw] ||
+        raw
+          .replaceAll("_", " ")
+          .toLowerCase()
+          .replace(/\b\w/g, (char) => char.toUpperCase()) ||
+        "—",
+    });
   }
 
   function operationLabel(count: number) {
@@ -225,19 +311,30 @@ export default function FinancialDashboardPage() {
 
       return {
         label: t(`headline.${currency.toLowerCase()}Total`, {
-          defaultValue: t("headline.arsTotal"),
+          currency: currencyLabel(currency),
+          defaultValue: t("headline.totalByCurrency", {
+            currency: currencyLabel(currency),
+            defaultValue: currencyLabel(currency),
+          }),
         }),
         value: formatMoney(amount, currency),
         subtitle: t(`headline.${currency.toLowerCase()}Subtitle`, {
-          defaultValue: currency,
+          currency: currencyLabel(currency),
+          defaultValue: currencyLabel(currency),
         }),
       };
     }
 
     return {
-      label: t("headline.arsTotal"),
-      value: formatMoney(Number(currentData.total_ars || 0), "ARS"),
-      subtitle: t("headline.arsSubtitle"),
+      label: t("headline.baseTotal", {
+        currency: currencyLabel(DEFAULT_BASE_CURRENCY),
+        defaultValue: currencyLabel(DEFAULT_BASE_CURRENCY),
+      }),
+      value: formatMoney(Number(currentData.total_ars || 0), DEFAULT_BASE_CURRENCY),
+      subtitle: t("headline.baseSubtitle", {
+        currency: currencyLabel(DEFAULT_BASE_CURRENCY),
+        defaultValue: currencyLabel(DEFAULT_BASE_CURRENCY),
+      }),
     };
   }
 
@@ -268,12 +365,12 @@ export default function FinancialDashboardPage() {
         ...(row.totals_by_currency || {}),
       } as Record<string, number>;
 
-      if (row.total_ars !== undefined && totals.ARS === undefined) {
-        totals.ARS = Number(row.total_ars || 0);
+      if (row.total_ars !== undefined && totals[DEFAULT_BASE_CURRENCY] === undefined) {
+        totals[DEFAULT_BASE_CURRENCY] = Number(row.total_ars || 0);
       }
 
-      if (row.total_usd !== undefined && totals.USD === undefined) {
-        totals.USD = Number(row.total_usd || 0);
+      if (row.total_usd !== undefined && totals[LEGACY_SECONDARY_CURRENCY] === undefined) {
+        totals[LEGACY_SECONDARY_CURRENCY] = Number(row.total_usd || 0);
       }
 
       return {
@@ -296,12 +393,12 @@ export default function FinancialDashboardPage() {
         ...(row.totals_by_currency || {}),
       } as Record<string, number>;
 
-      if (row.total_ars !== undefined && totals.ARS === undefined) {
-        totals.ARS = Number(row.total_ars || 0);
+      if (row.total_ars !== undefined && totals[DEFAULT_BASE_CURRENCY] === undefined) {
+        totals[DEFAULT_BASE_CURRENCY] = Number(row.total_ars || 0);
       }
 
-      if (row.total_usd !== undefined && totals.USD === undefined) {
-        totals.USD = Number(row.total_usd || 0);
+      if (row.total_usd !== undefined && totals[LEGACY_SECONDARY_CURRENCY] === undefined) {
+        totals[LEGACY_SECONDARY_CURRENCY] = Number(row.total_usd || 0);
       }
 
       return {
@@ -320,8 +417,11 @@ export default function FinancialDashboardPage() {
   const headline = useMemo(() => {
     if (!data) {
       return {
-        label: t("headline.arsTotal"),
-        value: formatMoney(0, "ARS"),
+        label: t("headline.baseTotal", {
+          currency: currencyLabel(DEFAULT_BASE_CURRENCY),
+          defaultValue: currencyLabel(DEFAULT_BASE_CURRENCY),
+        }),
+        value: formatMoney(0, DEFAULT_BASE_CURRENCY),
         subtitle: "",
       };
     }
@@ -373,13 +473,13 @@ export default function FinancialDashboardPage() {
 
           {activeCurrencies.length === 0 ? (
             <div className="df-fin-hero-inline">
-              <span>ARS</span>
-              <strong>{compactMoney(0, "ARS")}</strong>
+              <span>{currencyLabel(DEFAULT_BASE_CURRENCY)}</span>
+              <strong>{compactMoney(0, DEFAULT_BASE_CURRENCY)}</strong>
             </div>
           ) : (
             activeCurrencies.map((currency) => (
               <div key={currency} className="df-fin-hero-inline">
-                <span>{currency}</span>
+                <span>{currencyLabel(currency)}</span>
                 <strong>{compactMoney(Number(totalsByCurrency[currency] || 0), currency)}</strong>
               </div>
             ))
@@ -395,16 +495,16 @@ export default function FinancialDashboardPage() {
           >
             <span>
               {t("kpis.salesCurrency", {
-                currency,
-                defaultValue: `${t("kpis.sales")} ${currency}`,
+                currency: currencyLabel(currency),
+                defaultValue: t("kpis.sales"),
               })}
             </span>
             <strong>{formatMoney(Number(totalsByCurrency[currency] || 0), currency)}</strong>
             <small>
               {t("kpis.salesCurrencySubtitle", {
-                currency,
+                currency: currencyLabel(currency),
                 count: Number(salesCountByCurrency[currency] || 0),
-                defaultValue: `${operationLabel(Number(salesCountByCurrency[currency] || 0))} · ${currency}`,
+                defaultValue: operationLabel(Number(salesCountByCurrency[currency] || 0)),
               })}
             </small>
           </div>
@@ -419,13 +519,15 @@ export default function FinancialDashboardPage() {
         {activeCurrencies.map((currency) => (
           <div key={`avg-${currency}`} className="df-fin-card">
             <span>
-              {t("kpis.avgTicketCurrency", {
-                currency,
-                defaultValue: `${t("kpis.avgTicketARS")} ${currency}`,
+              {t("kpis.avgTicket", {
+                defaultValue: t("kpis.avgTicketCurrency", {
+                  currency: "",
+                  defaultValue: t("kpis.avgTicketARS", { defaultValue: "Ticket promedio" }),
+                }).replace(/ARS|USD|EUR|CLP|MXN|\$|US\$|€/g, "").trim(),
               })}
             </span>
             <strong>{formatMoney(Number(avgTicketByCurrency[currency] || 0), currency)}</strong>
-            <small>{t("kpis.avgTicketARSSubtitle")}</small>
+            <small>{t("kpis.avgTicketSubtitle", { defaultValue: t("kpis.avgTicketARSSubtitle") })}</small>
           </div>
         ))}
       </div>
@@ -444,7 +546,7 @@ export default function FinancialDashboardPage() {
               {t("sections.evolution")}
             </h3>
             <p style={{ margin: "6px 0 0", color: "#8b8193" }}>
-              {t("sections.evolutionSubtitle")}
+              {t("sections.evolutionSubtitle", { defaultValue: t("sections.evolutionSubtitleNeutral", { defaultValue: "Evolución financiera mensual" }) })}
             </p>
           </div>
 
@@ -473,17 +575,14 @@ export default function FinancialDashboardPage() {
                     tickLine={false}
                   />
                   <Tooltip
-                    formatter={(value: any, name: any) => {
-                      const currency = String(name || "").replace("currency_", "");
-                      return [formatMoney(Number(value || 0), currency), currency];
-                    }}
-                    contentStyle={{
-                      borderRadius: 14,
-                      border: "1px solid #e7deef",
-                      boxShadow: "0 18px 34px rgba(44, 28, 58, 0.12)",
-                      background: "#ffffff",
-                    }}
-                    labelStyle={{ color: "#35293f", fontWeight: 700 }}
+                    content={(props) => (
+                      <CurrencyTooltip
+                        active={props.active}
+                        payload={props.payload as CurrencyTooltipPayloadItem[]}
+                        label={props.label}
+                        formatMoney={formatMoney}
+                      />
+                    )}
                   />
 
                   {activeCurrencies.map((currency, index) => (
@@ -491,7 +590,7 @@ export default function FinancialDashboardPage() {
                       key={currency}
                       type="monotone"
                       dataKey={`currency_${currency}`}
-                      name={currency}
+                      name=""
                       stroke={PAYMENT_COLORS[index % PAYMENT_COLORS.length]}
                       strokeWidth={3}
                       dot={{ r: 4 }}
@@ -508,7 +607,7 @@ export default function FinancialDashboardPage() {
                   <strong>{monthLabel(row.month)}</strong>
                   {activeCurrencies.map((currency) => (
                     <div key={`${row.month}-${currency}`}>
-                      {currency}: {formatMoney(Number(row[`currency_${currency}`] || 0), currency)}
+                      {formatMoney(Number(row[`currency_${currency}`] || 0), currency)}
                     </div>
                   ))}
                   <small>{operationLabel(row.sales_count)}</small>
@@ -542,17 +641,21 @@ export default function FinancialDashboardPage() {
                 />
                 <YAxis type="category" dataKey="name" width={110} />
                 <Tooltip
-                  formatter={(value: any, name: any) => {
-                    const currency = String(name || "").replace("currency_", "");
-                    return [formatMoney(Number(value || 0), currency), currency];
-                  }}
+                  content={(props) => (
+                    <CurrencyTooltip
+                      active={props.active}
+                      payload={props.payload as CurrencyTooltipPayloadItem[]}
+                      label={props.label}
+                      formatMoney={formatMoney}
+                    />
+                  )}
                 />
 
                 {activeCurrencies.map((currency, index) => (
                   <Bar
                     key={currency}
                     dataKey={`currency_${currency}`}
-                    name={currency}
+                    name=""
                     stackId="currency"
                     radius={[10, 10, 10, 10]}
                     fill={PAYMENT_COLORS[index % PAYMENT_COLORS.length]}
@@ -568,12 +671,12 @@ export default function FinancialDashboardPage() {
                 ...(row.totals_by_currency || {}),
               } as Record<string, number>;
 
-              if (row.total_ars !== undefined && totals.ARS === undefined) {
-                totals.ARS = Number(row.total_ars || 0);
+              if (row.total_ars !== undefined && totals[DEFAULT_BASE_CURRENCY] === undefined) {
+                totals[DEFAULT_BASE_CURRENCY] = Number(row.total_ars || 0);
               }
 
-              if (row.total_usd !== undefined && totals.USD === undefined) {
-                totals.USD = Number(row.total_usd || 0);
+              if (row.total_usd !== undefined && totals[LEGACY_SECONDARY_CURRENCY] === undefined) {
+                totals[LEGACY_SECONDARY_CURRENCY] = Number(row.total_usd || 0);
               }
 
               return (

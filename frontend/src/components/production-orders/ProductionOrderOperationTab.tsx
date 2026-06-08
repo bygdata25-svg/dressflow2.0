@@ -216,6 +216,7 @@ type Props = {
   issuingAll: boolean;
   createOutput: (event: FormEvent) => Promise<void>;
   materialStatusClass: (status: string) => string;
+  onWorkflowChanged?: () => Promise<void> | void;
 };
 
 
@@ -420,32 +421,40 @@ function assignmentStatusTone(status?: string | null) {
   return "pending";
 }
 
-function assignmentIcon(icon?: string | null, code?: string | null) {
-  const normalizedIcon = String(icon || "").trim().toLowerCase();
-  const normalizedCode = String(code || "").trim().toUpperCase();
+function assignmentIcon(icon?: string | null, code?: string | null, name?: string | null) {
+  const normalizedIcon = String(icon || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ");
 
-  const iconMap: Record<string, string> = {
-    scissors: "✂",
-    shirt: "◈",
-    sparkles: "✦",
-    gem: "◆",
-    wand: "✧",
-    "badge-check": "✓",
-    check: "✓",
-  };
+  const normalizedCode = String(code || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[_-]+/g, " ");
 
-  if (iconMap[normalizedIcon]) return iconMap[normalizedIcon];
+  const normalizedName = String(name || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ");
 
-  const codeMap: Record<string, string> = {
-    CUTTING: "✂",
-    SEWING: "◈",
-    EMBROIDERY: "✦",
-    BEADING: "◆",
-    FINISHING: "✧",
-    QUALITY_CONTROL: "✓",
-  };
+  const signature = `${normalizedIcon} ${normalizedCode.toLowerCase()} ${normalizedName}`;
 
-  return codeMap[normalizedCode] || "•";
+  if (/scissors|scissor|cutting|cut|corte/.test(signature)) return "✂";
+  if (/sewing|shirt|confeccion|costura|sew/.test(signature)) return "◈";
+  if (/sparkles|sparkle|embroidery|embroider|bordado|bordar/.test(signature)) return "✦";
+  if (/gem|beading|bead|pedreria|perla|beads/.test(signature)) return "◆";
+  if (/wand|finishing|finish|terminacion|acabado|iron/.test(signature)) return "✧";
+  if (/badge check|badgecheck|quality|control calidad|quality control|check/.test(signature)) return "✓";
+  if (/packaging|package|empaque|packing/.test(signature)) return "□";
+
+  const trimmedIcon = String(icon || "").trim();
+  if (trimmedIcon && !/[a-zA-Z]{3,}/.test(trimmedIcon) && trimmedIcon.length <= 3) {
+    return trimmedIcon;
+  }
+
+  return "•";
 }
 
 function toDateInputValue(value?: string | null) {
@@ -731,7 +740,7 @@ function ProcessTimeline({
         <div className="po-process-timeline">
           {sortedAssignments.map((assignment) => {
             const tone = assignmentStatusTone(assignment.status);
-            const icon = assignmentIcon(assignment.process_icon, assignment.process_code);
+            const icon = assignmentIcon(assignment.process_icon, assignment.process_code, assignment.process_name);
 
             return (
               <article key={assignment.id} className={`po-process-step po-process-step--${tone}`}>
@@ -742,7 +751,9 @@ function ProcessTimeline({
                       background: assignment.process_color || undefined,
                     }}
                   >
-                    {icon}
+                    <span className="po-process-icon-glyph" aria-hidden="true">
+                      {icon}
+                    </span>
                   </span>
                 </div>
 
@@ -809,86 +820,6 @@ function ProcessTimeline({
 }
 
 
-function ProductionWorkflowPipeline({
-  t,
-  assignments,
-  processTypes,
-}: {
-  t: TranslateFn;
-  assignments: ProductionOrderAssignment[];
-  processTypes: ProductionProcessType[];
-}) {
-  const orderedAssignments = [...assignments].sort((a, b) => {
-    const aProcess = processTypes.find((process) => process.id === a.process_type_id);
-    const bProcess = processTypes.find((process) => process.id === b.process_type_id);
-
-    return Number(aProcess?.sort_order || 999) - Number(bProcess?.sort_order || 999);
-  });
-
-  if (orderedAssignments.length === 0) {
-    return null;
-  }
-
-  return (
-    <section className="po-workflow-pipeline">
-      <div className="po-workflow-pipeline__header">
-        <div>
-          <h3>
-            {tr(
-              t,
-              "production-orders:workflow.title",
-              "Workflow de producción"
-            )}
-          </h3>
-
-          <p>
-            {tr(
-              t,
-              "production-orders:workflow.subtitle",
-              "Visualizá el avance operativo completo de la orden."
-            )}
-          </p>
-        </div>
-      </div>
-
-      <div className="po-workflow-pipeline__track">
-        {orderedAssignments.map((assignment, index) => {
-          const tone = assignmentStatusTone(assignment.status);
-
-          return (
-            <div
-              key={assignment.id}
-              className={`po-workflow-step po-workflow-step--${tone}`}
-            >
-              <div
-                className="po-workflow-step__icon"
-                style={{
-                  background: assignment.process_color || "#2f2940",
-                }}
-              >
-                {assignmentIcon(
-                  assignment.process_icon,
-                  assignment.process_code
-                )}
-              </div>
-
-              <div className="po-workflow-step__content">
-                <strong>{assignment.process_name || "-"}</strong>
-                <span>{assignment.supplier_name || "-"}</span>
-                <small>{assignmentStatusLabel(t, assignment.status)}</small>
-              </div>
-
-              {index < orderedAssignments.length - 1 ? (
-                <div className="po-workflow-step__connector" />
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 export default function ProductionOrderOperationTab({
   t,
   order,
@@ -915,6 +846,7 @@ export default function ProductionOrderOperationTab({
   issuingAll,
   createOutput,
   materialStatusClass,
+  onWorkflowChanged,
 }: Props) {
   const outputCount = useMemo(
     () => outputs.reduce((acc, item) => acc + Number(item.quantity || 0), 0),
@@ -985,6 +917,11 @@ export default function ProductionOrderOperationTab({
     }
   };
 
+  const refreshWorkflowAndNotifyParent = async () => {
+    await loadWorkflow();
+    await onWorkflowChanged?.();
+  };
+
   useEffect(() => {
     setDesignPreview(resolveDesignPhotoUrl(order.design_photo_url));
   }, [order.id, order.design_photo_url]);
@@ -1014,7 +951,7 @@ export default function ProductionOrderOperationTab({
 
       setAssignmentForm(emptyAssignmentForm());
       setOpenAssignmentForm(false);
-      await loadWorkflow();
+      await refreshWorkflowAndNotifyParent();
     } catch (err: any) {
       setAssignmentError(
         err?.response?.data?.detail?.message ||
@@ -1049,7 +986,7 @@ export default function ProductionOrderOperationTab({
             : assignment.started_at || null,
       });
 
-      await loadWorkflow();
+      await refreshWorkflowAndNotifyParent();
     } catch (err: any) {
       setAssignmentError(
         err?.response?.data?.detail?.message ||
@@ -1067,7 +1004,7 @@ export default function ProductionOrderOperationTab({
     try {
       setAssignmentError("");
       await api.delete(`/production-order-assignments/${assignmentId}`);
-      await loadWorkflow();
+      await refreshWorkflowAndNotifyParent();
     } catch (err: any) {
       setAssignmentError(
         err?.response?.data?.detail?.message ||
@@ -1265,23 +1202,34 @@ export default function ProductionOrderOperationTab({
 
         .po-process-form {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
-          padding: 14px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          padding: 16px;
           margin-bottom: 18px;
           border: 1px solid rgba(216, 207, 195, 0.88);
           border-radius: 22px;
           background: rgba(255, 255, 255, 0.76);
+          align-items: end;
+        }
+
+        .po-process-form > div {
+          min-width: 0;
         }
 
         .po-process-form__wide {
-          grid-column: span 2;
+          grid-column: 1 / -1;
         }
 
         .po-process-form__actions {
-          grid-column: span 4;
+          grid-column: 1 / -1;
           display: flex;
           justify-content: flex-end;
+        }
+
+        .po-process-form .df-pro-input,
+        .po-process-form .df-pro-select {
+          width: 100%;
+          min-width: 0;
         }
 
         .po-process-empty {
@@ -1475,15 +1423,11 @@ export default function ProductionOrderOperationTab({
         }
       `}</style>
 
-      <div className="po-op-rail-layout">
-        <div className="po-op-work">
-          <ProductionWorkflowPipeline
-            t={t}
-            assignments={assignments}
-            processTypes={processTypes}
-          />
-
-          <ProcessTimeline
+      <div className="po-op-rail-layout po-op-rail-layout--compact">
+        <div className="po-op-work po-op-work--compact">
+          <div className="po-op-focus-grid">
+            <div className="po-op-focus-main">
+              <ProcessTimeline
             t={t}
             assignments={assignments}
             processTypes={processTypes}
@@ -1499,174 +1443,62 @@ export default function ProductionOrderOperationTab({
             onStatusChange={updateAssignmentStatus}
             onDelete={deleteAssignment}
           />
-
-          <section className="po-section-card po-design-card">
-            <div className="po-section-head">
-              <h3>{tr(t, "production-orders:design.title", "Imagen de diseño")}</h3>
-              <p>
-                {tr(
-                  t,
-                  "production-orders:design.subtitle",
-                  "Referencia visual de la prenda para taller, control interno y PDF."
-                )}
-              </p>
             </div>
 
-            <div className="po-design-body">
-              <div className="po-design-actions">
-                <div className="po-design-actions__text">
-                  <strong>{tr(t, "production-orders:design.reference", "Referencia de diseño")}</strong>
-                  <span>
-                    {tr(
-                      t,
-                      "production-orders:design.help",
-                      "Subí una imagen para que la orden tenga una referencia visual clara."
-                    )}
-                  </span>
+            <div className="po-op-focus-side">
+              <section className="po-section-card po-quick-rail-card po-quick-rail-card--compact">
+                <div className="po-section-head">
+                  <h3>{tr(t, "production-orders:operation.quickActions.title", "Acciones rápidas")}</h3>
+                  <p>
+                    {quickIssueReadyCount > 0
+                      ? tr(t, "production-orders:operation.quickActions.readyToIssue", "{{count}} materiales listos para entregar", { count: quickIssueReadyCount })
+                      : tr(t, "production-orders:operation.quickActions.noneReady", "No hay materiales reservados listos")}
+                  </p>
                 </div>
 
-                <label className="po-file-upload-btn">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    disabled={uploadingDesignImage}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void handleUploadDesignImage(file);
-                      event.target.value = "";
-                    }}
-                  />
-                  {uploadingDesignImage
-                    ? tr(t, "production-orders:design.uploading", "Subiendo...")
-                    : designPreview
-                      ? tr(t, "production-orders:design.replace", "Reemplazar imagen")
-                      : tr(t, "production-orders:design.upload", "Subir imagen")}
-                </label>
+                <button
+                  type="button"
+                  className="po-primary-btn"
+                  disabled={issuingAll}
+                  onClick={issueAllMaterials}
+                >
+                  {issuingAll ? tr(t, "production-orders:actions.issuing", "Entregando...") : tr(t, "production-orders:actions.issueReserved", "Entregar reservados")}
+                </button>
+              </section>
 
-                {designImageError ? (
-                  <div className="po-design-upload-error">{designImageError}</div>
-                ) : null}
-              </div>
-
-              <div className="po-design-preview">
-                {designPreview ? (
-                  <img
-                    src={designPreview}
-                    alt={tr(t, "production-orders:design.alt", "Imagen de diseño")}
-                  />
-                ) : (
-                  <div className="po-design-empty">
-                    <strong>{tr(t, "production-orders:design.empty", "Sin imagen")}</strong>
-                    <span>
-                      {tr(
-                        t,
-                        "production-orders:design.emptyHint",
-                        "La imagen aparecerá en la orden y en la ficha PDF."
-                      )}
-                    </span>
+              <section className="po-section-card po-op-mini-stats">
+                <div className="po-op-mini-stat">
+                  <span>{tr(t, "production-orders:operation.assigned.title", "Asignado")}</span>
+                  <strong>{assignedCount}</strong>
+                </div>
+                <div className="po-op-mini-stat">
+                  <span>{tr(t, "production-orders:output.title", "Producción")}</span>
+                  <strong>{outputCount}</strong>
+                </div>
+                <div className="po-op-mini-stat po-op-mini-stat--wide">
+                  <span>{tr(t, "production-orders:operation.summary.progress", "Progreso")}</span>
+                  <div className="po-bottom-bar__progress">
+                    <div className="po-progress-track">
+                      <div className="po-progress-fill" style={{ width: `${progressPercent}%` }} />
+                    </div>
+                    <strong>{progressPercent}%</strong>
                   </div>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section className="po-section-card">
-            <div className="po-section-head">
-              <h3>{tr(t, "production-orders:output.title", "Producción registrada")}</h3>
-              <p>
-                {tr(
-                  t,
-                  "production-orders:output.registerProductionHint",
-                  "Registrá la producción terminada. Se crearán automáticamente los vestidos disponibles para la venta."
-                )}
-              </p>
-            </div>
-
-            <form onSubmit={createOutput} className="po-op-output-form">
-              <div>
-                <label className="df-pro-label">
-                  {tr(t, "production-orders:fields.producedQuantity", "Cantidad producida")}
-                </label>
-                <input
-                  className="df-pro-input"
-                  type="number"
-                  min="1"
-                  value={outputForm.quantity}
-                  onChange={(e) =>
-                    setOutputForm((prev) => ({ ...prev, quantity: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="df-pro-label">
-                  {tr(t, "production-orders:fields.notes", "Notas")}
-                </label>
-                <input
-                  className="df-pro-input"
-                  placeholder={tr(t, "production-orders:fields.notes", "Notas")}
-                  value={outputForm.notes}
-                  onChange={(e) =>
-                    setOutputForm((prev) => ({ ...prev, notes: e.target.value }))
-                  }
-                />
-              </div>
-
-              <button type="submit" className="po-primary-btn">
-                {tr(t, "production-orders:actions.registerProduction", "Registrar Producción")}
-              </button>
-            </form>
-
-            <div className="po-op-output-list">
-              {outputs.length === 0 ? (
-                <div className="po-empty-state">
-                  {tr(
-                    t,
-                    "production-orders:output.emptyProduction",
-                    "Todavía no hay vestidos generados."
-                  )}
                 </div>
-              ) : (
-                outputs.map((output) => (
-                  <article key={output.id} className="po-op-output-card">
-                    <div className="po-op-output-card__top">
-                      <strong>{output.name}</strong>
-                      <span className="df-status-badge df-status-badge--available">
-                        {tr(t, "production-orders:status.AVAILABLE", "Disponible")}
-                      </span>
-                    </div>
-
-                    <div className="po-op-output-card__meta">
-                      {output.code ? (
-                        <span>
-                          {tr(t, "production-orders:fields.codeShort", "Cód.")} {output.code}
-                        </span>
-                      ) : null}
-                      {output.size ? (
-                        <span>
-                          {tr(t, "production-orders:fields.size", "Talle")} {output.size}
-                        </span>
-                      ) : null}
-                      {output.color ? <span>{output.color}</span> : null}
-                      <span>{output.quantity} u.</span>
-                    </div>
-
-                    {output.dress_id ? (
-                      <div className="po-op-output-card__notes">
-                        {tr(
-                          t,
-                          "production-orders:output.readyForSale",
-                          "Vestido creado y disponible para la venta."
-                        )}
-                      </div>
-                    ) : null}
-                  </article>
-                ))
-              )}
+              </section>
             </div>
-          </section> 
-          <div className="po-op-entry-grid">
+          </div>
+
+          <details className="po-compact-disclosure po-compact-disclosure--materials">
+            <summary>
+              <span>
+                {tr(t, "production-orders:materials.addTitle", "Agregar material")}
+              </span>
+              <small>
+                {tr(t, "production-orders:materials.addFabricHint", "Cargá el insumo principal de la orden.")}
+              </small>
+            </summary>
+
+            <div className="po-op-entry-grid">
             <section className="po-section-card po-material-entry-card">
               <div className="po-section-head">
                 <h3>{tr(t, "production-orders:materials.addFabric", "Agregar tela")}</h3>
@@ -1811,6 +1643,198 @@ export default function ProductionOrderOperationTab({
               </form>
             </section>
           </div>
+          </details>
+
+          <details className="po-compact-disclosure po-compact-disclosure--outputs" open>
+            <summary>
+              <span>
+                {tr(t, "production-orders:output.title", "Producción registrada")}
+              </span>
+              <small>
+                {tr(t, "production-orders:output.registerProductionHint", "Registrá la producción terminada.")}
+              </small>
+            </summary>
+
+            <section className="po-section-card">
+            <div className="po-section-head">
+              <h3>{tr(t, "production-orders:output.title", "Producción registrada")}</h3>
+              <p>
+                {tr(
+                  t,
+                  "production-orders:output.registerProductionHint",
+                  "Registrá la producción terminada. Se crearán automáticamente los vestidos disponibles para la venta."
+                )}
+              </p>
+            </div>
+
+            <form onSubmit={createOutput} className="po-op-output-form">
+              <div>
+                <label className="df-pro-label">
+                  {tr(t, "production-orders:fields.producedQuantity", "Cantidad producida")}
+                </label>
+                <input
+                  className="df-pro-input"
+                  type="number"
+                  min="1"
+                  value={outputForm.quantity}
+                  onChange={(e) =>
+                    setOutputForm((prev) => ({ ...prev, quantity: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="df-pro-label">
+                  {tr(t, "production-orders:fields.notes", "Notas")}
+                </label>
+                <input
+                  className="df-pro-input"
+                  placeholder={tr(t, "production-orders:fields.notes", "Notas")}
+                  value={outputForm.notes}
+                  onChange={(e) =>
+                    setOutputForm((prev) => ({ ...prev, notes: e.target.value }))
+                  }
+                />
+              </div>
+
+              <button type="submit" className="po-primary-btn">
+                {tr(t, "production-orders:actions.registerProduction", "Registrar Producción")}
+              </button>
+            </form>
+
+            <div className="po-op-output-list">
+              {outputs.length === 0 ? (
+                <div className="po-empty-state">
+                  {tr(
+                    t,
+                    "production-orders:output.emptyProduction",
+                    "Todavía no hay vestidos generados."
+                  )}
+                </div>
+              ) : (
+                outputs.map((output) => (
+                  <article key={output.id} className="po-op-output-card">
+                    <div className="po-op-output-card__top">
+                      <strong>{output.name}</strong>
+                      <span className="df-status-badge df-status-badge--available">
+                        {tr(t, "production-orders:status.AVAILABLE", "Disponible")}
+                      </span>
+                    </div>
+
+                    <div className="po-op-output-card__meta">
+                      {output.code ? (
+                        <span>
+                          {tr(t, "production-orders:fields.codeShort", "Cód.")} {output.code}
+                        </span>
+                      ) : null}
+                      {output.size ? (
+                        <span>
+                          {tr(t, "production-orders:fields.size", "Talle")} {output.size}
+                        </span>
+                      ) : null}
+                      {output.color ? <span>{output.color}</span> : null}
+                      <span>{output.quantity} u.</span>
+                    </div>
+
+                    {output.dress_id ? (
+                      <div className="po-op-output-card__notes">
+                        {tr(
+                          t,
+                          "production-orders:output.readyForSale",
+                          "Vestido creado y disponible para la venta."
+                        )}
+                      </div>
+                    ) : null}
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+          </details>
+
+          <details className="po-compact-disclosure po-compact-disclosure--design">
+            <summary>
+              <span>
+                {tr(t, "production-orders:design.title", "Imagen de diseño")}
+              </span>
+              <small>
+                {designPreview
+                  ? tr(t, "production-orders:design.subtitle", "Referencia visual de la prenda para taller, control interno y PDF.")
+                  : tr(t, "production-orders:design.empty", "Sin imagen")}
+              </small>
+            </summary>
+
+            <section className="po-section-card po-design-card">
+            <div className="po-section-head">
+              <h3>{tr(t, "production-orders:design.title", "Imagen de diseño")}</h3>
+              <p>
+                {tr(
+                  t,
+                  "production-orders:design.subtitle",
+                  "Referencia visual de la prenda para taller, control interno y PDF."
+                )}
+              </p>
+            </div>
+
+            <div className="po-design-body">
+              <div className="po-design-actions">
+                <div className="po-design-actions__text">
+                  <strong>{tr(t, "production-orders:design.reference", "Referencia de diseño")}</strong>
+                  <span>
+                    {tr(
+                      t,
+                      "production-orders:design.help",
+                      "Subí una imagen para que la orden tenga una referencia visual clara."
+                    )}
+                  </span>
+                </div>
+
+                <label className="po-file-upload-btn">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    disabled={uploadingDesignImage}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void handleUploadDesignImage(file);
+                      event.target.value = "";
+                    }}
+                  />
+                  {uploadingDesignImage
+                    ? tr(t, "production-orders:design.uploading", "Subiendo...")
+                    : designPreview
+                      ? tr(t, "production-orders:design.replace", "Reemplazar imagen")
+                      : tr(t, "production-orders:design.upload", "Subir imagen")}
+                </label>
+
+                {designImageError ? (
+                  <div className="po-design-upload-error">{designImageError}</div>
+                ) : null}
+              </div>
+
+              <div className="po-design-preview">
+                {designPreview ? (
+                  <img
+                    src={designPreview}
+                    alt={tr(t, "production-orders:design.alt", "Imagen de diseño")}
+                  />
+                ) : (
+                  <div className="po-design-empty">
+                    <strong>{tr(t, "production-orders:design.empty", "Sin imagen")}</strong>
+                    <span>
+                      {tr(
+                        t,
+                        "production-orders:design.emptyHint",
+                        "La imagen aparecerá en la orden y en la ficha PDF."
+                      )}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+          </details>
         </div>
 
         <aside className="po-op-rail">

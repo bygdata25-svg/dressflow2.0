@@ -18,7 +18,8 @@
     "noNextTitle": "No upcoming events",
     "noNextSubtitle": "There are no active pending events.",
     "quickFilters": "Quick filters",
-    "distribution": "Distribution"
+    "distribution": "Distribution",
+    "summary": "Summary"
   },
   "types": {
     "FITTING": "Fitting",
@@ -83,7 +84,8 @@
     "cancel": "Cancel",
     "close": "Close",
     "create": "Create event",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "addForDay": "Add for this day"
   },
   "scope": {
     "mine": "My agenda",
@@ -109,13 +111,34 @@
     "PRODUCTION": "Production"
   },
   "views": {
-    "timeline": "Timeline",
-    "compact": "Compact"
+    "timeline": "Calendar",
+    "compact": "List",
+    "day": "Today"
   },
   "priority": {
     "LOW": "Low",
     "MEDIUM": "Medium",
     "HIGH": "High",
     "URGENT": "Urgent"
+  },
+  "calendar": {
+    "week": "Week",
+    "today": "Today",
+    "noEvents": "No events",
+    "weekdaysShort": {
+      "monday": "MON",
+      "tuesday": "TUE",
+      "wednesday": "WED",
+      "thursday": "THU",
+      "friday": "FRI",
+      "saturday": "SAT",
+      "sunday": "SUN"
+    },
+    "moreEvents": "+{{count}} more events",
+    "todayAgenda": "Day agenda",
+    "noEventsForDay": "No events for this day",
+    "clickToCreate": "Click to create an event with the date prefilled.",
+    "clickDayToCreate": "Create an event for this day",
+    "createEvent": "+ Create event"
   }
 }

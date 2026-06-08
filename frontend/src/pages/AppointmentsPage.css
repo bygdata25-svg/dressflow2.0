@@ -1225,3 +1225,1656 @@
     justify-content: center;
   }
 }
+
+/* =========================================
+   PREMIUM COMPACT AGENDA REDESIGN
+   Additive overrides - keeps existing logic intact
+========================================= */
+
+.appointments--premium.appointments--apple {
+  --df-apple-bg: #f7f2ec;
+  --df-apple-card: rgba(255, 255, 255, 0.76);
+  --df-apple-card-solid: #ffffff;
+  --df-apple-border: rgba(218, 207, 198, 0.78);
+  --df-apple-text: #31283c;
+  --df-apple-muted: #837985;
+  --df-apple-soft: #fbf8f4;
+  --df-apple-accent: #a33c1f;
+  gap: 18px;
+}
+
+.appointments__apple-hero {
+  border-radius: 28px;
+  padding: 20px 24px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  background:
+    radial-gradient(circle at top right, rgba(111, 70, 145, 0.10), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(198, 167, 94, 0.10), transparent 34%),
+    rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 44px rgba(45, 38, 30, 0.07);
+}
+
+.appointments__eyebrow {
+  margin-bottom: 6px;
+  letter-spacing: 0.16em;
+}
+
+.appointments__title {
+  font-size: clamp(34px, 3.4vw, 48px);
+  line-height: 0.98;
+}
+
+.appointments__subtitle {
+  margin-top: 8px;
+  max-width: 620px;
+  font-size: 14px;
+}
+
+.appointments__apple-actions {
+  gap: 10px;
+}
+
+.appointments__scope-switch {
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.appointments__scope-switch button {
+  min-height: 34px;
+  padding: 0 13px;
+}
+
+.appointments__new-btn {
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 16px;
+}
+
+.appointments__apple-shell {
+  grid-template-columns: minmax(220px, 272px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.appointments__apple-sidebar,
+.appointments__apple-main {
+  border-color: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 46px rgba(62, 48, 39, 0.065);
+}
+
+.appointments__apple-sidebar {
+  top: 14px;
+  border-radius: 28px;
+  padding: 16px;
+  gap: 12px;
+}
+
+.appointments__apple-main {
+  border-radius: 28px;
+  padding: 16px;
+  gap: 12px;
+}
+
+.appointments__mini-calendar-card,
+.appointments__apple-side-card {
+  border-radius: 22px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.80);
+}
+
+.appointments__mini-calendar-head {
+  margin-bottom: 12px;
+}
+
+.appointments__mini-calendar-days button {
+  font-size: 12px;
+  min-height: 28px;
+}
+
+.appointments__apple-side-card {
+  gap: 8px;
+}
+
+.appointments__apple-side-card strong {
+  font-size: 15px;
+}
+
+.appointments__apple-side-card small {
+  font-size: 12px;
+}
+
+.appointments__apple-stats {
+  gap: 7px;
+}
+
+.appointments__apple-stats button {
+  min-height: 52px;
+  border-radius: 16px;
+  padding: 9px 10px;
+}
+
+.appointments__apple-stats button strong {
+  font-size: 17px;
+}
+
+.appointments__apple-toolbar {
+  grid-template-columns: minmax(210px, 0.9fr) minmax(0, 1.6fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.appointments__apple-toolbar p {
+  margin-bottom: 2px;
+  letter-spacing: 0.16em;
+}
+
+.appointments__apple-toolbar h2 {
+  font-size: clamp(26px, 2.6vw, 40px);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+}
+
+.appointments__week-nav {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.appointments__week-nav button {
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid rgba(50, 39, 60, 0.10);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--df-apple-text);
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.appointments__week-nav button:hover {
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: 0 10px 20px rgba(50, 39, 60, 0.08);
+}
+
+.appointments__apple-toolbar-actions {
+  gap: 8px;
+  align-items: center;
+}
+
+.appointments__search-box {
+  min-width: 240px;
+  min-height: 40px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.appointments__toolbar-btn {
+  min-height: 40px;
+  border-radius: 15px;
+  padding: 0 12px;
+}
+
+.appointments__view-switch {
+  border-radius: 15px;
+}
+
+.appointments__view-switch button {
+  width: 34px;
+  height: 32px;
+  border-radius: 11px;
+}
+
+.appointments__filters-panel {
+  border-radius: 20px;
+  padding: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px;
+}
+
+.appointments__filters-panel label {
+  gap: 6px;
+}
+
+.appointments__filters-panel select,
+.appointments__clear-btn {
+  min-height: 38px;
+  border-radius: 13px;
+}
+
+.appointments__week-grid {
+  min-height: 430px;
+  grid-template-columns: repeat(7, minmax(128px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+}
+
+.appointments__week-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.appointments__week-grid::-webkit-scrollbar-thumb {
+  background: rgba(50, 39, 60, 0.26);
+  border-radius: 999px;
+}
+
+.appointments__week-day {
+  min-width: 128px;
+  border-radius: 22px;
+  padding: 10px;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.appointments__week-day.is-today {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(252, 248, 244, 0.92));
+  border-color: rgba(50, 39, 60, 0.18);
+}
+
+.appointments__week-day-head {
+  position: relative;
+}
+
+.appointments__week-day-head strong {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.appointments__week-day-head em {
+  min-width: 21px;
+  height: 21px;
+  border-radius: 999px;
+  background: rgba(50, 39, 60, 0.06);
+  color: #837985;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+}
+
+.appointments__week-day.is-today .appointments__week-day-head em {
+  background: rgba(50, 39, 60, 0.12);
+  color: var(--df-apple-text);
+}
+
+.appointments__week-day-events {
+  gap: 8px;
+}
+
+.appointments__week-empty {
+  min-height: 74px;
+  border-radius: 16px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.appointments__week-event {
+  border-radius: 16px;
+  padding: 9px;
+  gap: 5px;
+  min-height: 88px;
+  align-content: start;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.appointments__week-event strong {
+  font-size: 12.5px;
+  line-height: 1.22;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.appointments__week-event small {
+  font-size: 10.8px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.appointments__week-event-time {
+  font-size: 10.5px;
+  gap: 5px;
+}
+
+.appointments__week-event-status {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 2px;
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #6f6578;
+  font-size: 9.8px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appointments__week-event-status--confirmed,
+.appointments__week-event-status--completed {
+  color: #287148;
+  background: rgba(238, 250, 242, 0.84);
+}
+
+.appointments__week-event-status--cancelled,
+.appointments__week-event-status--no_show {
+  color: #b42318;
+  background: rgba(255, 240, 240, 0.84);
+}
+
+.appointments__apple-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.appointments__card {
+  border-radius: 20px;
+  padding: 12px;
+}
+
+.appointments__card-top {
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.appointments__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+}
+
+.appointments__meta strong {
+  font-size: 15px;
+}
+
+.appointments__hour {
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.appointments__body,
+.appointments__footer {
+  padding-left: 52px;
+}
+
+.appointments__empty--apple {
+  min-height: 330px;
+}
+
+@media (max-width: 1380px) {
+  .appointments__apple-shell {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+
+  .appointments__apple-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .appointments__apple-toolbar-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .appointments__search-box {
+    min-width: min(100%, 420px);
+    flex: 1 1 260px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .appointments__apple-hero,
+  .appointments__apple-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .appointments__apple-actions {
+    justify-items: start;
+  }
+
+  .appointments__apple-sidebar {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .appointments__mini-calendar-card {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 860px) {
+  .appointments__apple-sidebar,
+  .appointments__filters-panel,
+  .appointments__apple-list,
+  .appointments__form-grid,
+  .appointments__detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .appointments__apple-hero {
+    padding: 18px;
+  }
+
+  .appointments__title {
+    font-size: 34px;
+  }
+
+  .appointments__search-box {
+    min-width: 100%;
+  }
+}
+
+/* =========================================
+   DRESSFLOW AGENDA - COMPACT PREMIUM PASS
+   Keeps filters collapsed by default and moves
+   the week grid higher in the viewport.
+========================================= */
+
+.appointments--apple {
+  gap: 14px;
+}
+
+.appointments__apple-hero {
+  min-height: unset;
+  padding: 16px 22px;
+  border-radius: 24px;
+  gap: 16px;
+}
+
+.appointments__eyebrow {
+  margin-bottom: 4px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.appointments__title {
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 0.98;
+}
+
+.appointments__subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.appointments__apple-actions {
+  gap: 8px;
+}
+
+.appointments__scope-switch button {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.appointments__new-btn {
+  min-height: 38px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-size: 13.5px;
+}
+
+.appointments__apple-shell {
+  grid-template-columns: minmax(210px, 258px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.appointments__apple-sidebar {
+  border-radius: 24px;
+  padding: 14px;
+  gap: 10px;
+}
+
+.appointments__apple-main {
+  border-radius: 24px;
+  padding: 14px;
+  gap: 10px;
+}
+
+.appointments__mini-calendar-card,
+.appointments__apple-side-card {
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.appointments__mini-calendar-head {
+  margin-bottom: 10px;
+}
+
+.appointments__mini-calendar-days {
+  margin-top: 6px;
+}
+
+.appointments__mini-calendar-days button {
+  min-height: 25px;
+  font-size: 11.5px;
+}
+
+.appointments__apple-side-card > span,
+.appointments__filters-panel label span,
+.appointments__detail-card span,
+.appointments__detail-section span {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.appointments__apple-side-card strong {
+  font-size: 14px;
+}
+
+.appointments__apple-side-card small {
+  font-size: 11.5px;
+}
+
+.appointments__apple-stats {
+  gap: 6px;
+}
+
+.appointments__apple-stats button {
+  min-height: 46px;
+  border-radius: 14px;
+  padding: 8px 10px;
+  font-size: 10.5px;
+}
+
+.appointments__apple-stats button strong {
+  font-size: 16px;
+}
+
+.appointments__apple-toolbar {
+  grid-template-columns: minmax(190px, 0.62fr) minmax(0, 1.38fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.appointments__apple-toolbar p {
+  margin-bottom: 1px;
+  font-size: 10px;
+}
+
+.appointments__apple-toolbar h2 {
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 0.95;
+}
+
+.appointments__week-nav {
+  margin-top: 6px;
+}
+
+.appointments__week-nav button {
+  min-width: 29px;
+  height: 29px;
+  font-size: 12px;
+}
+
+.appointments__apple-toolbar-actions {
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.appointments__search-box {
+  min-width: 230px;
+  min-height: 38px;
+  border-radius: 14px;
+}
+
+.appointments__toolbar-btn {
+  min-height: 38px;
+  border-radius: 14px;
+  padding: 0 11px;
+  font-size: 12.5px;
+}
+
+.appointments__view-switch {
+  border-radius: 14px;
+}
+
+.appointments__view-switch button {
+  width: 32px;
+  height: 30px;
+  border-radius: 10px;
+}
+
+.appointments__filters-panel {
+  border-radius: 18px;
+  padding: 10px;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+
+.appointments__filters-panel label {
+  gap: 5px;
+}
+
+.appointments__filters-panel select,
+.appointments__clear-btn {
+  min-height: 36px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.appointments__apple-main.is-compact .appointments__week-grid {
+  margin-top: 0;
+  min-height: 500px;
+}
+
+.appointments__apple-main.has-filters .appointments__week-grid {
+  min-height: 410px;
+}
+
+.appointments__week-grid {
+  grid-template-columns: repeat(7, minmax(126px, 1fr));
+  gap: 8px;
+  padding: 0 2px 8px;
+}
+
+.appointments__week-day {
+  min-width: 126px;
+  border-radius: 20px;
+  padding: 9px;
+  gap: 8px;
+}
+
+.appointments__week-day-head span {
+  font-size: 10px;
+}
+
+.appointments__week-day-head strong {
+  width: 26px;
+  height: 26px;
+  font-size: 12.5px;
+}
+
+.appointments__week-day-head em {
+  min-width: 20px;
+  height: 20px;
+  font-size: 10.5px;
+}
+
+.appointments__week-day-events {
+  gap: 7px;
+  min-height: 72px;
+}
+
+.appointments__week-empty {
+  min-height: 70px;
+  border-radius: 16px;
+  font-size: 11px;
+}
+
+.appointments__week-event {
+  min-height: 78px;
+  border-radius: 14px;
+  padding: 8px;
+  gap: 4px;
+}
+
+.appointments__week-event-time {
+  font-size: 10px;
+}
+
+.appointments__week-event strong {
+  font-size: 12px;
+}
+
+.appointments__week-event small {
+  font-size: 10.2px;
+}
+
+.appointments__week-event-status {
+  padding: 3px 6px;
+  font-size: 9.2px;
+}
+
+@media (max-width: 1380px) {
+  .appointments__apple-toolbar {
+    grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+  }
+
+  .appointments__apple-toolbar-actions {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+
+  .appointments__search-box {
+    min-width: 0;
+    flex: 1 1 230px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .appointments__apple-toolbar {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .appointments__apple-toolbar-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .appointments__apple-main.is-compact .appointments__week-grid {
+    min-height: 430px;
+  }
+}
+
+@media (max-width: 860px) {
+  .appointments__apple-hero {
+    padding: 16px;
+  }
+
+  .appointments__title {
+    font-size: 32px;
+  }
+
+  .appointments__apple-main.is-compact .appointments__week-grid {
+    min-height: 380px;
+  }
+}
+
+
+/* =========================================
+   AGENDA PREMIUM - WEEK LABEL & FILTERS FINAL
+========================================= */
+
+.appointments__apple-main.is-compact {
+  gap: 8px;
+}
+
+.appointments__week-range {
+  font-size: clamp(28px, 2.8vw, 40px);
+  line-height: 0.92;
+  letter-spacing: -0.07em;
+  font-weight: 900;
+  font-variant-numeric: lining-nums tabular-nums;
+  text-transform: none;
+}
+
+.appointments__apple-toolbar p {
+  margin-bottom: 2px;
+}
+
+.appointments__apple-toolbar-actions {
+  align-self: center;
+}
+
+.appointments__toolbar-btn:not(.is-active) strong {
+  background: rgba(50, 39, 60, 0.08);
+  color: var(--df-apple-text);
+}
+
+.appointments__filters-panel {
+  animation: appointmentsFilterReveal 0.18s ease both;
+}
+
+@keyframes appointmentsFilterReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.appointments__apple-main.is-compact .appointments__week-grid {
+  min-height: 540px;
+}
+
+@media (max-width: 1180px) {
+  .appointments__week-range {
+    font-size: clamp(26px, 4vw, 34px);
+  }
+}
+
+
+/* =========================================
+   AGENDA EVENT CARDS - FINAL POLISH
+========================================= */
+
+.appointments__week-event {
+  min-height: 108px;
+  padding: 10px 11px;
+  gap: 6px;
+  align-content: start;
+}
+
+.appointments__week-event-time {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  opacity: 0.86;
+}
+
+.appointments__week-event-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--df-apple-text);
+  font-size: 12.5px;
+  line-height: 1.18;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.appointments__week-event-ref {
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(50, 39, 60, 0.08);
+  color: #32273c;
+  font-size: 9.5px;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appointments__week-event small {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  font-size: 10.5px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.appointments__week-event-status {
+  margin-top: 1px;
+  padding: 3px 6px;
+  font-size: 8.8px;
+  letter-spacing: 0.06em;
+}
+
+.appointments__week-day-events {
+  gap: 8px;
+}
+
+@media (max-width: 1180px) {
+  .appointments__week-event {
+    min-height: 104px;
+  }
+}
+
+/* =========================================
+   AGENDA UX 7 - PREMIUM POLISH
+   Header compacto, toolbar sticky, eventos +N, vista día
+========================================= */
+
+.appointments--apple .appointments__apple-hero {
+  min-height: auto;
+  padding: 18px 24px;
+  border-radius: 28px;
+  gap: 18px;
+}
+
+.appointments--apple .appointments__title {
+  font-size: clamp(30px, 3.2vw, 46px);
+  line-height: 0.95;
+}
+
+.appointments--apple .appointments__subtitle {
+  margin-top: 8px;
+}
+
+.appointments--apple .appointments__eyebrow {
+  margin-bottom: 6px;
+}
+
+.appointments--apple .appointments__new-btn {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 16px;
+}
+
+.appointments--apple .appointments__apple-actions {
+  gap: 10px;
+}
+
+.appointments--apple .appointments__apple-main {
+  position: relative;
+  overflow: visible;
+}
+
+.appointments--apple .appointments__apple-toolbar {
+  position: sticky;
+  top: 8px;
+  z-index: 12;
+  margin: -4px -4px 0;
+  padding: 12px;
+  border: 1px solid rgba(222, 211, 203, 0.72);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 38px rgba(62, 48, 39, 0.07);
+}
+
+.appointments--apple .appointments__apple-toolbar h2,
+.appointments--apple .appointments__week-range {
+  font-size: clamp(28px, 3vw, 42px);
+  letter-spacing: -0.065em;
+}
+
+.appointments--apple .appointments__week-nav {
+  margin-top: 6px;
+}
+
+.appointments--apple .appointments__search-box,
+.appointments--apple .appointments__toolbar-btn {
+  min-height: 38px;
+}
+
+.appointments--apple .appointments__search-box {
+  min-width: min(320px, 34vw);
+  border-radius: 14px;
+}
+
+.appointments--apple .appointments__view-switch {
+  gap: 2px;
+}
+
+.appointments--apple .appointments__view-switch button {
+  width: 34px;
+  height: 32px;
+}
+
+.appointments--apple .appointments__week-grid {
+  min-height: 430px;
+  grid-template-columns: repeat(7, minmax(128px, 1fr));
+  gap: 8px;
+}
+
+.appointments--apple .appointments__week-day {
+  min-width: 128px;
+  border-radius: 22px;
+  padding: 10px;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.appointments--apple .appointments__week-day:hover {
+  transform: translateY(-1px);
+  border-color: rgba(50, 39, 60, 0.16);
+  box-shadow: 0 12px 26px rgba(62, 48, 39, 0.06);
+}
+
+.appointments--apple .appointments__week-day-head strong {
+  width: 28px;
+  height: 28px;
+}
+
+.appointments--apple .appointments__week-day-events {
+  gap: 8px;
+}
+
+.appointments--apple .appointments__week-event {
+  position: relative;
+  border-left-width: 4px;
+  border-left-style: solid;
+  padding: 8px 8px 8px 10px;
+  gap: 5px;
+  min-height: 92px;
+}
+
+.appointments--apple .appointments__week-event-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--appointment-color, #7c5cff);
+  font-size: 9px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 950;
+}
+
+.appointments--apple .appointments__week-event-time {
+  color: #796e82;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.appointments--apple .appointments__week-event-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  font-size: 12.5px;
+  line-height: 1.18;
+  max-height: 2.4em;
+}
+
+.appointments--apple .appointments__week-event-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.appointments--apple .appointments__week-event-ref {
+  max-width: 86px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #4c4058;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 950;
+}
+
+.appointments--apple .appointments__week-event-status {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 950;
+}
+
+.appointments--apple .appointments__week-event small {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  color: #81758a;
+}
+
+.appointments--apple .appointments__week-more {
+  width: 100%;
+  border: 1px dashed rgba(50, 39, 60, 0.16);
+  border-radius: 15px;
+  min-height: 34px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #4c4058;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.appointments--apple .appointments__week-more:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.appointments--apple .appointments__day-agenda {
+  display: grid;
+  gap: 14px;
+  min-height: 430px;
+  border: 1px solid rgba(222, 211, 203, 0.72);
+  border-radius: 26px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.appointments--apple .appointments__day-agenda-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.appointments--apple .appointments__day-agenda-head p {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #8c7f75;
+  font-weight: 950;
+}
+
+.appointments--apple .appointments__day-agenda-head h3 {
+  margin: 0;
+  color: var(--df-apple-text);
+  font-size: clamp(24px, 2.4vw, 34px);
+  letter-spacing: -0.05em;
+  text-transform: capitalize;
+}
+
+.appointments--apple .appointments__day-add-btn {
+  min-height: 38px;
+  border: 0;
+  border-radius: 15px;
+  padding: 0 14px;
+  background: #32273c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(50, 39, 60, 0.14);
+}
+
+.appointments--apple .appointments__day-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.appointments--apple .appointments__day-empty {
+  min-height: 280px;
+  border: 1px dashed rgba(222, 211, 203, 0.95);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.72);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #8a7f73;
+  text-align: center;
+  cursor: pointer;
+}
+
+.appointments--apple .appointments__day-empty strong {
+  color: #30283c;
+  font-size: 17px;
+}
+
+.appointments--apple .appointments__day-empty span {
+  max-width: 360px;
+  font-size: 13px;
+}
+
+@media (max-width: 1280px) {
+  .appointments--apple .appointments__apple-hero {
+    padding: 16px 22px;
+  }
+
+  .appointments--apple .appointments__apple-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .appointments--apple .appointments__apple-toolbar-actions {
+    justify-content: start;
+  }
+
+  .appointments--apple .appointments__search-box {
+    min-width: min(420px, 100%);
+  }
+
+  .appointments--apple .appointments__day-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================
+   AGENDA UX POLISH - compact week & events
+========================================= */
+
+.appointments--apple .appointments__apple-toolbar h2,
+.appointments--apple .appointments__week-range {
+  font-size: clamp(24px, 2.35vw, 34px);
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.appointments--apple .appointments__apple-toolbar p {
+  margin-bottom: 2px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.appointments--apple .appointments__week-nav {
+  margin-top: 4px;
+}
+
+.appointments--apple .appointments__week-grid {
+  min-height: 455px;
+}
+
+.appointments--apple .appointments__week-event {
+  padding: 8px 8px 7px 9px;
+  gap: 5px;
+  min-height: 78px;
+  border-radius: 16px;
+}
+
+.appointments--apple .appointments__week-event-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.appointments--apple .appointments__week-event-kind {
+  max-width: 72px;
+  min-width: 0;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.52);
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+  opacity: 0.82;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.appointments--apple .appointments__week-event-time {
+  min-width: 0;
+  font-size: 9px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.appointments--apple .appointments__week-event-title {
+  font-size: 12px;
+  line-height: 1.12;
+  max-height: 2.25em;
+}
+
+.appointments--apple .appointments__week-event-foot {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.appointments--apple .appointments__week-event-ref {
+  max-width: 74px;
+  padding: 2px 6px;
+  font-size: 8px;
+}
+
+.appointments--apple .appointments__week-event-status {
+  padding: 2px 6px;
+  font-size: 7.5px;
+  letter-spacing: 0.07em;
+}
+
+.appointments--apple .appointments__week-event small {
+  display: none;
+}
+
+.appointments--apple .appointments__week-empty {
+  position: relative;
+  min-height: 68px;
+  padding: 8px;
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.appointments--apple .appointments__week-empty span {
+  color: #b1a8a1;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.appointments--apple .appointments__week-empty strong {
+  display: block;
+  opacity: 0;
+  transform: translateY(2px);
+  color: #32273c;
+  font-size: 11px;
+  font-weight: 950;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.appointments--apple .appointments__week-day:hover .appointments__week-empty {
+  border-color: rgba(50, 39, 60, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.appointments--apple .appointments__week-day:hover .appointments__week-empty strong {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 1180px) {
+  .appointments--apple .appointments__apple-toolbar h2,
+  .appointments--apple .appointments__week-range {
+    font-size: clamp(22px, 3vw, 30px);
+  }
+}
+
+/* =========================================
+   AGENDA UX REFINEMENT - EVENT CARDS V2
+   Compact cards, softer type label and safer layout.
+========================================= */
+
+.appointments--apple .appointments__week-grid {
+  min-height: 440px;
+}
+
+.appointments--apple .appointments__week-day-events {
+  gap: 7px;
+  min-height: 0;
+}
+
+.appointments--apple .appointments__week-event {
+  min-height: 0;
+  padding: 7px 8px 7px 9px;
+  gap: 4px;
+  border-radius: 15px;
+  border-left-width: 3px;
+  box-shadow: none;
+}
+
+.appointments--apple .appointments__week-event:hover {
+  box-shadow: 0 10px 22px rgba(62, 48, 39, 0.08);
+}
+
+.appointments--apple .appointments__week-event-topline {
+  justify-content: flex-start;
+  gap: 5px;
+  color: #8b8193;
+  min-width: 0;
+}
+
+.appointments--apple .appointments__week-event-time,
+.appointments--apple .appointments__week-event-kind {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #7e7486;
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.appointments--apple .appointments__week-event-kind {
+  max-width: none;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.78;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.appointments--apple .appointments__week-event-time::after {
+  content: "·";
+  margin-left: 1px;
+  color: rgba(126, 116, 134, 0.58);
+}
+
+.appointments--apple .appointments__week-event-time > span:first-child {
+  width: 6px;
+  height: 6px;
+}
+
+.appointments--apple .appointments__week-event-kind svg {
+  flex: 0 0 auto;
+  opacity: 0.72;
+}
+
+.appointments--apple .appointments__week-event-kind span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.appointments--apple .appointments__week-event-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 11.8px;
+  line-height: 1.12;
+  max-height: 2.25em;
+  letter-spacing: -0.01em;
+}
+
+.appointments--apple .appointments__week-event-foot {
+  margin-top: 1px;
+  gap: 4px;
+  align-items: center;
+}
+
+.appointments--apple .appointments__week-event-ref,
+.appointments--apple .appointments__week-event-status {
+  min-height: 16px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  font-size: 7.25px;
+  line-height: 1;
+  letter-spacing: 0.075em;
+}
+
+.appointments--apple .appointments__week-more {
+  min-height: 28px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.appointments--apple .appointments__week-empty {
+  min-height: 62px;
+}
+
+.appointments--apple .appointments__week-empty span,
+.appointments--apple .appointments__week-empty strong {
+  font-size: 10.5px;
+}
+
+@media (max-width: 1380px) {
+  .appointments--apple .appointments__week-event-title {
+    font-size: 11.4px;
+  }
+
+  .appointments--apple .appointments__week-event-time,
+  .appointments--apple .appointments__week-event-kind {
+    font-size: 8px;
+  }
+}
+
+/* =========================================
+   AGENDA EVENT CARDS - FINAL READABILITY PASS
+========================================= */
+
+.appointments--apple .appointments__week-event {
+  min-height: 82px;
+  padding: 9px 10px 8px 10px;
+  gap: 5px;
+  border-radius: 15px;
+  border-left-width: 4px;
+  align-content: start;
+}
+
+.appointments--apple .appointments__week-event-topline {
+  min-height: 14px;
+  justify-content: flex-start;
+}
+
+.appointments--apple .appointments__week-event-time {
+  max-width: 100%;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  opacity: 0.88;
+}
+
+.appointments--apple .appointments__week-event-time::after {
+  content: none;
+}
+
+.appointments--apple .appointments__week-event-kind {
+  display: none;
+}
+
+.appointments--apple .appointments__week-event-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #30283c;
+  font-size: 12.8px;
+  line-height: 1.14;
+  max-height: 2.35em;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+}
+
+.appointments--apple .appointments__week-event small {
+  margin-top: -1px;
+  color: #7e7486;
+  font-size: 9.5px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.appointments--apple .appointments__week-event-foot {
+  margin-top: auto;
+  padding-top: 2px;
+  gap: 5px;
+  align-items: center;
+}
+
+.appointments--apple .appointments__week-event-ref,
+.appointments--apple .appointments__week-event-status {
+  min-height: 17px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 7.5px;
+  line-height: 1;
+  letter-spacing: 0.075em;
+  white-space: nowrap;
+}
+
+.appointments--apple .appointments__week-event-ref {
+  max-width: 74px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.appointments--apple .appointments__week-day-events {
+  gap: 8px;
+}
+
+@media (max-width: 1380px) {
+  .appointments--apple .appointments__week-event {
+    min-height: 80px;
+    padding: 8px 9px;
+  }
+
+  .appointments--apple .appointments__week-event-title {
+    font-size: 12.2px;
+  }
+
+  .appointments--apple .appointments__week-event-time {
+    font-size: 9px;
+  }
+}
+
+
+/* =========================================
+   FINAL UX PASS - DAY INTERNAL SCROLL
+   Keeps the weekly grid stable when a day has multiple events.
+========================================= */
+
+.appointments--apple .appointments__apple-hero {
+  padding: 12px 22px;
+  border-radius: 22px;
+}
+
+.appointments--apple .appointments__title {
+  font-size: clamp(28px, 2.7vw, 38px);
+}
+
+.appointments--apple .appointments__subtitle {
+  margin-top: 4px;
+}
+
+.appointments--apple .appointments__apple-main {
+  gap: 9px;
+}
+
+.appointments--apple .appointments__week-grid {
+  min-height: 405px;
+  align-items: stretch;
+}
+
+.appointments--apple .appointments__week-day {
+  min-height: 405px;
+  max-height: 440px;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.appointments--apple .appointments__week-day-events {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(50, 39, 60, 0.26) transparent;
+}
+
+.appointments--apple .appointments__week-day-events::-webkit-scrollbar {
+  width: 6px;
+}
+
+.appointments--apple .appointments__week-day-events::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(50, 39, 60, 0.22);
+}
+
+.appointments--apple .appointments__week-day-events::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.appointments--apple .appointments__week-event {
+  min-height: 100px;
+}
+
+.appointments--apple .appointments__week-empty {
+  min-height: 62px;
+  padding: 7px;
+  background: rgba(255, 255, 255, 0.36);
+  border-color: rgba(222, 211, 203, 0.58);
+}
+
+.appointments--apple .appointments__week-empty span {
+  color: rgba(126, 116, 134, 0.58);
+  font-size: 10.5px;
+}
+
+.appointments--apple .appointments__week-empty strong {
+  font-size: 10.5px;
+}
+
+.appointments--apple .appointments__week-empty:hover {
+  background: rgba(255, 255, 255, 0.76);
+  border-color: rgba(50, 39, 60, 0.18);
+}
+
+@media (max-width: 1180px) {
+  .appointments--apple .appointments__week-grid {
+    min-height: 390px;
+  }
+
+  .appointments--apple .appointments__week-day {
+    min-height: 390px;
+    max-height: 420px;
+  }
+}

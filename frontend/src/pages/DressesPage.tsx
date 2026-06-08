@@ -6,6 +6,7 @@ import { Modal } from "../components/common/Modal";
 import { PrimaryButton } from "../components/common/buttons";
 import { DressForm } from "../components/forms/DressForm";
 import { resolveMediaUrl } from "../lib/media";
+import { formatCurrencyAmount, getCurrencySymbol } from "../utils/currency";
 import "../styles/pro-pages.css";
 
 type Dress = {
@@ -73,21 +74,32 @@ function TrashIcon() {
   );
 }
 
-function money(value?: number | string | null, currency?: string | null) {
-  const n = Number(value ?? 0);
-  if (Number.isNaN(n)) return "—";
+function normalizeCurrency(currency?: string | null) {
+  return String(currency || "USD").toUpperCase().trim();
+}
 
-  const currencyCode = currency || "USD";
+function currencyLabel(currency?: string | null) {
+  const currencyCode = normalizeCurrency(currency);
+  return `${getCurrencySymbol(currencyCode)} ${currencyCode}`;
+}
 
-  try {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: currencyCode,
-      minimumFractionDigits: 2,
-    }).format(n);
-  } catch {
-    return `${currencyCode} ${n.toFixed(2)}`;
-  }
+function money(
+  value?: number | string | null,
+  currency?: string | null,
+  locale = "es-AR"
+) {
+  const numericValue = Number(value ?? 0);
+  if (!Number.isFinite(numericValue)) return "—";
+
+  const currencyCode = normalizeCurrency(currency);
+
+  return formatCurrencyAmount(numericValue, {
+    locale,
+    currencyCode,
+    symbol: getCurrencySymbol(currencyCode),
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function todayIso() {
@@ -99,7 +111,8 @@ function generateCustomerCode() {
 }
 
 export default function DressesPage() {
-  const { t } = useTranslation(["common", "dresses"]);
+  const { t, i18n } = useTranslation(["common", "dresses"]);
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
 
   const [rows, setRows] = useState<Dress[]>([]);
   const [loading, setLoading] = useState(false);
@@ -517,12 +530,19 @@ export default function DressesPage() {
       {
         key: "sale_price",
         label: t("dresses:fields.purchasePrice"),
-        render: (row) => money(row.sale_price, row.sale_currency),
+        render: (row) => money(row.sale_price, row.sale_currency, locale),
       },
       {
         key: "rental_price",
         label: t("dresses:fields.rentalPrice"),
-        render: (row) => money(row.rental_price, row.rental_currency),
+        render: (row) => money(row.rental_price, row.rental_currency, locale),
+      },
+      {
+        key: "sale_currency",
+        label: t("dresses:fields.saleCurrency", {
+          defaultValue: t("dresses:fields.currency", { defaultValue: "Currency" }),
+        }),
+        render: (row) => currencyLabel(row.sale_currency),
       },
       {
         key: "status",
@@ -631,7 +651,7 @@ export default function DressesPage() {
         },
       },
     ];
-  }, [t]);
+  }, [t, locale]);
 
   return (
     <section className="df-pro-page">
@@ -997,7 +1017,8 @@ export default function DressesPage() {
               {operationMode === "rental" && selectedDress?.rental_price
                 ? ` · ${t("dresses:operations.suggestedValue")}: ${money(
                     selectedDress.rental_price,
-                    selectedDress.rental_currency
+                    selectedDress.rental_currency,
+                    locale
                   )}`
                 : ""}
             </div>

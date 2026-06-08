@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { formatCurrencyAmount, getCurrencySymbol } from "../utils/currency";
 import "./SalesUnifiedPage.css";
 
 type CurrencyCode = string;
@@ -125,11 +126,20 @@ function getCustomerDisplayName(
 }
 
 function formatMoney(amount: number, currency: CurrencyCode, locale = "es-AR") {
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
+  const currencyCode = String(currency || "ARS").toUpperCase();
+
+  return formatCurrencyAmount(amount, {
+    locale,
+    currencyCode,
+    symbol: getCurrencySymbol(currencyCode),
     minimumFractionDigits: 2,
-  }).format(Number(amount || 0));
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatCurrencyLabel(currency?: CurrencyCode | null) {
+  const currencyCode = String(currency || "ARS").toUpperCase();
+  return getCurrencySymbol(currencyCode);
 }
 
 function getPaymentMethodLabel(method?: string, t?: any) {
@@ -396,10 +406,10 @@ export default function SalesUnifiedPage() {
       return {
         mode: "mixed" as const,
         label: t("summary.mixed"),
-        value: `${formatMoney(summaryTotals.itemsUSD, "USD")} + ${formatMoney(summaryTotals.itemsARS, "ARS")}`,
+        value: `${formatMoney(summaryTotals.itemsUSD, "USD", locale)} + ${formatMoney(summaryTotals.itemsARS, "ARS", locale)}`,
         hint:
           exchangeRateNumber > 0
-            ? `Equiv. ${formatMoney(totalEquivalentArs, "ARS")}`
+            ? `Equiv. ${formatMoney(totalEquivalentArs, "ARS", locale)}`
             : t("summary.exchangeRateHint"),
       };
     }
@@ -408,7 +418,7 @@ export default function SalesUnifiedPage() {
       return {
         mode: "usd" as const,
         label: t("summary.total"),
-        value: formatMoney(summaryTotals.itemsUSD, "USD"),
+        value: formatMoney(summaryTotals.itemsUSD, "USD", locale),
         hint: t("summary.usdHint"),
       };
     }
@@ -417,7 +427,7 @@ export default function SalesUnifiedPage() {
       return {
         mode: "ars" as const,
         label: t("summary.total"),
-        value: formatMoney(summaryTotals.itemsARS, "ARS"),
+        value: formatMoney(summaryTotals.itemsARS, "ARS", locale),
         hint: t("summary.arsHint"),
       };
     }
@@ -425,10 +435,10 @@ export default function SalesUnifiedPage() {
     return {
       mode: "empty" as const,
       label: t("summary.total"),
-      value: formatMoney(0, "ARS"),
+      value: formatMoney(0, "ARS", locale),
       hint: t("summary.emptyHint"),
     };
-  }, [summaryTotals, exchangeRateNumber, totalEquivalentArs]);
+  }, [summaryTotals, exchangeRateNumber, totalEquivalentArs, locale, t]);
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.id === form.customer_id) || null,
@@ -1163,7 +1173,11 @@ export default function SalesUnifiedPage() {
                       <td>
                          {t(
                            `currency.${String(sale.currency || "").toUpperCase()}`,
-                           sale.currency || "-"
+                           {
+                             defaultValue: sale.currency
+                               ? `${formatCurrencyLabel(sale.currency)} ${String(sale.currency).toUpperCase()}`
+                               : "-",
+                           }
                          )}
                       </td>
                       <td>
@@ -1193,7 +1207,7 @@ export default function SalesUnifiedPage() {
                             (sale.payments || []).map((payment) => (
                               <div key={payment.id} className="sales-table-line">
                                 <strong>{getPaymentMethodLabel(payment.payment_method || "other", t)}</strong>{" "}
-                                · {formatMoney(Number(payment.amount || 0), payment.currency || "ARS")}
+                                · {formatMoney(Number(payment.amount || 0), payment.currency || "ARS", locale)}
                               </div>
                             ))
                           )}
@@ -1402,10 +1416,7 @@ export default function SalesUnifiedPage() {
                                 <span>
                                   {Number(accessory.sale_price ?? 0) === 0
                                     ? t("items.free")
-                                    : formatMoney(
-                                        Number(accessory.sale_price ?? 0),
-                                        (accessory.sale_currency || "ARS").toUpperCase()
-                                      )} 
+                                    : formatMoney(Number(accessory.sale_price ?? 0), (accessory.sale_currency || "ARS").toUpperCase(), locale)} 
                                 </span>
                               </button>
                             ))
@@ -1443,7 +1454,7 @@ export default function SalesUnifiedPage() {
                                 <span>
                                   {isBonus
                                     ? t("items.free")
-                                    : `${formatMoney(Number(item.price), item.currency)} ${t("items.perUnit")}`}
+                                    : `${formatMoney(Number(item.price), item.currency, locale)} ${t("items.perUnit")}`}
                                 </span>
                               </div>
                             </div>
@@ -1462,7 +1473,7 @@ export default function SalesUnifiedPage() {
                               </div>
 
                               <div className="sales-inline-field">
-                                <label>{t("fields.price")} ({item.currency})</label>
+                                <label>{t("fields.price")} ({formatCurrencyLabel(item.currency)})</label>
                                 <input
                                   type="number"
                                   min={0}
@@ -1477,10 +1488,7 @@ export default function SalesUnifiedPage() {
                               <div className="sales-item-subtotal">
                                 {isBonus
                                   ? t("items.free")
-                                  : formatMoney(
-                                      Number(item.price) * Number(item.quantity),
-                                      item.currency
-                                    )}
+                                  : formatMoney(Number(item.price) * Number(item.quantity), item.currency, locale)}
                               </div>
 
                               <button
@@ -1547,38 +1555,38 @@ export default function SalesUnifiedPage() {
 
                     <div className="sales-summary-metric">
                       <span>{t("summary.itemsUsd")}</span>
-                      <strong>{formatMoney(summaryTotals.itemsUSD, "USD")}</strong>
+                      <strong>{formatMoney(summaryTotals.itemsUSD, "USD", locale)}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
                       <span>{t("summary.itemsArs")}</span>
-                      <strong>{formatMoney(summaryTotals.itemsARS, "ARS")}</strong>
+                      <strong>{formatMoney(summaryTotals.itemsARS, "ARS", locale)}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
                       <span>{t("summary.equivalentArs")}</span>
                       <strong>
                         {exchangeRateNumber > 0 || summaryTotals.itemsUSD === 0
-                          ? formatMoney(summaryTotals.equivalentARS, "ARS")
+                          ? formatMoney(summaryTotals.equivalentARS, "ARS", locale)
                           : t("summary.defineExchangeRate")}
                       </strong>
                     </div>
 
                     <div className="sales-summary-metric">
                       <span>{t("summary.paidUsd")}</span>
-                      <strong>{formatMoney(summaryTotals.paidUSD, "USD")}</strong>
+                      <strong>{formatMoney(summaryTotals.paidUSD, "USD", locale)}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
                       <span>{t("summary.paidArs")}</span>
-                      <strong>{formatMoney(summaryTotals.paidARS, "ARS")}</strong>
+                      <strong>{formatMoney(summaryTotals.paidARS, "ARS", locale)}</strong>
                     </div>
 
                     <div className="sales-summary-metric">
                       <span>{t("summary.paidEquivalentArs")}</span>
                       <strong>
                         {exchangeRateNumber > 0 || summaryTotals.paidUSD === 0
-                          ? formatMoney(summaryTotals.paidEquivalentARS, "ARS")
+                          ? formatMoney(summaryTotals.paidEquivalentARS, "ARS", locale)
                           : t("summary.defineExchangeRate")}
                       </strong>
                     </div>
@@ -1603,13 +1611,13 @@ export default function SalesUnifiedPage() {
 
                     {exchangeRateNumber > 0 && summaryTotals.itemsUSD > 0 && (
                       <div className="sales-payment-hint">
-                        {t("summary.usdItemsEquivalent")} <strong>{formatMoney(convertedUsdToArs, "ARS")}</strong>
+                        {t("summary.usdItemsEquivalent")} <strong>{formatMoney(convertedUsdToArs, "ARS", locale)}</strong>
                       </div>
                     )}
 
                     <div className="sales-payment-total-line">
                       <span>{t("summary.arsItemsEquivalent")}</span>
-                      <strong>{formatMoney(totalEquivalentArs, "ARS")}</strong>
+                      <strong>{formatMoney(totalEquivalentArs, "ARS", locale)}</strong>
                     </div>
                   </div>
 
@@ -1635,8 +1643,8 @@ export default function SalesUnifiedPage() {
                         value={paymentDraftCurrency}
                         onChange={(e) => setPaymentDraftCurrency(e.target.value as CurrencyCode)}
                       >
-                        <option value="ARS">ARS</option>
-                        <option value="USD">USD</option>
+                        <option value="ARS">{formatCurrencyLabel("ARS")}</option>
+                        <option value="USD">{formatCurrencyLabel("USD")}</option>
                       </select>
 
                       <input
@@ -1675,7 +1683,7 @@ export default function SalesUnifiedPage() {
                             <div className="sales-payment-item-copy">
                               <strong>{getPaymentMethodLabel(payment.method, t)}</strong>
                               <span>
-                                {formatMoney(payment.amount, payment.currency)}
+                                {formatMoney(payment.amount, payment.currency, locale)}
                                 {payment.reference ? ` · ${payment.reference}` : ""}
                               </span>
                             </div>
@@ -1739,7 +1747,7 @@ export default function SalesUnifiedPage() {
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                {formatMoney(row.amount, row.currency)}
+                                {formatMoney(row.amount, row.currency, locale)}
                               </div>
                             </div>
                           ))}
@@ -1750,25 +1758,25 @@ export default function SalesUnifiedPage() {
                     <div className="sales-payment-balance">
                       <div>
                         <span>{t("payments.totalArs")}</span>
-                        <strong>{formatMoney(summaryTotals.paidARS, "ARS")}</strong>
+                        <strong>{formatMoney(summaryTotals.paidARS, "ARS", locale)}</strong>
                       </div>
 
                       <div>
                         <span>{t("payments.totalUsd")}</span>
-                        <strong>{formatMoney(summaryTotals.paidUSD, "USD")}</strong>
+                        <strong>{formatMoney(summaryTotals.paidUSD, "USD", locale)}</strong>
                       </div>
 
                       <div>
                         <span>{t("payments.balanceArs")}</span>
                         <strong className={summaryTotals.balanceARS === 0 ? "sales-balance-ok" : "sales-balance-pending"}>
-                          {formatMoney(summaryTotals.balanceARS, "ARS")}
+                          {formatMoney(summaryTotals.balanceARS, "ARS", locale)}
                         </strong>
                       </div>
 
                       <div>
                         <span>{t("payments.balanceUsd")}</span>
                         <strong className={summaryTotals.balanceUSD === 0 ? "sales-balance-ok" : "sales-balance-pending"}>
-                          {formatMoney(summaryTotals.balanceUSD, "USD")}
+                          {formatMoney(summaryTotals.balanceUSD, "USD", locale)}
                         </strong>
                       </div>
 
@@ -1781,7 +1789,7 @@ export default function SalesUnifiedPage() {
                               : "sales-balance-pending"
                           }
                         >
-                          {formatMoney(paymentDifferenceEquivalentArs, "ARS")}
+                          {formatMoney(paymentDifferenceEquivalentArs, "ARS", locale)}
                         </strong>
                       </div>
                     </div>

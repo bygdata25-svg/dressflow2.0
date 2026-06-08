@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import { Modal } from "../components/common/Modal";
 import { PrimaryButton } from "../components/common/buttons";
+import { formatCurrencyAmount, getCurrencySymbol } from "../utils/currency";
 import "../styles/pro-pages.css";
 
 type TenantCurrencyOption = {
@@ -86,12 +87,13 @@ const STATUS_OPTIONS = [
   { value: "INACTIVE", labelKey: "status.INACTIVE" },
 ];
 
-function currencyLabel(currency: TenantCurrencyOption) {
-  if (!currency.symbol || currency.symbol === currency.currency_code) {
-    return currency.currency_code;
-  }
+function normalizeCurrency(currency?: string | null) {
+  return String(currency || "ARS").toUpperCase().trim();
+}
 
-  return `${currency.currency_code} · ${currency.symbol}`;
+function currencyLabel(currency: TenantCurrencyOption) {
+  const currencyCode = normalizeCurrency(currency.currency_code);
+  return `${getCurrencySymbol(currencyCode)} ${currencyCode}`;
 }
 
 function fallbackCurrencyOptions(): TenantCurrencyOption[] {
@@ -104,19 +106,26 @@ function fallbackCurrencyOptions(): TenantCurrencyOption[] {
   ];
 }
 
-function money(value?: number | string | null, currency = "ARS") {
-  const n = Number(value ?? 0);
-  if (Number.isNaN(n)) return "—";
+function money(
+  value?: number | string | null,
+  currency = "ARS",
+  locale = "es-AR"
+) {
+  const numericValue = Number(value ?? 0);
 
-  try {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-    }).format(n);
-  } catch {
-    return `${currency} ${n.toFixed(2)}`;
+  if (!Number.isFinite(numericValue)) {
+    return "—";
   }
+
+  const currencyCode = normalizeCurrency(currency);
+
+  return formatCurrencyAmount(numericValue, {
+    locale,
+    currencyCode,
+    symbol: getCurrencySymbol(currencyCode),
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function TrashIcon() {
@@ -156,8 +165,10 @@ function stockBadgeLabel(t: any, row: Accessory) {
 }
 
 export default function AccessoriesPage() {
-  const { t } = useTranslation("accessories");
+  const { t, i18n } = useTranslation("accessories");
   const { t: tc } = useTranslation("common");
+
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "es-AR";
 
   const [rows, setRows] = useState<Accessory[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<TenantCurrencyOption[]>([]);
@@ -482,12 +493,12 @@ export default function AccessoriesPage() {
       {
         key: "unit_cost",
         label: t("fields.unitCost"),
-        render: (row) => money(row.unit_cost, row.unit_cost_currency || defaultCurrency),
+        render: (row) => money(row.unit_cost, row.unit_cost_currency || defaultCurrency, locale),
       },
       {
         key: "sale_price",
         label: t("fields.salePrice"),
-        render: (row) => money(row.sale_price, row.sale_price_currency || defaultCurrency),
+        render: (row) => money(row.sale_price, row.sale_price_currency || defaultCurrency, locale),
       },
       {
         key: "status",
@@ -543,7 +554,7 @@ export default function AccessoriesPage() {
         ),
       },
     ];
-  }, [rows, t, tc, defaultCurrency]);
+  }, [rows, t, tc, defaultCurrency, locale]);
 
   return (
     <section className="df-pro-page">

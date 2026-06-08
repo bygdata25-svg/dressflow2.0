@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
+import { formatCurrencyAmount, getCurrencySymbol } from "../utils/currency";
 import { DataGrid, type DataGridColumn } from "../components/data-grid/DataGrid";
 import "./DressesPage.css";
 
@@ -72,13 +73,24 @@ export default function ProductionCostsReportPage() {
 
   const [exporting, setExporting] = useState(false);
 
-  function money(value?: number | string | null) {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: "ARS",
+  function money(
+    value?: number | string | null,
+    currency: string = "ARS"
+  ) {
+    const currencyCode = String(currency || "ARS").toUpperCase();
+
+    return formatCurrencyAmount(toNumber(value), {
+      locale,
+      currencyCode,
+      symbol: getCurrencySymbol(currencyCode),
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(toNumber(value));
+    });
+  }
+
+  function currencyLabel(currency?: string | null) {
+    const currencyCode = String(currency || "ARS").toUpperCase();
+    return `${getCurrencySymbol(currencyCode)} ${currencyCode}`;
   }
 
   function number(value: number) {
@@ -225,6 +237,11 @@ export default function ProductionCostsReportPage() {
         render: (row: ProductionCostsRow) => statusLabel(row.status),
       },
       {
+        key: "currency",
+        label: t("fields.currency", { defaultValue: "Currency" }),
+        render: (row: ProductionCostsRow) => currencyLabel(row.currency),
+      },
+      {
         key: "due_date",
         label: t("fields.dueDate"),
         render: (row: ProductionCostsRow) => formatDate(row.due_date),
@@ -242,17 +259,17 @@ export default function ProductionCostsReportPage() {
       {
         key: "material_cost",
         label: t("fields.material"),
-        render: (row: ProductionCostsRow) => money(visibleMaterialCost(row)),
+        render: (row: ProductionCostsRow) => money(visibleMaterialCost(row), row.currency),
       },
       {
         key: "labor_other",
         label: t("fields.laborOther"),
-        render: (row: ProductionCostsRow) => money(laborAndOtherCost(row)),
+        render: (row: ProductionCostsRow) => money(laborAndOtherCost(row), row.currency),
       },
       {
         key: "total_estimated",
         label: t("fields.totalEstimated"),
-        render: (row: ProductionCostsRow) => <strong>{money(estimatedTotal(row))}</strong>,
+        render: (row: ProductionCostsRow) => <strong>{money(estimatedTotal(row), row.currency)}</strong>,
       },
     ];
   }, [t, locale]);

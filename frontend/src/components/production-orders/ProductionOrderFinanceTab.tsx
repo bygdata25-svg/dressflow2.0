@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from "../../utils/currency";
 import "../../styles/production-orders.css";
 
 type ProductionOrder = {
@@ -75,6 +76,11 @@ function tr(
 function toNumber(value?: string | number | null) {
   const n = Number(value ?? 0);
   return Number.isFinite(n) ? n : 0;
+}
+
+function currencyLabel(currency?: string | null) {
+  const currencyCode = String(currency || "USD").toUpperCase();
+  return `${getCurrencySymbol(currencyCode)} ${currencyCode}`;
 }
 
 export default function ProductionOrderFinanceTab({
@@ -354,8 +360,8 @@ export default function ProductionOrderFinanceTab({
                     }))
                   }
                 >
-                  <option value="ARS">ARS</option>
-                  <option value="USD">USD</option>
+                  <option value="ARS">{currencyLabel("ARS")}</option>
+                  <option value="USD">{currencyLabel("USD")}</option>
                 </select>
               </div>
 
@@ -479,7 +485,7 @@ export default function ProductionOrderFinanceTab({
 
             <div className="po-fin-summary__item">
               <span>{tr(t, "production-orders:costs.currency", "Moneda")}</span>
-              <strong>{effectiveCurrency}</strong>
+              <strong>{currencyLabel(effectiveCurrency)}</strong>
             </div>
 
             <div className="po-fin-summary__item">

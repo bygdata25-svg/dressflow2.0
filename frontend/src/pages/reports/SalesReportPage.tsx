@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
+import { formatCurrencyAmount, getCurrencySymbol } from "../../utils/currency";
 import { PrimaryButton } from "../../components/common/buttons";
 import "../../styles/pro-pages.css";
 
@@ -97,16 +98,18 @@ export default function SalesReportPage() {
   function formatMoney(value: number, currency: CurrencyCode) {
     const currencyCode = String(currency || "ARS").toUpperCase();
 
-    try {
-      return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: currencyCode,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(Number(value || 0));
-    } catch {
-      return `${currencyCode} ${Number(value || 0).toFixed(2)}`;
-    }
+    return formatCurrencyAmount(value, {
+      locale,
+      currencyCode,
+      symbol: getCurrencySymbol(currencyCode),
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function currencyLabel(currency?: CurrencyCode | null) {
+    const currencyCode = String(currency || "ARS").toUpperCase();
+    return `${getCurrencySymbol(currencyCode)} ${currencyCode}`;
   }
 
   function normalizeTotals(
@@ -724,8 +727,8 @@ export default function SalesReportPage() {
             >
               <option value="">{t("filters.allCurrencies")}</option>
               {metrics.currencyOptions.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
+                <option key={currencyLabel(currency)} value={currencyLabel(currency)}>
+                  {currencyLabel(currency)}
                 </option>
               ))}
             </select>
@@ -790,10 +793,10 @@ export default function SalesReportPage() {
           </div>
         ) : (
           Object.entries(metrics.totalsByCurrency).map(([currency, amount]) => (
-            <div className="df-sales-report-kpi-card" key={currency}>
-              <span>{t("kpis.totalByCurrency", { currency, defaultValue: `Total ${currency}` })}</span>
+            <div className="df-sales-report-kpi-card" key={currencyLabel(currency)}>
+              <span>{t("kpis.totalByCurrency", { currency, defaultValue: `Total ${currencyLabel(currency)}` })}</span>
               <strong>{formatMoney(Number(amount || 0), currency)}</strong>
-              <small>{currency}</small>
+              <small>{currencyLabel(currency)}</small>
             </div>
           ))
         )}
@@ -848,7 +851,7 @@ export default function SalesReportPage() {
                         <td className="df-pro-table__td">{row.sale_number || "—"}</td>
                         <td className="df-pro-table__td">{formatDateTime(row.sale_date)}</td>
                         <td className="df-pro-table__td">{row.customer_full_name || "—"}</td>
-                        <td className="df-pro-table__td">{row.currency || "—"}</td>
+                        <td className="df-pro-table__td">{row.currency ? currencyLabel(row.currency) : "—"}</td>
                         <td className="df-pro-table__td">
                           <strong>{saleTotalLabel(row)}</strong>
                           {isMixed ? (
@@ -863,7 +866,7 @@ export default function SalesReportPage() {
                               <span>—</span>
                             ) : (
                               Object.entries(rowPaymentTotals(row)).map(([currency, amount]) => (
-                                <span key={currency}>{formatMoney(Number(amount || 0), currency)}</span>
+                                <span key={currencyLabel(currency)}>{formatMoney(Number(amount || 0), currency)}</span>
                               ))
                             )}
                           </div>
@@ -948,8 +951,8 @@ export default function SalesReportPage() {
                       </div>
                     ) : (
                       Object.entries(rowItemTotals(selectedSale)).map(([currency, amount]) => (
-                        <div key={currency}>
-                          <span>{currency}</span>
+                        <div key={currencyLabel(currency)}>
+                          <span>{currencyLabel(currency)}</span>
                           <strong>{formatMoney(Number(amount || 0), currency)}</strong>
                         </div>
                       ))

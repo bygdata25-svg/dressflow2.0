@@ -578,7 +578,7 @@ export default function FinancialDashboardPage() {
                     content={(props) => (
                       <CurrencyTooltip
                         active={props.active}
-                        payload={props.payload as CurrencyTooltipPayloadItem[]}
+                        payload={props.payload as unknown as CurrencyTooltipPayloadItem[]}
                         label={props.label}
                         formatMoney={formatMoney}
                       />
@@ -644,7 +644,7 @@ export default function FinancialDashboardPage() {
                   content={(props) => (
                     <CurrencyTooltip
                       active={props.active}
-                      payload={props.payload as CurrencyTooltipPayloadItem[]}
+                      payload={props.payload as unknown as CurrencyTooltipPayloadItem[]}
                       label={props.label}
                       formatMoney={formatMoney}
                     />

@@ -728,6 +728,7 @@ export default function AppointmentsPage() {
 
   function renderAppointmentCard(appointment: Appointment, compact = false) {
     const config = TYPE_CONFIG[appointment.appointment_type] || TYPE_CONFIG.FITTING;
+    const Icon = config.icon;
     const customerName = appointmentCustomerName(appointment);
     const dressName = appointmentDressName(appointment);
     const responsibleName = appointmentResponsibleName(appointment);

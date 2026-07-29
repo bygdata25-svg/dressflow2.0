@@ -30,7 +30,8 @@
       "roll": "Select roll",
       "quantity": "Ex: 5",
       "reference": "Ex: Workshop cut / Purchase / Adjustment",
-      "notes": "Movement notes"
+      "notes": "Movement notes",
+      "rollSearch": "Search by roll code or fabric name"
     },
     "messages": {
       "error": "Could not create movement."

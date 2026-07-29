@@ -30,7 +30,8 @@
       "roll": "Seleccionar rollo",
       "quantity": "Ej: 5",
       "reference": "Ej: Corte taller / Compra / Ajuste",
-      "notes": "Notas del movimiento"
+      "notes": "Notas del movimiento",
+      "rollSearch": "Buscar por código de rollo o nombre de tela"
     },
     "messages": {
       "error": "No se pudo crear el movimiento."

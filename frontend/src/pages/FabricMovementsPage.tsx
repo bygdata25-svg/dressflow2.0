@@ -32,6 +32,7 @@ type PaginatedResponse<T> = {
 };
 
 const PAGE_SIZE = 20;
+const ROLLS_PAGE_SIZE = 100;
 
 export default function FabricMovementsPage() {
   const { t } = useTranslation(["common", "fabric-movements"]);
@@ -47,6 +48,7 @@ export default function FabricMovementsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [rollSearch, setRollSearch] = useState("");
 
   const [form, setForm] = useState({
     fabric_roll_id: "",
@@ -59,47 +61,76 @@ export default function FabricMovementsPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const selectableRolls = useMemo(() => {
-    return rolls.filter((roll) => {
-      const status = String(roll.status || "").toUpperCase();
-      const current = Number(roll.current_length || 0);
+    const normalizedSearch = rollSearch.trim().toLocaleLowerCase();
 
-      if (!["AVAILABLE", "LOW_STOCK", "RESERVED", "DEPLETED"].includes(status)) {
-        return false;
-      }
+    return rolls
+      .filter((roll) => {
+        const status = String(roll.status || "").toUpperCase();
+        const current = Number(roll.current_length || 0);
 
-      if (form.type === "OUT" && current <= 0) {
-        return false;
-      }
+        if (!["AVAILABLE", "LOW_STOCK", "RESERVED", "DEPLETED"].includes(status)) {
+          return false;
+        }
 
-      return true;
+        if (form.type === "OUT" && current <= 0) {
+          return false;
+        }
+
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        const searchableText = `${roll.roll_code || ""} ${roll.fabric_name || ""}`.toLocaleLowerCase();
+        return searchableText.includes(normalizedSearch);
+      })
+      .sort((a, b) => String(a.roll_code).localeCompare(String(b.roll_code)));
+  }, [rolls, form.type, rollSearch]);
+
+  const loadRolls = async () => {
+    const firstResponse = await api.get<PaginatedResponse<Roll>>("/fabric-rolls", {
+      params: { page: 1, page_size: ROLLS_PAGE_SIZE },
     });
-  }, [rolls, form.type]);
 
-  const loadAll = async () => {
+    const firstItems = Array.isArray(firstResponse.data.items) ? firstResponse.data.items : [];
+    const rollsTotal = Number(firstResponse.data.total || firstItems.length);
+    const totalRollPages = Math.max(1, Math.ceil(rollsTotal / ROLLS_PAGE_SIZE));
+
+    if (totalRollPages === 1) {
+      setRolls(firstItems);
+      return;
+    }
+
+    const remainingRequests = Array.from({ length: totalRollPages - 1 }, (_, index) =>
+      api.get<PaginatedResponse<Roll>>("/fabric-rolls", {
+        params: { page: index + 2, page_size: ROLLS_PAGE_SIZE },
+      }),
+    );
+
+    const remainingResponses = await Promise.all(remainingRequests);
+    const allRolls = remainingResponses.reduce<Roll[]>((accumulator, response) => {
+      const items = Array.isArray(response.data.items) ? response.data.items : [];
+      return accumulator.concat(items);
+    }, firstItems);
+
+    setRolls(allRolls);
+  };
+
+  const loadMovements = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [movementsResponse, rollsResponse] = await Promise.all([
-        api.get<PaginatedResponse<Movement>>("/fabric-movements", {
-          params: {
-            page,
-            page_size: PAGE_SIZE,
-            search: search || undefined,
-            type: typeFilter || undefined,
-          },
-        }),
-        api.get<PaginatedResponse<Roll>>("/fabric-rolls", {
-          params: {
-            page: 1,
-            page_size: 100,
-          },
-        }),
-      ]);
+      const movementsResponse = await api.get<PaginatedResponse<Movement>>("/fabric-movements", {
+        params: {
+          page,
+          page_size: PAGE_SIZE,
+          search: search || undefined,
+          type: typeFilter || undefined,
+        },
+      });
 
       setRows(Array.isArray(movementsResponse.data.items) ? movementsResponse.data.items : []);
       setTotal(Number(movementsResponse.data.total || 0));
-      setRolls(Array.isArray(rollsResponse.data.items) ? rollsResponse.data.items : []);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
 
@@ -112,8 +143,17 @@ export default function FabricMovementsPage() {
   };
 
   useEffect(() => {
-    void loadAll();
+    void loadMovements();
   }, [page, search, typeFilter]);
+
+  useEffect(() => {
+    void loadRolls().catch((err: any) => {
+      const detail = err?.response?.data?.detail;
+      if (typeof detail === "string") setError(detail);
+      else if (detail?.message) setError(detail.message);
+      else setError(t("fabric-movements:form.messages.error"));
+    });
+  }, []);
 
   const createMovement = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -137,7 +177,7 @@ export default function FabricMovementsPage() {
         notes: "",
       });
 
-      await loadAll();
+      await Promise.all([loadMovements(), loadRolls()]);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
 
@@ -200,6 +240,15 @@ export default function FabricMovementsPage() {
         <form onSubmit={createMovement} className="df-pro-form-grid df-pro-form-grid--6">
           <div>
             <label className="df-pro-label">{t("fabric-movements:fields.roll")}</label>
+            <input
+              className="df-pro-input"
+              type="search"
+              placeholder={t("fabric-movements:form.placeholders.rollSearch", {
+                defaultValue: "Buscar por código de rollo o nombre de tela",
+              })}
+              value={rollSearch}
+              onChange={(e) => setRollSearch(e.target.value)}
+            />
             <select
               className="df-pro-select"
               value={form.fabric_roll_id}

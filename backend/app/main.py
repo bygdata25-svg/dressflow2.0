@@ -8,7 +8,15 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.services.storage_service import ensure_upload_dirs
 
-app = FastAPI(title="DressFlow API")
+
+is_production = settings.environment.lower().strip() in {"production", "prod"}
+
+app = FastAPI(
+    title="DressFlow API",
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json",
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOADS_DIR = BASE_DIR / "uploads"
@@ -36,6 +44,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(api_router, prefix="/api/v1")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/health")
 def health():

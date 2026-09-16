@@ -82,6 +82,7 @@ def get_current_user(
 
 def get_current_membership(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     token_payload: dict = Depends(get_token_payload),
 ):
     membership_id = token_payload.get("membership_id")
@@ -102,10 +103,13 @@ def get_current_membership(
             detail="Invalid membership context in token",
         )
 
+    # Validamos la relación completa: membership + tenant + usuario autenticado.
+    # Así el contexto multi-tenant no depende sólo de los claims del JWT.
     membership = db.execute(
         select(UserTenant).where(
             UserTenant.id == membership_uuid,
             UserTenant.tenant_id == tenant_uuid,
+            UserTenant.user_id == current_user.id,
         )
     ).scalar_one_or_none()
 

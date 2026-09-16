@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import uuid
 
 from jose import jwt
 from passlib.context import CryptContext
@@ -23,27 +24,25 @@ def hash_password(password: str) -> str:
 
 
 def get_jwt_secret() -> str:
-    candidates = [
-        getattr(settings, "SECRET_KEY", None),
-        getattr(settings, "secret_key", None),
-        getattr(settings, "JWT_SECRET", None),
-        getattr(settings, "jwt_secret", None),
-        getattr(settings, "AUTH_SECRET", None),
-        getattr(settings, "auth_secret", None),
-    ]
-
-    for value in candidates:
-        if value:
-            return str(value)
-
-    # fallback solo para desarrollo local
-    return "dressflow-dev-secret-change-me"
+    # Settings exige SECRET_KEY/secret_key. No usamos un secreto fallback conocido:
+    # si la configuración falta, es preferible que la aplicación no pueda firmar JWT.
+    secret = str(settings.secret_key or "").strip()
+    if not secret:
+        raise RuntimeError("SECRET_KEY is required for JWT signing")
+    return secret
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=8))
-    to_encode.update({"exp": expire})
+    now = datetime.now(timezone.utc)
+    expire = now + (expires_delta or timedelta(hours=8))
+    to_encode.update(
+        {
+            "exp": expire,
+            "iat": now,
+            "jti": str(uuid.uuid4()),
+        }
+    )
     return jwt.encode(to_encode, get_jwt_secret(), algorithm=ALGORITHM)
 
 

@@ -42,7 +42,7 @@ class ChangePasswordRequest(BaseModel):
 
 
 def get_token_expire_minutes() -> int:
-    return int(getattr(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 480))
+    return int(settings.access_token_expire_minutes)
 
 
 @router.get("/ping")
@@ -189,7 +189,6 @@ def me(
 
         "impersonated": bool(token_payload.get("impersonated", False)),
         "impersonated_by": token_payload.get("impersonated_by"),
-        "original_sub": token_payload.get("original_sub"),
         "original_sub": token_payload.get("original_sub"),
         "impersonation_audit_id": token_payload.get("impersonation_audit_id"),
     }
@@ -359,7 +358,10 @@ def exit_impersonation(
         )
 
     original_membership = db.execute(
-        select(UserTenant).where(UserTenant.id == original_membership_uuid)
+        select(UserTenant).where(
+            UserTenant.id == original_membership_uuid,
+            UserTenant.user_id == original_user.id,
+        )
     ).scalar_one_or_none()
 
     if not original_membership:

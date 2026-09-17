@@ -82,19 +82,89 @@ def _fmt_date(value) -> str:
         return str(value)
 
 
-def _get_order_or_404(db: Session, tenant_id, order_id: UUIDType) -> ProductionOrder:
-    order = db.execute(
-        select(ProductionOrder).where(
-            ProductionOrder.id == order_id,
-            ProductionOrder.tenant_id == tenant_id,
-            ProductionOrder.deleted_at.is_(None),
-        )
-    ).scalar_one_or_none()
+def _get_order_or_404(
+    db: Session,
+    tenant_id,
+    order_id: UUIDType,
+    *,
+    for_update: bool = False,
+) -> ProductionOrder:
+    query = select(ProductionOrder).where(
+        ProductionOrder.id == order_id,
+        ProductionOrder.tenant_id == tenant_id,
+        ProductionOrder.deleted_at.is_(None),
+    )
+
+    if for_update:
+        query = query.with_for_update()
+
+    order = db.execute(query).scalar_one_or_none()
 
     if not order:
         raise AppException(404, "Production order not found", "PRODUCTION_ORDER_NOT_FOUND")
 
     return order
+
+
+def _get_material_or_404(
+    db: Session,
+    tenant_id,
+    order_id: UUIDType,
+    material_id: UUIDType,
+    *,
+    for_update: bool = False,
+) -> ProductionOrderMaterial:
+    query = select(ProductionOrderMaterial).where(
+        ProductionOrderMaterial.id == material_id,
+        ProductionOrderMaterial.production_order_id == order_id,
+        ProductionOrderMaterial.tenant_id == tenant_id,
+    )
+
+    if for_update:
+        query = query.with_for_update()
+
+    material = db.execute(query).scalar_one_or_none()
+
+    if not material:
+        raise AppException(
+            404,
+            "Material not found",
+            "PRODUCTION_ORDER_MATERIAL_NOT_FOUND",
+        )
+
+    return material
+
+
+def _material_was_reserved(
+    db: Session,
+    tenant_id,
+    order_id: UUIDType,
+    material_id: UUIDType,
+) -> bool:
+    """
+    Reserva idempotente sin cambio de esquema:
+    el evento MATERIAL_RESERVED actúa como evidencia de que este material
+    ya incrementó el stock reservado.
+
+    El llamador debe bloquear primero la fila ProductionOrderMaterial
+    (SELECT ... FOR UPDATE) para serializar requests concurrentes del mismo
+    material antes de consultar este estado.
+    """
+    payloads = db.execute(
+        select(ProductionOrderEvent.payload).where(
+            ProductionOrderEvent.tenant_id == tenant_id,
+            ProductionOrderEvent.production_order_id == order_id,
+            ProductionOrderEvent.event_type == "MATERIAL_RESERVED",
+        )
+    ).scalars().all()
+
+    target_id = str(material_id)
+
+    for payload in payloads:
+        if isinstance(payload, dict) and str(payload.get("material_id")) == target_id:
+            return True
+
+    return False
 
 
 def create_order_event(
@@ -236,12 +306,18 @@ def build_material_response(
 
     if material.fabric_roll_id:
         roll = db.execute(
-            select(FabricRoll).where(FabricRoll.id == material.fabric_roll_id)
+            select(FabricRoll).where(
+                FabricRoll.id == material.fabric_roll_id,
+                FabricRoll.tenant_id == material.tenant_id,
+            )
         ).scalar_one_or_none()
 
     if material.trim_id:
         trim = db.execute(
-            select(Trim).where(Trim.id == material.trim_id)
+            select(Trim).where(
+                Trim.id == material.trim_id,
+                Trim.tenant_id == material.tenant_id,
+            )
         ).scalar_one_or_none()
 
     description = material.description_snapshot or ""
@@ -678,7 +754,7 @@ def add_fabric_material(
         material_type="FABRIC_ROLL",
         fabric_roll_id=payload.fabric_roll_id,
         description_snapshot=f"Rollo {roll.roll_code}",
-        planned_quantity=planned_quantity,
+        planned_quantity=planned,
         delivered_quantity=Decimal("0"),
         consumed_quantity=Decimal("0"),
         returned_quantity=Decimal("0"),
@@ -734,6 +810,14 @@ def add_trim_material(
     if not trim:
         raise AppException(404, "Trim not found", "TRIM_NOT_FOUND")
 
+    planned = _decimal(planned_quantity)
+    if planned <= 0:
+        raise AppException(
+            400,
+            "Planned quantity must be greater than zero",
+            "INVALID_PLANNED_QUANTITY",
+        )
+
     material = ProductionOrderMaterial(
         tenant_id=membership.tenant_id,
         production_order_id=order_id,
@@ -781,22 +865,27 @@ def delete_production_order_material(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
-    order = _get_order_or_404(db, membership.tenant_id, order_id)
+    order = _get_order_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        for_update=True,
+    )
 
-    material = db.execute(
-        select(ProductionOrderMaterial).where(
-            ProductionOrderMaterial.id == material_id,
-            ProductionOrderMaterial.production_order_id == order_id,
-            ProductionOrderMaterial.tenant_id == membership.tenant_id,
-        )
-    ).scalar_one_or_none()
+    material = _get_material_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        material_id,
+        for_update=True,
+    )
 
-    if not material:
-        raise AppException(
-            404,
-            "Material not found",
-            "PRODUCTION_ORDER_MATERIAL_NOT_FOUND",
-        )
+    was_reserved = _material_was_reserved(
+        db,
+        membership.tenant_id,
+        order_id,
+        material_id,
+    )
 
     if _decimal(material.delivered_quantity) > 0:
         raise AppException(
@@ -805,12 +894,14 @@ def delete_production_order_material(
             "ISSUED_MATERIAL_CANNOT_BE_DELETED",
         )
 
-    if material.material_type == "FABRIC_ROLL" and material.fabric_roll_id:
+    if was_reserved and material.material_type == "FABRIC_ROLL" and material.fabric_roll_id:
         roll = db.execute(
-            select(FabricRoll).where(
+            select(FabricRoll)
+            .where(
                 FabricRoll.id == material.fabric_roll_id,
                 FabricRoll.tenant_id == membership.tenant_id,
             )
+            .with_for_update()
         ).scalar_one_or_none()
 
         if roll and _decimal(material.planned_quantity) > 0:
@@ -820,12 +911,14 @@ def delete_production_order_material(
             )
             roll.reserved_length = _decimal(roll.reserved_length) - reserved_to_release
 
-    if material.material_type == "TRIM" and material.trim_id:
+    if was_reserved and material.material_type == "TRIM" and material.trim_id:
         trim = db.execute(
-            select(Trim).where(
+            select(Trim)
+            .where(
                 Trim.id == material.trim_id,
                 Trim.tenant_id == membership.tenant_id,
             )
+            .with_for_update()
         ).scalar_one_or_none()
 
         if trim and _decimal(material.planned_quantity) > 0:
@@ -864,28 +957,51 @@ def reserve_material(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
-    order = _get_order_or_404(db, membership.tenant_id, order_id)
+    order = _get_order_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        for_update=True,
+    )
 
-    material = db.execute(
-        select(ProductionOrderMaterial).where(
-            ProductionOrderMaterial.id == material_id,
-            ProductionOrderMaterial.production_order_id == order_id,
-            ProductionOrderMaterial.tenant_id == membership.tenant_id,
-        )
-    ).scalar_one_or_none()
+    material = _get_material_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        material_id,
+        for_update=True,
+    )
 
-    if not material:
-        raise AppException(404, "Material not found", "PRODUCTION_ORDER_MATERIAL_NOT_FOUND")
+    # Hace al endpoint idempotente: un retry/doble click no duplica reservas.
+    if _material_was_reserved(
+        db,
+        membership.tenant_id,
+        order_id,
+        material_id,
+    ):
+        return {"message": "Material already reserved"}
 
     planned = _decimal(material.planned_quantity)
+    if planned <= 0:
+        raise AppException(
+            400,
+            "Planned quantity must be greater than zero",
+            "INVALID_PLANNED_QUANTITY",
+        )
 
     if material.material_type == "FABRIC_ROLL":
         roll = db.execute(
-            select(FabricRoll).where(
+            select(FabricRoll)
+            .where(
                 FabricRoll.id == material.fabric_roll_id,
                 FabricRoll.tenant_id == membership.tenant_id,
+                FabricRoll.deleted_at.is_(None),
             )
-        ).scalar_one()
+            .with_for_update()
+        ).scalar_one_or_none()
+
+        if not roll:
+            raise AppException(404, "Fabric roll not found", "FABRIC_ROLL_NOT_FOUND")
 
         free = _decimal(roll.current_length) - _decimal(roll.reserved_length)
         if planned > free:
@@ -894,15 +1010,22 @@ def reserve_material(
                 "Not enough available roll stock to reserve",
                 "FABRIC_ROLL_NOT_ENOUGH_AVAILABLE_TO_RESERVE",
             )
+
         roll.reserved_length = _decimal(roll.reserved_length) + planned
 
     elif material.material_type == "TRIM":
         trim = db.execute(
-            select(Trim).where(
+            select(Trim)
+            .where(
                 Trim.id == material.trim_id,
                 Trim.tenant_id == membership.tenant_id,
+                Trim.deleted_at.is_(None),
             )
-        ).scalar_one()
+            .with_for_update()
+        ).scalar_one_or_none()
+
+        if not trim:
+            raise AppException(404, "Trim not found", "TRIM_NOT_FOUND")
 
         free = _decimal(trim.current_stock) - _decimal(trim.reserved_stock)
         if planned > free:
@@ -911,7 +1034,15 @@ def reserve_material(
                 "Not enough available trim stock to reserve",
                 "TRIM_NOT_ENOUGH_AVAILABLE_TO_RESERVE",
             )
+
         trim.reserved_stock = _decimal(trim.reserved_stock) + planned
+
+    else:
+        raise AppException(
+            400,
+            "Unsupported material type",
+            "UNSUPPORTED_MATERIAL_TYPE",
+        )
 
     if order.status == "DRAFT":
         order.status = "MATERIALS_RESERVED"
@@ -936,31 +1067,58 @@ def issue_material(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
-    order = _get_order_or_404(db, membership.tenant_id, order_id)
+    order = _get_order_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        for_update=True,
+    )
 
-    material = db.execute(
-        select(ProductionOrderMaterial).where(
-            ProductionOrderMaterial.id == material_id,
-            ProductionOrderMaterial.production_order_id == order_id,
-            ProductionOrderMaterial.tenant_id == membership.tenant_id,
-        )
-    ).scalar_one_or_none()
-
-    if not material:
-        raise AppException(404, "Material not found", "PRODUCTION_ORDER_MATERIAL_NOT_FOUND")
+    material = _get_material_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        material_id,
+        for_update=True,
+    )
 
     planned = _decimal(material.planned_quantity)
+
+    if planned <= 0:
+        raise AppException(
+            400,
+            "Planned quantity must be greater than zero",
+            "INVALID_PLANNED_QUANTITY",
+        )
 
     if _decimal(material.delivered_quantity) > 0:
         raise AppException(400, "Material already issued", "MATERIAL_ALREADY_ISSUED")
 
+    if not _material_was_reserved(
+        db,
+        membership.tenant_id,
+        order_id,
+        material_id,
+    ):
+        raise AppException(
+            400,
+            "Material must be reserved before issuing",
+            "MATERIAL_NOT_RESERVED",
+        )
+
     if material.material_type == "FABRIC_ROLL":
         roll = db.execute(
-            select(FabricRoll).where(
+            select(FabricRoll)
+            .where(
                 FabricRoll.id == material.fabric_roll_id,
                 FabricRoll.tenant_id == membership.tenant_id,
+                FabricRoll.deleted_at.is_(None),
             )
-        ).scalar_one()
+            .with_for_update()
+        ).scalar_one_or_none()
+
+        if not roll:
+            raise AppException(404, "Fabric roll not found", "FABRIC_ROLL_NOT_FOUND")
 
         if planned > _decimal(roll.reserved_length):
             raise AppException(400, "Material must be reserved before issuing", "MATERIAL_NOT_RESERVED")
@@ -991,11 +1149,17 @@ def issue_material(
 
     elif material.material_type == "TRIM":
         trim = db.execute(
-            select(Trim).where(
+            select(Trim)
+            .where(
                 Trim.id == material.trim_id,
                 Trim.tenant_id == membership.tenant_id,
+                Trim.deleted_at.is_(None),
             )
-        ).scalar_one()
+            .with_for_update()
+        ).scalar_one_or_none()
+
+        if not trim:
+            raise AppException(404, "Trim not found", "TRIM_NOT_FOUND")
 
         if planned > _decimal(trim.reserved_stock):
             raise AppException(400, "Material must be reserved before issuing", "MATERIAL_NOT_RESERVED")
@@ -1022,6 +1186,13 @@ def issue_material(
                 movement_reason="PRODUCTION_ISSUE",
                 created_at=_now_utc(),
             )
+        )
+
+    else:
+        raise AppException(
+            400,
+            "Unsupported material type",
+            "UNSUPPORTED_MATERIAL_TYPE",
         )
 
     material.delivered_quantity = planned
@@ -1055,18 +1226,20 @@ def return_material(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
-    order = _get_order_or_404(db, membership.tenant_id, order_id)
+    order = _get_order_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        for_update=True,
+    )
 
-    material = db.execute(
-        select(ProductionOrderMaterial).where(
-            ProductionOrderMaterial.id == material_id,
-            ProductionOrderMaterial.production_order_id == order_id,
-            ProductionOrderMaterial.tenant_id == membership.tenant_id,
-        )
-    ).scalar_one_or_none()
-
-    if not material:
-        raise AppException(404, "Material not found", "PRODUCTION_ORDER_MATERIAL_NOT_FOUND")
+    material = _get_material_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        material_id,
+        for_update=True,
+    )
 
     delivered = _decimal(material.delivered_quantity)
     already_returned = _decimal(material.returned_quantity)
@@ -1091,11 +1264,17 @@ def return_material(
 
     if material.material_type == "FABRIC_ROLL" and new_return > 0:
         roll = db.execute(
-            select(FabricRoll).where(
+            select(FabricRoll)
+            .where(
                 FabricRoll.id == material.fabric_roll_id,
                 FabricRoll.tenant_id == membership.tenant_id,
+                FabricRoll.deleted_at.is_(None),
             )
-        ).scalar_one()
+            .with_for_update()
+        ).scalar_one_or_none()
+
+        if not roll:
+            raise AppException(404, "Fabric roll not found", "FABRIC_ROLL_NOT_FOUND")
 
         roll.current_length = _decimal(roll.current_length) + new_return
         roll.status = "AVAILABLE"
@@ -1120,11 +1299,17 @@ def return_material(
 
     if material.material_type == "TRIM" and new_return > 0:
         trim = db.execute(
-            select(Trim).where(
+            select(Trim)
+            .where(
                 Trim.id == material.trim_id,
                 Trim.tenant_id == membership.tenant_id,
+                Trim.deleted_at.is_(None),
             )
-        ).scalar_one()
+            .with_for_update()
+        ).scalar_one_or_none()
+
+        if not trim:
+            raise AppException(404, "Trim not found", "TRIM_NOT_FOUND")
 
         trim.current_stock = _decimal(trim.current_stock) + new_return
 
@@ -1174,7 +1359,12 @@ def receive_production_order(
     db: Session = Depends(get_db),
     membership=Depends(require_roles("admin", "manager")),
 ):
-    order = _get_order_or_404(db, membership.tenant_id, order_id)
+    order = _get_order_or_404(
+        db,
+        membership.tenant_id,
+        order_id,
+        for_update=True,
+    )
 
     order.produced_quantity = payload.produced_quantity
     order.received_notes = payload.received_notes

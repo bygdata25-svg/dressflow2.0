@@ -77,8 +77,8 @@ class ProductionOrderResponse(BaseModel):
 
 class ProductionOrderMaterialAdd(BaseModel):
     fabric_roll_id: UUID
-    planned_quantity: Decimal
-    unit: str = Field(default="meters", max_length=20)
+    planned_quantity: Decimal = Field(gt=0)
+    unit: str = Field(default="meters", min_length=1, max_length=20)
     notes: str | None = Field(default=None, max_length=2000)
 
 

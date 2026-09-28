@@ -754,7 +754,7 @@ def add_fabric_material(
         material_type="FABRIC_ROLL",
         fabric_roll_id=payload.fabric_roll_id,
         description_snapshot=f"Rollo {roll.roll_code}",
-        planned_quantity=planned_quantity,
+        planned_quantity=planned,
         delivered_quantity=Decimal("0"),
         consumed_quantity=Decimal("0"),
         returned_quantity=Decimal("0"),

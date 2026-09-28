@@ -17,3 +17,4 @@ numpy>=2.1.1
 pandas>=2.2.3
 cloudinary
 psycopg2-binary>=2.9.10
+psycopg[binary]>=3.2,<4

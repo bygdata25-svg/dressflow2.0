@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ProductionOrderAssignmentBase(BaseModel):
     supplier_id: UUID
     process_type_id: UUID
+    assigned_user_id: UUID | None = None
 
     status: str = Field(default="PENDING", max_length=30)
 
@@ -27,6 +28,7 @@ class ProductionOrderAssignmentCreate(ProductionOrderAssignmentBase):
 class ProductionOrderAssignmentUpdate(BaseModel):
     supplier_id: UUID | None = None
     process_type_id: UUID | None = None
+    assigned_user_id: UUID | None = None
 
     status: str | None = Field(default=None, max_length=30)
 
@@ -54,6 +56,7 @@ class ProductionOrderAssignmentOut(ProductionOrderAssignmentBase):
 
 class ProductionOrderAssignmentDetailOut(ProductionOrderAssignmentOut):
     supplier_name: str | None = None
+    assigned_user_name: str | None = None
     process_code: str | None = None
     process_name: str | None = None
     process_color: str | None = None

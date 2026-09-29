@@ -12,6 +12,7 @@ from app.models.production_order import ProductionOrder
 from app.models.production_order_assignment import ProductionOrderAssignment
 from app.models.production_process_type import ProductionProcessType
 from app.models.supplier import Supplier
+from app.models.user import User, UserTenant
 from app.schemas.production_order_assignment import (
     ProductionOrderAssignmentCreate,
     ProductionOrderAssignmentUpdate,
@@ -50,6 +51,7 @@ def build_assignment_detail(row: ProductionOrderAssignment) -> ProductionOrderAs
         production_order_id=row.production_order_id,
         supplier_id=row.supplier_id,
         process_type_id=row.process_type_id,
+        assigned_user_id=row.assigned_user_id,
         appointment_id=row.appointment_id,
         status=str(
             row.status.value
@@ -65,11 +67,49 @@ def build_assignment_detail(row: ProductionOrderAssignment) -> ProductionOrderAs
         updated_at=row.updated_at,
         deleted_at=row.deleted_at,
         supplier_name=getattr(row, "supplier_name", None),
+        assigned_user_name=getattr(row, "assigned_user_name", None),
         process_code=getattr(row, "process_code", None),
         process_name=getattr(row, "process_name", None),
         process_color=getattr(row, "process_color", None),
         process_icon=getattr(row, "process_icon", None),
     )
+
+
+def _get_assignable_user_or_404(
+    db: Session,
+    tenant_id,
+    user_id: uuid.UUID | None,
+) -> User | None:
+    if user_id is None:
+        return None
+
+    user = (
+        db.query(User)
+        .join(UserTenant, UserTenant.user_id == User.id)
+        .filter(
+            User.id == user_id,
+            UserTenant.tenant_id == tenant_id,
+            User.deleted_at.is_(None),
+            User.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario asignado no encontrado, inactivo o fuera del tenant.",
+        )
+
+    return user
+
+
+def _user_display_name(user: User | None) -> str | None:
+    if not user:
+        return None
+
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    return full_name or user.email
 
 
 def _build_assignment_title(
@@ -126,7 +166,7 @@ def _sync_assignment_appointment(
             source_id=assignment.id,
             production_order_id=assignment.production_order_id,
             process_type_id=assignment.process_type_id,
-            assigned_user_id=None,
+            assigned_user_id=assignment.assigned_user_id,
             start_at=assignment.started_at,
             end_at=assignment.finished_at or _default_end_at(assignment.started_at),
             priority="MEDIUM",
@@ -148,6 +188,7 @@ def _sync_assignment_appointment(
     appointment.source_id = assignment.id
     appointment.production_order_id = assignment.production_order_id
     appointment.process_type_id = assignment.process_type_id
+    appointment.assigned_user_id = assignment.assigned_user_id
     appointment.start_at = assignment.started_at
     appointment.end_at = assignment.finished_at or _default_end_at(assignment.started_at)
     appointment.color = getattr(process_type, "color", None)
@@ -208,12 +249,16 @@ def list_production_order_assignments(
         db.query(
             ProductionOrderAssignment,
             Supplier.name.label("supplier_name"),
+            User.first_name.label("assigned_user_first_name"),
+            User.last_name.label("assigned_user_last_name"),
+            User.email.label("assigned_user_email"),
             ProductionProcessType.code.label("process_code"),
             ProductionProcessType.name.label("process_name"),
             ProductionProcessType.color.label("process_color"),
             ProductionProcessType.icon.label("process_icon"),
         )
         .join(Supplier, Supplier.id == ProductionOrderAssignment.supplier_id)
+        .outerjoin(User, User.id == ProductionOrderAssignment.assigned_user_id)
         .join(
             ProductionProcessType,
             ProductionProcessType.id == ProductionOrderAssignment.process_type_id,
@@ -229,8 +274,20 @@ def list_production_order_assignments(
 
     result: list[ProductionOrderAssignmentDetailOut] = []
 
-    for assignment, supplier_name, process_code, process_name, process_color, process_icon in rows:
+    for (
+        assignment,
+        supplier_name,
+        assigned_user_first_name,
+        assigned_user_last_name,
+        assigned_user_email,
+        process_code,
+        process_name,
+        process_color,
+        process_icon,
+    ) in rows:
         assignment.supplier_name = supplier_name
+        assigned_name = f"{assigned_user_first_name or ''} {assigned_user_last_name or ''}".strip()
+        assignment.assigned_user_name = assigned_name or assigned_user_email
         assignment.process_code = process_code
         assignment.process_name = process_name
         assignment.process_color = process_color
@@ -300,11 +357,18 @@ def create_production_order_assignment(
             detail="Tipo de proceso no encontrado o inactivo.",
         )
 
+    assigned_user = _get_assignable_user_or_404(
+        db,
+        membership.tenant_id,
+        payload.assigned_user_id,
+    )
+
     assignment = ProductionOrderAssignment(
         tenant_id=membership.tenant_id,
         production_order_id=production_order_id,
         supplier_id=payload.supplier_id,
         process_type_id=payload.process_type_id,
+        assigned_user_id=payload.assigned_user_id,
         status=payload.status,
         estimated_cost=payload.estimated_cost,
         actual_cost=payload.actual_cost,
@@ -327,6 +391,7 @@ def create_production_order_assignment(
     db.refresh(assignment)
 
     assignment.supplier_name = supplier.name
+    assignment.assigned_user_name = _user_display_name(assigned_user)
     assignment.process_code = process_type.code
     assignment.process_name = process_type.name
     assignment.process_color = process_type.color
@@ -399,6 +464,14 @@ def update_production_order_assignment(
                 detail="Proveedor/taller no encontrado.",
             )
 
+    assigned_user = None
+    if "assigned_user_id" in data:
+        assigned_user = _get_assignable_user_or_404(
+            db,
+            membership.tenant_id,
+            data["assigned_user_id"],
+        )
+
     if "process_type_id" in data:
         process_type = (
             db.query(ProductionProcessType)
@@ -454,6 +527,13 @@ def update_production_order_assignment(
             detail="Tipo de proceso no encontrado.",
         )
 
+    if "assigned_user_id" not in data:
+        assigned_user = _get_assignable_user_or_404(
+            db,
+            membership.tenant_id,
+            assignment.assigned_user_id,
+        )
+
     _sync_assignment_appointment(
         db=db,
         assignment=assignment,
@@ -465,6 +545,7 @@ def update_production_order_assignment(
     db.refresh(assignment)
 
     assignment.supplier_name = supplier.name
+    assignment.assigned_user_name = _user_display_name(assigned_user)
     assignment.process_code = process_type.code
     assignment.process_name = process_type.name
     assignment.process_color = process_type.color

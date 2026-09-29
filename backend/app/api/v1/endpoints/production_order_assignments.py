@@ -12,6 +12,7 @@ from app.models.production_order import ProductionOrder
 from app.models.production_order_assignment import ProductionOrderAssignment
 from app.models.production_process_type import ProductionProcessType
 from app.models.supplier import Supplier
+from app.models.supplier_contact import SupplierContact
 from app.models.user import User, UserTenant
 from app.schemas.production_order_assignment import (
     ProductionOrderAssignmentCreate,
@@ -51,6 +52,7 @@ def build_assignment_detail(row: ProductionOrderAssignment) -> ProductionOrderAs
         production_order_id=row.production_order_id,
         supplier_id=row.supplier_id,
         process_type_id=row.process_type_id,
+        supplier_contact_id=row.supplier_contact_id,
         assigned_user_id=row.assigned_user_id,
         appointment_id=row.appointment_id,
         status=str(
@@ -67,6 +69,8 @@ def build_assignment_detail(row: ProductionOrderAssignment) -> ProductionOrderAs
         updated_at=row.updated_at,
         deleted_at=row.deleted_at,
         supplier_name=getattr(row, "supplier_name", None),
+        supplier_contact_name=getattr(row, "supplier_contact_name", None),
+        supplier_contact_whatsapp=getattr(row, "supplier_contact_whatsapp", None),
         assigned_user_name=getattr(row, "assigned_user_name", None),
         process_code=getattr(row, "process_code", None),
         process_name=getattr(row, "process_name", None),
@@ -110,6 +114,46 @@ def _user_display_name(user: User | None) -> str | None:
 
     full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
     return full_name or user.email
+
+
+def _get_supplier_contact_or_404(
+    db: Session,
+    tenant_id,
+    supplier_id: uuid.UUID,
+    contact_id: uuid.UUID | None,
+) -> SupplierContact | None:
+    if contact_id is None:
+        return None
+
+    contact = (
+        db.query(SupplierContact)
+        .filter(
+            SupplierContact.id == contact_id,
+            SupplierContact.tenant_id == tenant_id,
+            SupplierContact.supplier_id == supplier_id,
+            SupplierContact.deleted_at.is_(None),
+            SupplierContact.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if not contact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "Contacto del proveedor no encontrado, inactivo "
+                "o no pertenece al proveedor seleccionado."
+            ),
+        )
+
+    return contact
+
+
+def _supplier_contact_display_name(contact: SupplierContact | None) -> str | None:
+    if not contact:
+        return None
+
+    return f"{contact.first_name or ''} {contact.last_name or ''}".strip() or None
 
 
 def _build_assignment_title(
@@ -249,6 +293,9 @@ def list_production_order_assignments(
         db.query(
             ProductionOrderAssignment,
             Supplier.name.label("supplier_name"),
+            SupplierContact.first_name.label("supplier_contact_first_name"),
+            SupplierContact.last_name.label("supplier_contact_last_name"),
+            SupplierContact.whatsapp_phone.label("supplier_contact_whatsapp"),
             User.first_name.label("assigned_user_first_name"),
             User.last_name.label("assigned_user_last_name"),
             User.email.label("assigned_user_email"),
@@ -258,6 +305,10 @@ def list_production_order_assignments(
             ProductionProcessType.icon.label("process_icon"),
         )
         .join(Supplier, Supplier.id == ProductionOrderAssignment.supplier_id)
+        .outerjoin(
+            SupplierContact,
+            SupplierContact.id == ProductionOrderAssignment.supplier_contact_id,
+        )
         .outerjoin(User, User.id == ProductionOrderAssignment.assigned_user_id)
         .join(
             ProductionProcessType,
@@ -277,6 +328,9 @@ def list_production_order_assignments(
     for (
         assignment,
         supplier_name,
+        supplier_contact_first_name,
+        supplier_contact_last_name,
+        supplier_contact_whatsapp,
         assigned_user_first_name,
         assigned_user_last_name,
         assigned_user_email,
@@ -286,6 +340,9 @@ def list_production_order_assignments(
         process_icon,
     ) in rows:
         assignment.supplier_name = supplier_name
+        contact_name = f"{supplier_contact_first_name or ''} {supplier_contact_last_name or ''}".strip()
+        assignment.supplier_contact_name = contact_name or None
+        assignment.supplier_contact_whatsapp = supplier_contact_whatsapp
         assigned_name = f"{assigned_user_first_name or ''} {assigned_user_last_name or ''}".strip()
         assignment.assigned_user_name = assigned_name or assigned_user_email
         assignment.process_code = process_code
@@ -363,11 +420,19 @@ def create_production_order_assignment(
         payload.assigned_user_id,
     )
 
+    supplier_contact = _get_supplier_contact_or_404(
+        db,
+        membership.tenant_id,
+        payload.supplier_id,
+        payload.supplier_contact_id,
+    )
+
     assignment = ProductionOrderAssignment(
         tenant_id=membership.tenant_id,
         production_order_id=production_order_id,
         supplier_id=payload.supplier_id,
         process_type_id=payload.process_type_id,
+        supplier_contact_id=payload.supplier_contact_id,
         assigned_user_id=payload.assigned_user_id,
         status=payload.status,
         estimated_cost=payload.estimated_cost,
@@ -391,6 +456,10 @@ def create_production_order_assignment(
     db.refresh(assignment)
 
     assignment.supplier_name = supplier.name
+    assignment.supplier_contact_name = _supplier_contact_display_name(supplier_contact)
+    assignment.supplier_contact_whatsapp = (
+        supplier_contact.whatsapp_phone if supplier_contact else None
+    )
     assignment.assigned_user_name = _user_display_name(assigned_user)
     assignment.process_code = process_type.code
     assignment.process_name = process_type.name
@@ -472,6 +541,33 @@ def update_production_order_assignment(
             data["assigned_user_id"],
         )
 
+    effective_supplier_id = data.get("supplier_id", assignment.supplier_id)
+
+    # Si cambia el proveedor y no se informa un nuevo contacto,
+    # limpiamos el contacto anterior para no dejar una relación inválida.
+    if (
+        "supplier_id" in data
+        and data["supplier_id"] != assignment.supplier_id
+        and "supplier_contact_id" not in data
+    ):
+        data["supplier_contact_id"] = None
+
+    supplier_contact = None
+    if "supplier_contact_id" in data:
+        supplier_contact = _get_supplier_contact_or_404(
+            db,
+            membership.tenant_id,
+            effective_supplier_id,
+            data["supplier_contact_id"],
+        )
+    else:
+        supplier_contact = _get_supplier_contact_or_404(
+            db,
+            membership.tenant_id,
+            effective_supplier_id,
+            assignment.supplier_contact_id,
+        )
+
     if "process_type_id" in data:
         process_type = (
             db.query(ProductionProcessType)
@@ -545,6 +641,10 @@ def update_production_order_assignment(
     db.refresh(assignment)
 
     assignment.supplier_name = supplier.name
+    assignment.supplier_contact_name = _supplier_contact_display_name(supplier_contact)
+    assignment.supplier_contact_whatsapp = (
+        supplier_contact.whatsapp_phone if supplier_contact else None
+    )
     assignment.assigned_user_name = _user_display_name(assigned_user)
     assignment.process_code = process_type.code
     assignment.process_name = process_type.name

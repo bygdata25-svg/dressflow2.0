@@ -47,6 +47,13 @@ class ProductionOrderAssignment(UUIDMixin, TimestampMixin, Base):
         index=True,
     )
 
+    supplier_contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("supplier_contacts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     assigned_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),

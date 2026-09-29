@@ -149,6 +149,24 @@ type Supplier = {
   supplier_type?: string | null;
 };
 
+type SupplierContact = {
+  id: string;
+  supplier_id: string;
+  first_name: string;
+  last_name?: string | null;
+  whatsapp_phone?: string | null;
+  role?: string | null;
+  is_supplier_manager: boolean;
+  is_active: boolean;
+};
+
+type PaginatedSupplierContactResponse = {
+  items: SupplierContact[];
+  page: number;
+  page_size: number;
+  total: number;
+};
+
 type AssignmentUser = {
   id: string;
   email: string;
@@ -175,6 +193,9 @@ type ProductionOrderAssignment = {
   production_order_id: string;
   supplier_id: string;
   process_type_id: string;
+  supplier_contact_id?: string | null;
+  supplier_contact_name?: string | null;
+  supplier_contact_whatsapp?: string | null;
   assigned_user_id?: string | null;
   assigned_user_name?: string | null;
   status: string;
@@ -193,6 +214,7 @@ type ProductionOrderAssignment = {
 type AssignmentForm = {
   process_type_id: string;
   supplier_id: string;
+  supplier_contact_id: string;
   assigned_user_id: string;
   status: string;
   estimated_cost: string;
@@ -487,6 +509,7 @@ function emptyAssignmentForm(): AssignmentForm {
   return {
     process_type_id: "",
     supplier_id: "",
+    supplier_contact_id: "",
     assigned_user_id: "",
     status: "PENDING",
     estimated_cost: "0",
@@ -514,6 +537,7 @@ function ProcessTimeline({
   assignments,
   processTypes,
   suppliers,
+  contactsBySupplier,
   users,
   loading,
   saving,
@@ -523,7 +547,9 @@ function ProcessTimeline({
   setOpenForm,
   error,
   onSubmit,
+  onFormSupplierChange,
   onStatusChange,
+  onSupplierContactChange,
   onAssignedUserChange,
   onDelete,
 }: {
@@ -531,6 +557,7 @@ function ProcessTimeline({
   assignments: ProductionOrderAssignment[];
   processTypes: ProductionProcessType[];
   suppliers: Supplier[];
+  contactsBySupplier: Record<string, SupplierContact[]>;
   users: AssignmentUser[];
   loading: boolean;
   saving: boolean;
@@ -540,7 +567,9 @@ function ProcessTimeline({
   setOpenForm: Dispatch<SetStateAction<boolean>>;
   error: string;
   onSubmit: (event: FormEvent) => Promise<void>;
+  onFormSupplierChange: (supplierId: string) => Promise<void>;
   onStatusChange: (assignment: ProductionOrderAssignment, status: string) => Promise<void>;
+  onSupplierContactChange: (assignment: ProductionOrderAssignment, supplierContactId: string) => Promise<void>;
   onAssignedUserChange: (assignment: ProductionOrderAssignment, assignedUserId: string) => Promise<void>;
   onDelete: (assignmentId: string) => Promise<void>;
 }) {
@@ -615,9 +644,7 @@ function ProcessTimeline({
             <select
               className="df-pro-select"
               value={form.supplier_id}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, supplier_id: event.target.value }))
-              }
+              onChange={(event) => void onFormSupplierChange(event.target.value)}
               required
             >
               <option value="">
@@ -626,6 +653,30 @@ function ProcessTimeline({
               {suppliers.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="df-pro-label">
+              {tr(t, "production-orders:assignments.supplierContact", "Contacto operativo")}
+            </label>
+            <select
+              className="df-pro-select"
+              value={form.supplier_contact_id}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, supplier_contact_id: event.target.value }))
+              }
+              disabled={!form.supplier_id}
+            >
+              <option value="">
+                {tr(t, "production-orders:assignments.selectSupplierContact", "Sin contacto asignado")}
+              </option>
+              {(contactsBySupplier[form.supplier_id] || []).map((item) => (
+                <option key={item.id} value={item.id}>
+                  {[item.first_name, item.last_name].filter(Boolean).join(" ")}
+                  {item.role ? ` · ${item.role}` : ""}
                 </option>
               ))}
             </select>
@@ -802,6 +853,11 @@ function ProcessTimeline({
                       <h4>{assignment.process_name || "-"}</h4>
                       <p>{assignment.supplier_name || "-"}</p>
                       <p>
+                        {tr(t, "production-orders:assignments.supplierContact", "Contacto operativo")}: {" "}
+                        {assignment.supplier_contact_name ||
+                          tr(t, "production-orders:assignments.noSupplierContact", "Sin contacto asignado")}
+                      </p>
+                      <p>
                         {tr(t, "production-orders:assignments.responsible", "Responsable")}: {" "}
                         {assignment.assigned_user_name ||
                           tr(t, "production-orders:assignments.noResponsible", "Sin responsable")}
@@ -833,6 +889,33 @@ function ProcessTimeline({
                   ) : null}
 
                   <div className="po-process-step__actions">
+                    <select
+                      className="df-pro-select"
+                      value={assignment.supplier_contact_id || ""}
+                      onChange={(event) =>
+                        void onSupplierContactChange(assignment, event.target.value)
+                      }
+                      aria-label={tr(
+                        t,
+                        "production-orders:assignments.supplierContact",
+                        "Contacto operativo"
+                      )}
+                    >
+                      <option value="">
+                        {tr(
+                          t,
+                          "production-orders:assignments.selectSupplierContact",
+                          "Sin contacto asignado"
+                        )}
+                      </option>
+                      {(contactsBySupplier[assignment.supplier_id] || []).map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {[item.first_name, item.last_name].filter(Boolean).join(" ")}
+                          {item.role ? ` · ${item.role}` : ""}
+                        </option>
+                      ))}
+                    </select>
+
                     <select
                       className="df-pro-select"
                       value={assignment.assigned_user_id || ""}
@@ -930,12 +1013,35 @@ export default function ProductionOrderOperationTab({
   const [processTypes, setProcessTypes] = useState<ProductionProcessType[]>([]);
   const [assignments, setAssignments] = useState<ProductionOrderAssignment[]>([]);
   const [assignmentSuppliers, setAssignmentSuppliers] = useState<Supplier[]>([]);
+  const [contactsBySupplier, setContactsBySupplier] = useState<Record<string, SupplierContact[]>>({});
   const [assignmentUsers, setAssignmentUsers] = useState<AssignmentUser[]>([]);
   const [loadingWorkflow, setLoadingWorkflow] = useState(false);
   const [savingAssignment, setSavingAssignment] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
   const [openAssignmentForm, setOpenAssignmentForm] = useState(false);
   const [assignmentForm, setAssignmentForm] = useState<AssignmentForm>(() => emptyAssignmentForm());
+
+  const loadContactsForSupplier = async (supplierId: string) => {
+    if (!supplierId) return [];
+
+    const response = await api.get<PaginatedSupplierContactResponse>("/supplier-contacts", {
+      params: {
+        supplier_id: supplierId,
+        page: 1,
+        page_size: 100,
+        active_only: true,
+      },
+    });
+
+    const items = Array.isArray(response.data?.items) ? response.data.items : [];
+
+    setContactsBySupplier((prev) => ({
+      ...prev,
+      [supplierId]: items,
+    }));
+
+    return items;
+  };
 
   const loadWorkflow = async () => {
     try {
@@ -955,7 +1061,40 @@ export default function ProductionOrderOperationTab({
         ]);
 
       setProcessTypes(Array.isArray(processTypesResponse.data) ? processTypesResponse.data : []);
-      setAssignments(Array.isArray(assignmentsResponse.data) ? assignmentsResponse.data : []);
+
+      const assignmentItems = Array.isArray(assignmentsResponse.data)
+        ? assignmentsResponse.data
+        : [];
+      setAssignments(assignmentItems);
+
+      const supplierIdsWithAssignments = Array.from(
+        new Set(assignmentItems.map((item) => item.supplier_id).filter(Boolean))
+      );
+
+      if (supplierIdsWithAssignments.length > 0) {
+        const contactResults = await Promise.all(
+          supplierIdsWithAssignments.map(async (supplierId) => {
+            const response = await api.get<PaginatedSupplierContactResponse>("/supplier-contacts", {
+              params: {
+                supplier_id: supplierId,
+                page: 1,
+                page_size: 100,
+                active_only: true,
+              },
+            });
+
+            return [
+              supplierId,
+              Array.isArray(response.data?.items) ? response.data.items : [],
+            ] as const;
+          })
+        );
+
+        setContactsBySupplier((prev) => ({
+          ...prev,
+          ...Object.fromEntries(contactResults),
+        }));
+      }
 
       const supplierItems = Array.isArray(suppliersResponse.data?.items)
         ? suppliersResponse.data.items
@@ -1001,6 +1140,27 @@ export default function ProductionOrderOperationTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.id]);
 
+  const handleAssignmentSupplierChange = async (supplierId: string) => {
+    setAssignmentForm((prev) => ({
+      ...prev,
+      supplier_id: supplierId,
+      supplier_contact_id: "",
+    }));
+
+    if (!supplierId || contactsBySupplier[supplierId]) return;
+
+    try {
+      setAssignmentError("");
+      await loadContactsForSupplier(supplierId);
+    } catch (err: any) {
+      setAssignmentError(
+        err?.response?.data?.detail?.message ||
+          err?.response?.data?.detail ||
+          "No se pudieron cargar los contactos del proveedor."
+      );
+    }
+  };
+
   const createAssignment = async (event: FormEvent) => {
     event.preventDefault();
 
@@ -1011,6 +1171,7 @@ export default function ProductionOrderOperationTab({
       await api.post(`/production-orders/${order.id}/assignments`, {
         process_type_id: assignmentForm.process_type_id,
         supplier_id: assignmentForm.supplier_id,
+        supplier_contact_id: assignmentForm.supplier_contact_id || null,
         assigned_user_id: assignmentForm.assigned_user_id || null,
         status: assignmentForm.status,
         estimated_cost: Number(assignmentForm.estimated_cost || 0),
@@ -1066,6 +1227,31 @@ export default function ProductionOrderOperationTab({
             t,
             "production-orders:assignments.updateError",
             "No se pudo actualizar el proceso."
+          )
+      );
+    }
+  };
+
+  const updateAssignmentSupplierContact = async (
+    assignment: ProductionOrderAssignment,
+    supplierContactId: string
+  ) => {
+    try {
+      setAssignmentError("");
+
+      await api.put(`/production-order-assignments/${assignment.id}`, {
+        supplier_contact_id: supplierContactId || null,
+      });
+
+      await refreshWorkflowAndNotifyParent();
+    } catch (err: any) {
+      setAssignmentError(
+        err?.response?.data?.detail?.message ||
+          err?.response?.data?.detail ||
+          tr(
+            t,
+            "production-orders:assignments.updateSupplierContactError",
+            "No se pudo actualizar el contacto operativo del proceso."
           )
       );
     }
@@ -1494,6 +1680,7 @@ export default function ProductionOrderOperationTab({
           justify-content: flex-end;
           gap: 10px;
           margin-top: 12px;
+          flex-wrap: wrap;
         }
 
         .po-process-step__actions .df-pro-select {
@@ -1528,6 +1715,7 @@ export default function ProductionOrderOperationTab({
             assignments={assignments}
             processTypes={processTypes}
             suppliers={assignmentSuppliers}
+            contactsBySupplier={contactsBySupplier}
             users={assignmentUsers}
             loading={loadingWorkflow}
             saving={savingAssignment}
@@ -1537,7 +1725,9 @@ export default function ProductionOrderOperationTab({
             setOpenForm={setOpenAssignmentForm}
             error={assignmentError}
             onSubmit={createAssignment}
+            onFormSupplierChange={handleAssignmentSupplierChange}
             onStatusChange={updateAssignmentStatus}
+            onSupplierContactChange={updateAssignmentSupplierContact}
             onAssignedUserChange={updateAssignmentResponsible}
             onDelete={deleteAssignment}
           />

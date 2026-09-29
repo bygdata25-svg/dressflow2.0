@@ -539,7 +539,7 @@ export default function SuppliersPage() {
                     Contactos del proveedor
                   </h3>
                   <p style={{ margin: "5px 0 0", color: "#81768a", fontSize: 13 }}>
-                    Personas que podrán identificarse e interactuar mediante BaiVox.
+                    Personas de contacto asociadas al proveedor.
                   </p>
                 </div>
                 <button type="button" onClick={openNewContact}>

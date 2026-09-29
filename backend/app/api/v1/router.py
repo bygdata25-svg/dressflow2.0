@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     tenants,
     customers,
     suppliers,
+    supplier_contacts,
     fabrics,
     fabric_rolls,
     fabric_movements,
@@ -45,6 +46,7 @@ api_router.include_router(sales.router)
 api_router.include_router(tenants.router)
 api_router.include_router(customers.router)
 api_router.include_router(suppliers.router)
+api_router.include_router(supplier_contacts.router)
 api_router.include_router(fabrics.router)
 api_router.include_router(fabric_rolls.router)
 api_router.include_router(fabric_movements.router)

@@ -149,6 +149,15 @@ type Supplier = {
   supplier_type?: string | null;
 };
 
+type AssignmentUser = {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  is_active: boolean;
+};
+
 type ProductionProcessType = {
   id: string;
   tenant_id: string;
@@ -166,6 +175,8 @@ type ProductionOrderAssignment = {
   production_order_id: string;
   supplier_id: string;
   process_type_id: string;
+  assigned_user_id?: string | null;
+  assigned_user_name?: string | null;
   status: string;
   estimated_cost: string;
   actual_cost: string;
@@ -182,6 +193,7 @@ type ProductionOrderAssignment = {
 type AssignmentForm = {
   process_type_id: string;
   supplier_id: string;
+  assigned_user_id: string;
   status: string;
   estimated_cost: string;
   actual_cost: string;
@@ -475,6 +487,7 @@ function emptyAssignmentForm(): AssignmentForm {
   return {
     process_type_id: "",
     supplier_id: "",
+    assigned_user_id: "",
     status: "PENDING",
     estimated_cost: "0",
     actual_cost: "0",
@@ -501,6 +514,7 @@ function ProcessTimeline({
   assignments,
   processTypes,
   suppliers,
+  users,
   loading,
   saving,
   form,
@@ -510,12 +524,14 @@ function ProcessTimeline({
   error,
   onSubmit,
   onStatusChange,
+  onAssignedUserChange,
   onDelete,
 }: {
   t: TranslateFn;
   assignments: ProductionOrderAssignment[];
   processTypes: ProductionProcessType[];
   suppliers: Supplier[];
+  users: AssignmentUser[];
   loading: boolean;
   saving: boolean;
   form: AssignmentForm;
@@ -525,6 +541,7 @@ function ProcessTimeline({
   error: string;
   onSubmit: (event: FormEvent) => Promise<void>;
   onStatusChange: (assignment: ProductionOrderAssignment, status: string) => Promise<void>;
+  onAssignedUserChange: (assignment: ProductionOrderAssignment, assignedUserId: string) => Promise<void>;
   onDelete: (assignmentId: string) => Promise<void>;
 }) {
   const assignedProcessTypeIds = new Set(assignments.map((item) => item.process_type_id));
@@ -609,6 +626,28 @@ function ProcessTimeline({
               {suppliers.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="df-pro-label">
+              {tr(t, "production-orders:assignments.responsible", "Responsable")}
+            </label>
+            <select
+              className="df-pro-select"
+              value={form.assigned_user_id}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, assigned_user_id: event.target.value }))
+              }
+            >
+              <option value="">
+                {tr(t, "production-orders:assignments.selectResponsible", "Sin responsable")}
+              </option>
+              {users.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {[item.first_name, item.last_name].filter(Boolean).join(" ") || item.email}
                 </option>
               ))}
             </select>
@@ -762,6 +801,11 @@ function ProcessTimeline({
                     <div>
                       <h4>{assignment.process_name || "-"}</h4>
                       <p>{assignment.supplier_name || "-"}</p>
+                      <p>
+                        {tr(t, "production-orders:assignments.responsible", "Responsable")}: {" "}
+                        {assignment.assigned_user_name ||
+                          tr(t, "production-orders:assignments.noResponsible", "Sin responsable")}
+                      </p>
                     </div>
 
                     <span className={`po-process-status po-process-status--${tone}`}>
@@ -789,6 +833,24 @@ function ProcessTimeline({
                   ) : null}
 
                   <div className="po-process-step__actions">
+                    <select
+                      className="df-pro-select"
+                      value={assignment.assigned_user_id || ""}
+                      onChange={(event) =>
+                        void onAssignedUserChange(assignment, event.target.value)
+                      }
+                      aria-label={tr(t, "production-orders:assignments.responsible", "Responsable")}
+                    >
+                      <option value="">
+                        {tr(t, "production-orders:assignments.selectResponsible", "Sin responsable")}
+                      </option>
+                      {users.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {[item.first_name, item.last_name].filter(Boolean).join(" ") || item.email}
+                        </option>
+                      ))}
+                    </select>
+
                     <select
                       className="df-pro-select"
                       value={assignment.status}
@@ -868,6 +930,7 @@ export default function ProductionOrderOperationTab({
   const [processTypes, setProcessTypes] = useState<ProductionProcessType[]>([]);
   const [assignments, setAssignments] = useState<ProductionOrderAssignment[]>([]);
   const [assignmentSuppliers, setAssignmentSuppliers] = useState<Supplier[]>([]);
+  const [assignmentUsers, setAssignmentUsers] = useState<AssignmentUser[]>([]);
   const [loadingWorkflow, setLoadingWorkflow] = useState(false);
   const [savingAssignment, setSavingAssignment] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
@@ -879,7 +942,7 @@ export default function ProductionOrderOperationTab({
       setLoadingWorkflow(true);
       setAssignmentError("");
 
-      const [processTypesResponse, assignmentsResponse, suppliersResponse] =
+      const [processTypesResponse, assignmentsResponse, suppliersResponse, usersResponse] =
         await Promise.all([
           api.get<ProductionProcessType[]>("/production-process-types"),
           api.get<ProductionOrderAssignment[]>(
@@ -888,6 +951,7 @@ export default function ProductionOrderOperationTab({
           api.get<{ items: Supplier[] }>("/suppliers", {
             params: { page: 1, page_size: 100 },
           }),
+          api.get<AssignmentUser[]>("/users"),
         ]);
 
       setProcessTypes(Array.isArray(processTypesResponse.data) ? processTypesResponse.data : []);
@@ -900,6 +964,12 @@ export default function ProductionOrderOperationTab({
       setAssignmentSuppliers(
         supplierItems.filter(
           (item) => item.supplier_type === "WORKSHOP" || item.supplier_type === "BOTH"
+        )
+      );
+
+      setAssignmentUsers(
+        (Array.isArray(usersResponse.data) ? usersResponse.data : []).filter(
+          (item) => item.is_active
         )
       );
     } catch (err: any) {
@@ -941,6 +1011,7 @@ export default function ProductionOrderOperationTab({
       await api.post(`/production-orders/${order.id}/assignments`, {
         process_type_id: assignmentForm.process_type_id,
         supplier_id: assignmentForm.supplier_id,
+        assigned_user_id: assignmentForm.assigned_user_id || null,
         status: assignmentForm.status,
         estimated_cost: Number(assignmentForm.estimated_cost || 0),
         actual_cost: Number(assignmentForm.actual_cost || 0),
@@ -995,6 +1066,31 @@ export default function ProductionOrderOperationTab({
             t,
             "production-orders:assignments.updateError",
             "No se pudo actualizar el proceso."
+          )
+      );
+    }
+  };
+
+  const updateAssignmentResponsible = async (
+    assignment: ProductionOrderAssignment,
+    assignedUserId: string
+  ) => {
+    try {
+      setAssignmentError("");
+
+      await api.put(`/production-order-assignments/${assignment.id}`, {
+        assigned_user_id: assignedUserId || null,
+      });
+
+      await refreshWorkflowAndNotifyParent();
+    } catch (err: any) {
+      setAssignmentError(
+        err?.response?.data?.detail?.message ||
+          err?.response?.data?.detail ||
+          tr(
+            t,
+            "production-orders:assignments.updateResponsibleError",
+            "No se pudo actualizar el responsable del proceso."
           )
       );
     }
@@ -1432,6 +1528,7 @@ export default function ProductionOrderOperationTab({
             assignments={assignments}
             processTypes={processTypes}
             suppliers={assignmentSuppliers}
+            users={assignmentUsers}
             loading={loadingWorkflow}
             saving={savingAssignment}
             form={assignmentForm}
@@ -1441,6 +1538,7 @@ export default function ProductionOrderOperationTab({
             error={assignmentError}
             onSubmit={createAssignment}
             onStatusChange={updateAssignmentStatus}
+            onAssignedUserChange={updateAssignmentResponsible}
             onDelete={deleteAssignment}
           />
             </div>

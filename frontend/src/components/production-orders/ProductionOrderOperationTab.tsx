@@ -1,3 +1,5 @@
+// supplier contact selector enabled
+
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { api } from "../../lib/api";
